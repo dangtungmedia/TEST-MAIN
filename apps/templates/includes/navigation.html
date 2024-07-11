@@ -60,25 +60,5 @@
                 </div>
             </li>
         </ul>
-        <script>
-            show_count_data();
-            function show_count_data() {
-                $.ajax({
-                    url: "{% url 'render:count-data' %}",
-                    type: 'GET',
-                    success: function(response) {
-                        if (response.success === true) {
-                            $('#count-data-use').empty();
-                            $('#count-data-use').html(response.text);
-                        } else {
-                            alert(response.message);
-                        }
-                    },
-                    error: function(error) {
-                        console.log(error);
-                    }
-                });
-            }
-        </script>
     </div>
 </header>
