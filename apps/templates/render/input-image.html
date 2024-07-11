@@ -1,0 +1,27 @@
+<div class="row row-cols-1 row-cols-md-6 g-3 justify-content-center">
+    <div class="col" id="input-click-image">
+        <div class="card border-success p-4 enlarge-on-hover" style="height: 150px; width: 150px;" >
+            <label for="input-image">
+                <img class="card-img-top" src="/static/assets/img/plus.png" alt="">
+            </label>
+            <input type="file" id="input-image" style="display:none;" class="form-control" accept="image/*" multiple>
+        </div>
+    </div>
+    {% for item in images %}
+        <div class="col"  data-toggle="tick-icon" >
+            <div class="card border-success p-1 enlarge-on-hover" style="height: 150px; width: 150px;">
+                <img class="card-img-top file-image-url"  style="height:90px;" src="{{ item.url }}" alt="">
+                <!-- Icon dấu tích -->
+                <div class="tick-icon">
+                    <svg class="icon p-2 " style="height: 50px; width: 50px;color: aqua;">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-chevron-circle-down-alt"></use>
+                    </svg>
+                </div>
+                <div class="progress progress-thin my-2" style="height:5px;">
+                    <div class="progress-bar   bg-success bg-success" role="progressbar" style="width: 100%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <ul class="nav justify-content-center ">{{ item.name }}</ul>
+            </div>
+        </div>
+    {% endfor %}
+</div>

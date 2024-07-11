@@ -1,0 +1,12 @@
+{% for item in text_content %}
+    <tr class='iteam-text-video'>
+        <th class="text-center pt-4 iteam-id" data-id='{{ item.id }}' >{{ item.id }}</th>
+        <td class="col m-3">
+            <span class='iteam-text' data-id='{{ item.id }}'>{{ item.text }}</span>
+        </td>
+        <td class="text-center">
+            <img class='iteam-video-content' data-id='{{ item.id }}' src="{% if item.url_video %}{{ item.url_video }}{% else %}/static/assets/img/no-image-available.png{% endif %}" 
+                style="height: 75px; width: 133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);">
+        </td>
+    </tr>
+{% endfor %}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Picker</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+</head>
+<body>
+    <form>
+        <div class="form-group">
+            <label for="input-time-upload">Nhập giờ upload:</label>
+            <input type="time" name="time_upload" class="form-control" id="input-time-upload" placeholder="Nhập giờ upload" required="">
+        </div>
+        <button type="button" onclick="showTime24()">Get Time</button>
+    </form>
+
+    <div id="formatted-time"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        flatpickr("#input-time-upload", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true
+        });
+
+        function showTime24() {
+            const timeInput = document.getElementById('input-time-upload').value;
+            if (timeInput) {
+                document.getElementById('formatted-time').innerText = `Thời gian đã nhập là: ${timeInput}`;
+            } else {
+                alert("Vui lòng nhập thời gian");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{% for iteam in page_obj %}
+    {% if iteam %}
+        <div class="col" data-toggle="tick-icon" >
+            <div class="card border-success p-1" style="height: 230px; width: 360px;">
+                <img class="card-img-top file-image-url" style="height:200px;" src="{{ iteam.url_thumbnail }}" alt="">
+                <!-- Icon dấu tích -->
+                <label class="nav justify-content-center">{{ iteam.name_video }}</label>
+            </div>
+        </div>
+    {% else %}
+        <div class="col" data-toggle="tick-icon" >
+            <div class="card border-success p-1" style="height: 230px; width: 360px;">
+                <img class="card-img-top file-image-url" style="height:200px;" src="/static/assets/img/no-image-available.png" alt="">
+                <!-- Icon dấu tích -->
+                <label class="nav justify-content-center">Video Đã Bị Xóa</label>
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}

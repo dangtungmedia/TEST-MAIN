@@ -1,0 +1,819 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Dashboard {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet">
+
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="card-body">
+            <div class="row">
+                <div class="col">
+                    <div class="mb-3">
+                        <label class="form-label" for="formFile">Forder</label>
+                        <div class="input-group">
+                            {% csrf_token %}
+                            {{ form.folder_name }}
+                            <button class="btn btn-primary" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalLiveAddFolder">Button</button>
+                        </div>
+
+                        <!-- setting  Forder -->
+                        <div class="modal fade" id="exampleModalLiveAddFolder" tabindex="-1" aria-labelledby="exampleModalLiveLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLiveLabel">ADD Forder</h5>
+                                        <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <div class="row">
+                                                <div class="col">
+                                                    <label class="form-label" for="formFile">Folder</label>
+                                                    {{ form.channel_forder_setting}}
+                                                    <label class="form-label" for="formFile">Văn Bản</label>
+                                                    {{ form.input_folder_name}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button class="btn btn-primary col" type="submit" name="action" value="folder-delete">Forder Delete</button>
+                                        <button class="btn btn-primary col" type="submit" name="action" value="folder-update">Forder Update</button>
+                                        <button class="btn btn-primary col" type="submit" name="action" value="folder-add">Forder Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- setting  Profile -->
+                    <div class="mb-3">
+                        <label class="form-label" for="formFile">Profile Channel</label>
+                        <div class="input-group">
+                            {{ form.channel_name }}
+                            <button class="btn btn-primary" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalLiveProfileChannel">Button</button>
+                        </div>
+                        <div class="modal fade" id="exampleModalLiveProfileChannel" tabindex="-1" aria-labelledby="exampleModalLiveLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLiveLabel">Profile Channel</h5>
+                                        <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <div class="row">
+                                                <div class="col">
+                                                    <label class="form-label" for="formFile">Folder</label>
+                                                    {{ form.channel_forder_name_setting}}
+                                                    <label class="form-label" for="formFile">Channel</label>
+                                                    {{ form.channel_name_setting}}
+
+                                                    <label class="form-label" for="formFile">Văn Bản</label>
+                                                    {{ form.input_channel_name}}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button class="btn btn-primary col" type="submit" name="action" value="delete-channel">Channel Delete</button>
+                                        <button class="btn btn-primary col" type="submit" name="action" value="update-channel">Channel Update</button>
+                                        <button class="btn btn-primary col" type="submit" name="action" value="add-channel">Channel Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- setting  intro -->
+                    <div class="mb-3">
+                        <label class="form-label">Intro</label>
+                        <div class="input-group mb-3">
+                            <div class="input-group-text">
+                                {{ form.channel_intro_active }}
+                            </div>
+                            {{ form.channel_intro_url }}
+                            {{ form.channel_intro_input_file}}
+                            <button class="btn btn-outline-secondary" id="button-open-intro" type="button">...</button>
+                        </div>
+                    </div>
+
+                    <!-- setting  outro -->
+                    <div class="mb-3">
+                        <label class="form-label">Outro</label>
+                        <div class="input-group mb-3">
+                            <div class="input-group-text">
+                                {{ form.channel_outro_active }}
+                            </div>
+                            {{ form.channel_outro_url }}
+                            {{ form.channel_outro_input_file}}
+                            <button class="btn btn-outline-secondary"  id="button-open-outro"  type="button">...</button>
+                        </div>
+                    </div>
+
+                    <!-- setting  logo -->
+                    <div class="mb-3">
+                        <label class="form-label" for="formFile">Logo</label>
+                        <div class="input-group mb-3">
+                            <div class="input-group-text">
+                                {{ form.channel_logo_active }}
+                            </div>
+                            {{ form.channel_logo_url }}
+                            {{ form.channel_logo_input_file}}
+                            <button class="btn btn-outline-secondary" id="button-open-logo" type="button">...</button>
+                            <button class="btn btn-primary" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalXlLogoProfile">Cài Đặt</button>
+                        </div>
+
+                        <div class="modal fade" id="exampleModalXlLogoProfile" tabindex="-1" aria-labelledby="exampleModalXlLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title h4" id="exampleModalXlLabel">CÀI ĐẶT LOGO</h5>
+                                    <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body row">
+                                    <div class="col-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" id="flexRadioDefault1" type="radio" name="flexRadioDefault" value="left">
+                                            <label class="form-check-label" for="flexRadioDefault1">
+                                                Bên Trái
+                                            </label>
+                                        </div>
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" id="flexRadioDefault2" type="radio" name="flexRadioDefault" value="right">
+                                            <label class="form-check-label" for="flexRadioDefault2">
+                                                Bên Phải
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-9">
+                                        <div class="video-container" style="position: relative; width: 568px; height: 320px; border: 1px solid red;">
+                                            <img src="https://img.freepik.com/free-vector/gradient-quill-pen-logo-with-tagline-template_23-2149813051.jpg" class="logo"alt="Logo Right" style="position: absolute; top: 10px; right: 10px; width: 80px;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+                                    <button class="btn btn-primary"  type="submit" name="action" value="logo-setting">Save changes</button>
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- setting  Subtitle -->
+                    <div class="mb-3">
+                        <label class="form-label" for="formFile">Font Chữ</label>
+                        <div class="input-group mb-3">
+                            {{ form.channel_font_text }}
+                            <button class="btn btn-primary" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalXlFontText">Cài Đặt</button>
+                        </div>
+
+                        <div class="modal fade" id="exampleModalXlFontText" tabindex="-1" aria-labelledby="exampleModalXlLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                    <h5 class="modal-title h4" id="exampleModalXlLabel">CÀI ĐẶT Subtitle</h5>
+                                    <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="col-12 mb-3">
+                                            <div style="position: relative; border: 1px solid red;  height: 200px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;">                            
+                                                <div style=" width: 100%; height: 100%;  text-align: center;  color: rgb(255, 0, 106); ">
+                                                    <div  id="Subtitle" style="font-size: 10px;">
+                                                        <span id="text-Subtitle" style=" background:red;">{{ form.channel_subtitle_text.value|default:"Đây Là Phụ Đề Của Video" }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <div class="col-9">
+                                                <div class="input-group mb-3">
+                                                    <label class="input-group-text" for="inputGroupSelect01">Font Chữ</label>
+                                                    {{ form.channel_font_text_setting }}
+                                                </div>
+                                            </div>
+                                            <div class="col-3">
+                                                <div class="input-group mb-3">
+                                                    {{ form.channel_font_size }}
+                                                    <label class="input-group-text" for="inputGroupSelect01">Size Chữ</label>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3 row">
+                                            <div class="col">
+                                                <div class="form-check form-check-inline">
+                                                    {{ form.channel_font_bold }}
+                                                    <label class="form-check-label" for="inlineCheckbox1">Bold</label>
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="form-check form-check-inline ">
+                                                    {{ form.channel_font_italic }}
+                                                    <label class="form-check-label" for="inlineCheckbox1">Italic</label>
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="form-check form-check-inline ">
+                                                    {{ form.channel_font_underline }}
+                                                    <label class="form-check-label" for="inlineCheckbox1">Underline</label>
+                                                </div>
+                                            </div>
+                                            <div class="col ">
+                                                <div class="form-check form-check-inline">
+                                                    {{ form.channel_font_strikeout }}
+                                                    <label class="form-check-label" for="inlineCheckbox1">Strikeout</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                
+                                        <div class="mb-3 row">
+                                            <div class="col">
+                                                <div class="input-group mb-3">
+                                                    <span class="input-group-text">Màu Chữ</span>
+                                                    {{ form.channel_font_color }}
+                                                    {{ form.channel_font_color_opacity }}
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="input-group mb-3">
+                                                    <span class="input-group-text">Viền Chữ</span>
+                                                    {{ form.channel_font_color_troke }}
+                                                    {{ form.channel_font_color_troke_opacity }}
+                                                </div>
+                                            </div>
+                                            <div class="col">
+                                                <div class="input-group mb-3">
+                                                    <span class="input-group-text">Nền Chữ</span>
+                                                    {{ form.channel_font_background }}
+                                                    {{ form.channel_font_background_opacity }}
+                                                </div>
+                                            </div>
+                                        </div>
+                
+                                        <div class="mb-3 row">
+                                            <div class="mb-3 row">
+                                                <div class="col">
+                                                    <div class="input-group mb-3">
+                                                        <span class="input-group-text">VIỀN CHỮ</span>
+                                                        {{ form.channel_stroke_text }}
+                                                        {{ form.channel_font_border_opacity }}
+                                                    </div>  
+                                                </div>
+                                                <div class="col">
+                                                    <div class="input-group mb-3">
+                                                        <span class="input-group-text">Bóng Đổ</span>
+                                                        <input type="number" id="inputGroupSelect02" class="form-control" value="100" min="1" max="100" step="0.1">
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <div class="input-group mb-3">
+                                                        <span class="input-group-text">Giãn Từ</span>
+                                                        <input type="number" id="inputGroupSelect03" class="form-control" value="100" min="0" max="100" step="0.1">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label" for="channel_font_subtitle">Văn Bản</label>
+                                            {{ form.channel_subtitle_text }}
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+                                        <button class="btn btn-primary" type="submit" name="action" value="save-fontext">Save changes</button>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Giọng Đọc -->
+                    <div class="mb-3">
+                        <label class="form-label" for="formFile">Giọng Đọc</label>
+                        <div class="input-group mb-3">
+                            {{ form.channel_voice }}
+                            <button class="btn btn-primary" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalXlVoiceProfile">Cài Đặt</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="mb-3">
+                        <label class="form-label" for="channel_title">TIÊU ĐỀ</label>
+                        {{ form.channel_title }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="channel_description">Mô Tả</label>
+                        {{ form.channel_description }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="channel_keyword">Từ Khóa</label>
+                        {{ form.channel_keywords }}
+                    </div>
+                    <div class="mb-3">
+                        
+                        <label class="form-label" for="channel_time_upload">Time Upload Channel</label>
+                        <div class="row g-3">
+
+                            <div class="col">
+                                {{ form.channel_time_upload }}
+                            </div>
+                            <div class="col-auto">
+                                <input type="number" style='width:70px;' id="count-random" class="form-control" value="4" min="0" max="10" step="1">
+                            </div>
+                            <div class="col-auto">
+                                <button class="btn btn-primary" id='random-time' type="button">Random</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="exampleFormControlInput1">Url Channel</label>
+                        {{ form.channel_url }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="channel_email_login">Email Channel</label>
+                        {{ form.channel_email_login }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="channel_vps_upload">IP VPS</label>
+                        {{ form.channel_vps_upload }}
+                    </div>
+                    <div class="mb-3 ">
+                        <button class="btn btn-primary col form-control" type="submit" name="action" value="save-channel">Lưu Cấu Hình</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal fade" id="exampleModalXlFontText" tabindex="-1" aria-labelledby="exampleModalXlLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <h5 class="modal-title h4" id="exampleModalXlLabel">CÀI ĐẶT Subtitle</h5>
+                    <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="col-12 mb-3">
+                            <div style="position: relative; border: 1px solid red; height: 200px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;">                            
+                                <div style="width: 100%; height: 100%;  text-align: center;">
+                                    <div  id="Subtitle" style="">
+                                        <span id="text-Subtitle"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col-9">
+                                <div class="input-group mb-3">
+                                    <label class="input-group-text" for="inputGroupSelect01">Font Chữ</label>
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="input-group mb-3">
+                                    <label class="input-group-text" for="inputGroupSelect01">Size Chữ</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <div class="form-check form-check-inline">
+                                    <label class="form-check-label" for="inlineCheckbox1">Bold</label>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-check form-check-inline ">
+                                    <label class="form-check-label" for="inlineCheckbox1">Italic</label>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-check form-check-inline ">
+                                    <label class="form-check-label" for="inlineCheckbox1">Underline</label>
+                                </div>
+                            </div>
+                            <div class="col ">
+                                <div class="form-check form-check-inline">
+                                    <label class="form-check-label" for="inlineCheckbox1">Strikeout</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Màu Chữ</span>
+                
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Viền Chữ</span>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Nền Chữ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3 row">
+                            <div class="mb-3 row">
+                                <div class="col">
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">VIỀN CHỮ</span>
+                                        
+                                    </div>  
+                                </div>
+                                <div class="col">
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">Bóng Đổ</span>
+                                        <input type="number" id="inputGroupSelect02" class="form-control" value="100" min="1" max="100" step="0.1">
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="input-group mb-3">
+                                        <span class="input-group-text">Giãn Từ</span>
+                                        <input type="number" id="inputGroupSelect03" class="form-control" value="100" min="0" max="100" step="0.1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="channel_font_subtitle">Văn Bản</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+                        <button class="btn btn-primary" type="button">Save changes</button>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+
+        <div class="modal fade" id="exampleModalXlVoiceProfile" tabindex="-1" aria-labelledby="exampleModalXlLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title h4" id="exampleModalXlLabel">CÀI ĐẶT GIỌNG ĐỌC</h5>
+                        <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col">
+                                <div class="input-group mb-3">
+                                    <label class="input-group-text" for="inputGroupSelect01">Giọng Đọc</label>
+                                    {{ form.channel_voice_setting }}
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="input-group mb-3">
+                                    <label class="input-group-text" for="inputGroupSelect01">styles giọng đọc</label>
+                                    {{ form.channel_voice_style }}
+                                </div>
+                            </div>
+                        </div>
+                        <label class="form-label" for="customRange1">SPEED</label>
+                        {{ form.channel_voice_speed }}
+                        <label class="form-label" for="customRange1">PITCH</label>
+                        {{ form.channel_voice_pitch }}
+                        <label class="form-label" for="customRange1">VALUE</label>
+                        {{ form.channel_voice_volume }}
+                        <div class="mb-3">
+                            <label class="form-label" for="channel_text_voice">Văn Bản</label>
+                            {{ form.channel_text_voice }}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+                        <button class="btn btn-primary"  type="button">NGHE THỬ</button>
+                        <button class="btn btn-primary"  type="button">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="btn btn-primary col form-control" style="display:none" type="submit">Lưu Cấu Hình</button>
+        
+    </form>
+</div>
+{% endblock %}
+{% block javascripts %}
+<script>
+    $(document).ready(function(){
+        $('#folder_name').change(function(){
+            var folder_name = $(this).val();
+            $.ajax({
+                url: "{% url 'home:load-channel' %}",
+                type: "GET",
+                data: {
+                    folder_name: folder_name
+                },
+                success: function(data){
+                    $('#channel_name').html(data.profile_html);
+                    showChannelName(data.data);
+                }
+            });
+        });
+        $('#channel_forder_name_setting').change(function(){
+            var folder_name = $(this).val();
+            $.ajax({
+                url: "{% url 'home:load-channel' %}",
+                type: "GET",
+                data: {
+                    folder_name: folder_name
+                },
+                success: function(data){
+                    $('#channel_name_setting').html(data.profile_html);
+                }
+            });
+        });
+
+    });
+
+
+    $('input[type="radio"]').change(function () {
+        // Kiểm tra radio button nào được chọn
+       if ($('#flexRadioDefault1').is(':checked')) {
+           // Di chuyển logo sang trái
+           $('.logo').css('right', '').css('left', '10px');
+       } else if ($('#flexRadioDefault2').is(':checked')) {
+           // Di chuyển logo sang phải
+           $('.logo').css('left', '').css('right', '10px');
+       }
+   });
+
+   $("#channel_font_text").change(function(){
+       $('#channel_font_text_setting').val($('#channel_font_text').val());
+   });
+
+   $("#channel_font_text_setting").change(function(){
+       $('#channel_font_text').val($('#channel_font_text_setting').val());
+   });
+
+   $("#button-open-intro").click(function() {
+       $("#channel_intro_input_file").click();
+   });
+   handleInputChange("#channel_intro_input_file", "#button-open-intro", "#channel_intro_url");
+   
+   $("#button-open-outro").click(function() {
+       $("#channel_outro_input_file").click();
+   });
+   handleInputChange("#channel_outro_input_file", "#button-open-outro", "#channel_outro_url");
+   
+   $("#button-open-logo").click(function() {
+       $("#channel_logo_input_file").click();
+   });
+   handleInputChange("#channel_logo_input_file", "#button-open-logo", "#channel_logo_url");
+
+   $("#channel_subtitle_text").change(function(){
+       show_Subtitle()
+   });
+   $("#channel_font_size").change(function(){
+       show_Subtitle()
+   });
+
+   $("#channel_font_text_setting").change(function(){
+       show_Subtitle()
+   });
+
+   $("#channel_font_bold").change(function(){
+       show_Subtitle()
+   });
+
+   $("#channel_font_italic").change(function(){
+       show_Subtitle()
+   });
+
+   $("#channel_font_underline").change(function(){
+       show_Subtitle()
+   });
+
+   $("#channel_font_strikeout").change(function(){
+       show_Subtitle()
+   });
+
+   $("#channel_font_color").change(function(){
+       show_Subtitle()
+   });
+
+   $("#channel_font_color_opacity").change(function(){
+    show_Subtitle()
+    });
+
+    $("#channel_font_background").change(function(){
+        show_Subtitle()
+    });
+
+    $("#channel_font_background_opacity").change(function(){
+        show_Subtitle()
+    });
+
+    $("#channel_font_color_troke").change(function(){
+        show_Subtitle()
+    });
+
+    $("#channel_font_color_troke_opacity").change(function(){
+        show_Subtitle()
+    });
+
+    $("#channel_stroke_text").change(function(){
+        show_Subtitle()
+    });
+
+    $("#random-time").click(function(){
+        $('#channel_time_upload').val('');
+        $('#channel_time_upload').val(generateTimeSlots());
+    });
+
+
+    $('#channel_name').change(function(){
+        show_infor_channel();
+    });
+
+    function generateTimeSlots() {
+        var timeSlots = [];
+        var list_time = [];
+        var count = $('#count-random').val();
+    
+        // Tạo danh sách thời gian từ 1 giờ đến 22 giờ với các phút cách nhau là 00, 15, 30 và 45
+        for (var hour = 1; hour <= 22; hour++) {
+            for (var minute = 0; minute < 60; minute += 15) {
+                var formattedHour = hour < 10 ? "0" + hour : hour;
+                var formattedMinute = minute < 10 ? "0" + minute : minute;
+                timeSlots.push(formattedHour + ":" + formattedMinute);
+            }
+        }
+    
+        // Lấy ngẫu nhiên các thời gian từ danh sách thời gian
+        while (list_time.length < count) {
+            var randomIndex = Math.floor(Math.random() * timeSlots.length);
+            var timeSlot = timeSlots.splice(randomIndex, 1)[0]; // Remove the selected time slot from timeSlots
+    
+            list_time.push(timeSlot);
+        }
+    
+        // Sắp xếp thời gian theo thứ tự tăng dần
+        list_time.sort();
+    
+        // Chuyển list_time thành chuỗi
+        var list_time_string = list_time.join(",");
+    
+        return list_time_string;
+    }
+
+    function show_infor_channel(){
+        var channel_id = $("#channel_name").val();
+        $.ajax({
+            url: "{% url 'home:load-channel-infor' %}",
+            type: "GET",
+            data: {
+                channel_id: channel_id
+            },
+            success: function(data){
+                $('#channel_intro_active').prop('checked', data.channel_intro_active|| false);
+                $('#channel_intro_url').val(data.channel_intro_url||'');
+                $('#channel_outro_active').prop('checked',data.channel_outro_active||false);
+                $('#channel_outro_url').val(data.channel_outro_url||'');
+                $('#channel_logo_active').prop('checked',data.channel_logo_active||false);
+                $('#channel_logo_url').val(data.channel_logo_url||'');
+                $('#channel_font_text').val(data.channel_font_text||'');
+                $('#channel_voice').val(data.channel_voice||'');
+                $('#channel_title').val(data.channel_title||'');
+                $('#channel_description').val(data.channel_description||'');
+                $('#channel_keywords').val(data.channel_keywords||'');
+                $('#channel_time_upload').val(data.channel_time_upload||'');
+                $('#channel_url').val(data.channel_url||'');
+                $('#channel_email_login').val(data.channel_email_login||'');
+                $('#channel_vps_upload').val(data.channel_vps_upload||'');
+                $('#channel_font_text_setting').val(data.channel_font_text_setting||'');
+                $('#channel_font_size').val(data.channel_font_size||40);
+                $('#channel_font_bold').prop('checked', data.channel_font_bold||false);
+                $('#channel_font_italic').prop('checked', data.channel_font_italic||false);
+                $('#channel_font_underline').prop('checked', data.channel_font_underline||false);
+                $('#channel_font_strikeout').prop('checked', data.channel_font_strikeout||false);
+                $('#channel_font_color').val(data.channel_font_color||'#FFFFFF');
+                $('#channel_font_color_opacity').val(data.channel_font_color_opacity||100);
+                $('#channel_font_color_troke').val(data.channel_font_color_troke||' #000000');
+                $('#channel_font_color_troke_opacity').val(data.channel_font_color_troke_opacity||100);
+                $('#channel_font_background').val(data.channel_font_background||'#000000');
+                $('#channel_font_background_opacity').val(data.channel_font_background_opacity||0);
+                $('#channel_stroke_text').val(data.channel_stroke_text||1);
+                $('text-Subtitle').text(data.channel_subtitle_text||'Đây là phụ đề của video');
+                $('#channel_subtitle_text').val(data.channel_subtitle_text||'Đây là phụ đề của video');
+
+                if(data.channel_logo_position == 'left'){
+                    $('#flexRadioDefault1').prop('checked', true);
+                    $('#flexRadioDefault1').click();
+                } else {
+                    $('#flexRadioDefault2').prop('checked', true);
+                    $('#flexRadioDefault2').click();
+                }
+                show_intro_video();
+                show_Subtitle();
+            }
+        });
+    }
+
+    function handleInputChange(inputId, buttonId, urlId) {
+        $(inputId).change(function() {
+            // Kiểm tra xem có tệp nào được chọn không
+            if (this.files && this.files.length > 0) {
+                // Có tệp được chọn, thực hiện các hành động bạn muốn thực hiện
+                $(buttonId).hide();
+                $(urlId).hide();
+                $(inputId).show();
+            } else {
+                // Không có tệp nào được chọn
+                show_input(); // Nếu show_input() là hàm chung, bạn có thể gọi nó ở đây
+            }
+        });
+    }
+
+
+    function show_intro_video(){
+        if ($('#channel_intro_url').val().trim() === '') {
+            $('#channel_intro_url').hide();
+            $('#channel_intro_input_file').show();
+            $('#button-open-intro').hide();
+        } else {
+            $('#channel_intro_url').show();
+            $('#channel_intro_input_file').hide();
+            $('#button-open-intro').show();
+        }
+
+        if ($('#channel_outro_url').val().trim() === '') {
+            $('#channel_outro_url').hide();
+            $('#channel_outro_input_file').show();
+            $('#button-open-outro').hide();
+        } else {
+            $('#channel_outro_url').show();
+            $('#channel_outro_input_file').hide();
+            $('#button-open-outro').show();
+        }
+
+        if ($('#channel_logo_url').val().trim() === '') {
+            $('#channel_logo_url').hide();
+            $('#channel_logo_input_file').show();
+            $('#button-open-logo').hide();
+        } else {
+            $('#channel_logo_url').show();
+            $('#channel_logo_input_file').hide();
+            $('#button-open-logo').show();
+        }
+    }
+
+
+    function show_Subtitle () {
+        $("#text-Subtitle").text($('#channel_subtitle_text').val());
+        $("#text-Subtitle").css('font-size', $('#channel_font_size').val() + 'px');
+        var selectedText = $("#channel_font_text_setting option:selected").text();
+        $("#text-Subtitle").css('font-family', selectedText);
+        $("#text-Subtitle").css('font-weight', $('#channel_font_bold').is(':checked') ? 'bold' : 'normal');
+        $("#text-Subtitle").css('font-style', $('#channel_font_italic').is(':checked') ? 'italic' : 'normal');
+        $("#text-Subtitle").css('text-decoration', $('#channel_font_underline').is(':checked') ? 'underline' : 'none');
+        $("#text-Subtitle").css('text-decoration', $('#channel_font_strikeout').is(':checked') ? 'line-through' : 'none');
+        
+        let color = document.getElementById('channel_font_color').value;
+        let opacity = document.getElementById('channel_font_color_opacity').value / 100;
+        let rgbaColor = `rgba(${parseInt(color.substr(1, 2), 16)}, ${parseInt(color.substr(3, 2), 16)}, ${parseInt(color.substr(5, 2), 16)}, ${opacity})`;
+        document.getElementById('text-Subtitle').style.color = rgbaColor;
+
+        let backgroundColor = document.getElementById('channel_font_background').value;
+        let backgroundOpacity = document.getElementById('channel_font_background_opacity').value / 100;
+        let rgbaBackgroundColor = `rgba(${parseInt(backgroundColor.substr(1, 2), 16)}, ${parseInt(backgroundColor.substr(3, 2), 16)}, ${parseInt(backgroundColor.substr(5, 2), 16)}, ${backgroundOpacity})`;
+        document.getElementById('text-Subtitle').style.background = rgbaBackgroundColor;
+
+        let strokeColor = document.getElementById('channel_font_color_troke').value;
+        let strokeOpacity = document.getElementById('channel_font_color_troke_opacity').value / 100;
+        let rgbaStrokeColor = `rgba(${parseInt(strokeColor.substr(1, 2), 16)}, ${parseInt(strokeColor.substr(3, 2), 16)}, ${parseInt(strokeColor.substr(5, 2), 16)}, ${strokeOpacity})`;
+        document.getElementById('text-Subtitle').style.textShadow = `0 0 0 ${rgbaStrokeColor}`;
+
+        const r = document.getElementById('channel_stroke_text').value; // width of outline in pixels
+        const n = Math.ceil(2 * Math.PI * r); // number of shadows
+        var str = '';
+        for (var i = 0; i < n; i++) { // append shadows in n evenly distributed directions
+            const theta = 2 * Math.PI * i / n;
+            str += `${r * Math.cos(theta)}px ${r * Math.sin(theta)}px 0 ${rgbaStrokeColor}${i == n - 1 ? '' : ','}`;
+        }
+        document.getElementById("text-Subtitle").style.textShadow = str;
+    }   
+</script>
+{% endblock javascripts %}
+
+
+

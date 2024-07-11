@@ -1,0 +1,1220 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Dashboard {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+{% endblock stylesheets %}
+
+{% block content %}
+<div class="modal fade" id="exampleModalLive1" tabindex="-1" aria-labelledby="exampleModalLiveLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLiveLabel">ADD CHỦ ĐỀ</h5>
+                <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-0">
+                    <div class="row">
+                        <div class="col">
+                            <input class="form-control" type="text" id='input-keyword-folder' placeholder="Nhập Tên Chủ đề" aria-label="default input example">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" id="closeModalButton" data-coreui-dismiss="modal">Close</button>
+                <button class="btn btn-primary" type="button" id='add-keyword-folder'>Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="exampleModalLive2" tabindex="-1" aria-labelledby="exampleModalLiveLabe2" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLiveLabel">Thêm Kênh</h5>
+                <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <select class="form-select" id="input-combobox-keyword">
+                        {% for keyword in my_topic_keywords %}
+                        <option value="{{keyword.id}}">{{ keyword.name_toppic_keyword }}</option>
+                    	{% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <select class="form-select" id="input-combobox-profile">
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col">
+                            <input class="form-control" id="input-name-profile" type="text" placeholder="Nhập Tên Kênh" aria-label="default input example" disabled>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-outline-primary" type="button" id='get-name-profile-channel'>
+                                <svg class="icon">
+                                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-plus"></use>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col">
+                            <input class="form-control" id="input-email-profile" type="text" placeholder="Nhập Email Kênh" aria-label="default input example">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col">
+                            <input class="form-control" id="input-url-profile" type="text" placeholder="Nhập Url Kênh Upload" aria-label="default input example">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col">
+                            <input class="form-control" id="input-ip-profile" type="text" placeholder="Nhập IPVPS Upload" aria-label="default input example">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col">
+                            <input class="form-control" id="input-time-profile" type="text" placeholder="Time Upload" aria-label="First name">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+                <button class="btn btn-primary" id="add-profile" type="button">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModalLive3" tabindex="-1" aria-labelledby="exampleModalLiveLabe" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+	  <div class="modal-content">
+		<div class="modal-header">
+		  <h5 class="modal-title" id="exampleModalLiveLabel">Thêm Nội Dung Chủ Đề</h5>
+		  <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+		</div>
+		<div class="modal-body">
+		  <div class="mb-3">
+			<div class="row">
+			  <div class="col-4">
+				<select class="form-select" aria-label="Default select example" id="add-video-text-content">
+					{% for keyword in my_topic_keywords %}
+						<option value="{{keyword.id}}">{{ keyword.name_toppic_keyword }}</option>
+					{% endfor %}
+				</select>
+			  </div>
+			</div>
+		  </div>
+		  <div class="mb-3">
+			<div class="row">
+			  <div class="col">
+				<input class="form-control" id='input-url-channel-folder' type="Url" placeholder="url video" aria-label="default input example">
+			  </div>
+			  <div class="col-auto">
+				<button class="btn btn-outline-primary" type="button" id="seach-url-channel">
+				  <svg class="icon">
+					  <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-zoom"></use>
+				  </svg>
+			  </button>
+			  </div>
+			</div>
+		  </div>
+		  <div class="mb-3">
+			<label class="form-label" for="exampleFormControlTextarea1">Nội Dung Video</label>
+			<textarea class="form-control" id="exampleFormControlTextarea1" style="height:400px" rows="3"></textarea>
+		  </div>
+		</div>
+		<div class="modal-footer">
+		  <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+		  <button class="btn btn-primary" type="button" id="save-text-video-conent">Save changes</button>
+		</div>
+	  </div>
+	</div>
+</div>
+
+
+<div class="modal fade" id="exampleModalXl" tabindex="-1" aria-labelledby="exampleModalXlLabel" aria-hidden="true">
+	<div class="modal-dialog modal-xl">
+	  <div class="modal-content">
+		<div class="modal-header">
+		  <h5 class="modal-title h4" id="exampleModalXlLabel">EDIT VIDEO</h5>
+		  <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+		</div>
+		<div class="modal-body">
+			<div class="mb-3 row">
+				<div class="col-auto ">
+					<div class="mb-3">
+						<img  id ='Image-Thumnail-infor-video' style="height: 360px; width:540px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);" src="">
+					</div>
+					<div class="input-group mb-3">
+						<input class="form-control" type="file" id="inputFileImageThumnail" accept="image/*">
+					</div>
+				</div>
+				<div class="col">
+					<div class="mb-3">
+						<label class="form-label" for="modal-infor-titel">Tiêu Đề</label>
+						<input class="form-control" id="modal-infor-titel" type="text" placeholder="name@example.com">
+					</div>
+					<div class="mb-3">
+						<label class="form-label" for="input-infor-video-description">Mô tả:</label>
+						<textarea class="form-control" id="input-infor-video-description" rows="3"></textarea>
+					</div>
+					<div class="mb-3">
+						<label class="form-label" for="input-infor-video-keyword">Từ khóa:</label>
+						<input class="form-control" id="input-infor-video-keyword" type="text" placeholder="name@example.com">
+					</div>
+					<div class="row">
+						<div class="mb-3 col">
+							<label class="form-label" for="input-infor-date-upload">Ngày Upload</label>
+							<input class="form-control" id="input-infor-date-upload" type="date" placeholder="nhập ngày upload">
+						</div>
+						<div class="mb-3 col">
+							<label class="form-label" for="input-infor-time-upload">Giờ Upload</label>
+							<input class="form-control" id="input-infor-time-upload" type="text" placeholder="Nhập giờ upload">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="mb-3">
+				<label class="form-label" for="input-infor-video-text-content">Nội Dung Video Gốc:</label>
+				<textarea class="form-control" id="input-infor-video-text-content" rows="3" style='height:300px'></textarea>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+			<button class="btn btn-primary" type="button" id="UpdateInforVideo" value =''>Save changes</button>
+		  </div>
+	  </div>
+	</div>
+</div>
+
+<div class="card">
+    <table class="table">
+        {% csrf_token %}
+        <tbody id="myTbody">
+            <tr class="align-middle">
+                <td class="col-auto gap-0" style="width:100px; padding-left:1rem;">
+                    <input class="form-check-input" type="checkbox">
+                </td>
+                <th class="col-auto">
+                    <img  id="upload-image-thumnail" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);">
+                </th>
+                <td class="col-auto">
+                    <div class="col-form-label">미국여성이 수천만원을 준다는 일본행을 거절하고 한국으로 올수밖에 없었던 이유?</div>
+                    <div>
+                        <button class="btn btn-outline-primary" type="button">
+                            <svg class="icon">
+                                <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use>
+                            </svg>
+                        </button>
+                        <button class="btn btn-outline-primary" type="button">
+                            <svg class="icon">
+                                <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-pencil"></use>
+                            </svg>
+                        </button>
+                        <button class="btn btn-outline-primary" type="button">
+                            <svg class="icon">
+                                <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use>
+                            </svg>
+                        </button>
+                        <button class="btn btn-outline-primary" type="button">
+                            <svg class="icon">
+                                <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-arrow-thick-from-bottom"></use>
+                            </svg>
+                        </button>
+                        <button class="btn btn-outline-primary" type="button">
+                            <svg class="icon">
+                                <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-trash"></use>
+                            </svg>
+                        </button>
+                        <label class="col-form-label">Ngày Upload: 09/12/2024</label>
+                    </div>
+					<div class=" col progress progress-thin m-1">
+						<div class="progress-bar bg-info" role="progressbar" style="width: 100%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+					</div>
+                </td>
+                <td class="col text-center">
+                    <div class="col-form-label">ID:khanhtunh81</div>
+                </td>
+                <td class="col text-center">
+                    <div>Trạng thái</div>
+                </td>
+                <td class="col text-center">
+                    <label class="col-form-label">Showing 1 to 10 of 32 entries</label>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		load_infor_combobox();
+		document.getElementById('combobox_keyword').addEventListener("change", load_infor_combobox);
+		document.getElementById('combobox-profile').addEventListener("change", load_profile_combobox);
+			
+		document.getElementById('input-combobox-keyword').addEventListener("change", load_infor_profile);
+		document.getElementById('input-combobox-profile').addEventListener("change", load_infor_profile_combobox);
+
+
+
+		document.getElementById('add-keyword-folder').addEventListener("click",button_add_folder);
+			
+		document.getElementById('get-name-profile-channel').addEventListener("click",button_get_name);
+
+		document.getElementById('add-profile').addEventListener("click",button_add_profile);
+
+		document.getElementById('seach-url-channel').addEventListener("click", button_add_seach_url_channel);
+
+		document.getElementById('save-text-video-conent').addEventListener("click", button_add_video_content);
+
+		document.getElementById('add-video-render-upload').addEventListener("click", button_add_video_render_upload);
+
+		document.getElementById('create_video_news').addEventListener("click", button_cread_videos_profie);
+
+
+
+	});
+	
+	function button_cread_videos_profie(){
+		const input_url_video = document.getElementById('combobox_keyword').value;
+		const id_profile = document.getElementById('combobox-profile').value;
+		const count_video = document.getElementById('count-video').value;
+		const count_text = document.getElementById('count-text-video').value;
+		const time_upload = document.getElementById('input-time-add-video-render-upload').value;
+		const date_update = document.getElementById('date-Input').value;
+		if(!input_url_video && !id_keyword){
+			alert("Vui lòng chọn chủ đề và kênh");
+			return;
+		}
+		var data = {
+			id_keyword: input_url_video,
+			id_profile: id_profile,
+			count_video : count_video,
+			count_text : count_text,
+			time_upload: time_upload,
+			date_upload: date_update,
+		};
+		fetch('/cread-video-profile/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+			body: JSON.stringify(data)
+		})
+		.then(response => {
+			return response.json().then(data => ({
+				ok: response.ok,
+				data,
+			}));
+		})
+		.then(({ok, data}) => {
+			if(ok){
+				alert(data.message);
+				load_profile_combobox()
+			} else {
+				alert(data.message);
+			}
+
+			document.getElementById('exampleModalLive0').style.display = 'none';
+					document.body.classList.remove('modal-open');
+					const backdrops = document.getElementsByClassName('modal-backdrop');
+					while(backdrops.length > 0){
+						backdrops[0].parentNode.removeChild(backdrops[0]);
+					}
+		})
+		.catch((error) => {
+			alert('Error: ' + error.message);
+		});
+	}
+
+	function button_add_video_render_upload(){
+		const input_url_video = document.getElementById('combobox_keyword').value;
+		const id_keyword = document.getElementById('combobox-profile').value;
+		var today = new Date();
+		var dd = String(today.getDate()).padStart(2, '0');
+		var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+		var yyyy = today.getFullYear();
+
+		today = yyyy + '-' + mm + '-' + dd;
+		document.getElementById("date-Input").value = today;
+	}
+
+	function button_add_video_content(){
+		const input_url_video = document.getElementById('input-url-channel-folder').value;
+		const id_keyword = document.getElementById('add-video-text-content').value;
+		var textareaContent = document.getElementById("exampleFormControlTextarea1").value;
+
+		if (!input_url_video && !id_keyword && !text_content) {
+			alert("Vui lòng điền đầy đủ thông tin");
+			return;
+		}else{
+			var data = {
+				url: input_url_video,
+				id_keyword: id_keyword,
+				text_content: textareaContent
+			};
+			fetch('/add-video-content/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				return response.json().then(data => ({
+					ok: response.ok,
+					data,
+				}));
+			})
+			.then(({ok, data}) => {
+				if(ok){
+					document.getElementById("exampleFormControlTextarea1").value = '';
+					alert(data.message);
+				} else {
+					throw new Error(data.message || 'Network response was not ok');
+				}
+			})
+			.catch((error) => {
+				alert('Error: ' + error.message);
+			});
+		
+		}
+
+	}
+
+	function button_add_seach_url_channel() {
+		const input_url_video = document.getElementById('input-url-channel-folder').value;
+		const id_keyword = document.getElementById('add-video-text-content').value;
+		if (input_url_video){
+			var data = {
+				url: input_url_video,
+				id_keyword: id_keyword
+			};
+			fetch('/seach-url-channel/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				return response.json().then(data => ({
+					ok: response.ok,
+					data,
+				}));
+			})
+			.then(({ok, data}) => {
+				if(ok){
+					alert(data.message);
+				} else {
+					throw new Error(data.message || 'Network response was not ok');
+				}
+			})
+			.catch((error) => {
+				alert('Error: ' + error.message);
+			});
+		
+		};
+	}
+
+	function button_add_profile() {
+		// Retrieve the value of the input fields
+		const combobox_keyword1 = document.getElementById('combobox_keyword');
+		const combobox_keyword = document.getElementById('input-combobox-keyword');
+		const combobox_profile = document.getElementById('input-combobox-profile');
+		const channelNameInput = document.getElementById("input-name-profile");
+		const inputEmail = document.getElementById('input-email-profile');
+		const inputUrlProfile = document.getElementById('input-url-profile'); 
+		const inputIpProfile = document.getElementById('input-ip-profile'); 
+		const inputTimeUpload = document.getElementById('input-time-profile');
+	
+		// Check if all input fields have values
+		if (combobox_keyword.value && inputEmail.value && inputUrlProfile.value && inputIpProfile.value && inputTimeUpload.value) {
+			var data = {
+				id_keyword: combobox_keyword.value,
+				id_profile: combobox_profile.value,
+				channelName: channelNameInput.value,
+				email: inputEmail.value,
+				urlProfile: inputUrlProfile.value,
+				ipProfile: inputIpProfile.value,
+				timeUpload: inputTimeUpload.value
+			};
+
+			// Send a POST request with the data
+			fetch('/add-profile/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => response.json())
+			.then(data => {
+				if (data.success) {
+					alert("cập nhập thông tin thành công");
+					load_infor_combobox2()
+				} else {
+						if (combobox_keyword1.value == combobox_keyword.value) {
+							// Create an Option object named 'option1'
+							var option1 = new Option(data.name_profile_channel, data.id); // Assuming 'data' is defined and has the necessary properties
+						
+							// Add 'option1' to the 'select' element
+							document.getElementById('combobox-profile').add(option1);
+						}
+					
+						alert("Thêm thành công profile");
+						var option = new Option(data.name_profile_channel,data.id); // Giả sử mỗi profile có 'name' và 'id'
+	   					combobox_profile.add(option);
+						document.getElementById('exampleModalLive2').style.display = 'none';
+						document.body.classList.remove('modal-open');
+						const backdrops = document.getElementsByClassName('modal-backdrop');
+						while(backdrops.length > 0){
+							backdrops[0].parentNode.removeChild(backdrops[0]);
+					   }
+					  
+				}
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+
+		} else {
+			// Not all input fields are filled, show an error message or handle accordingly
+			alert("Vui lòng điền đầy đủ thông tin");
+		}
+	}
+
+	function button_get_name(){
+		const combobox_keyword_folder = document.getElementById('input-combobox-keyword');
+		const combobox_profile_folder = document.getElementById('input-combobox-profile');
+		if (!combobox_keyword_folder){
+			alert("Vui lòng chọn chủ đề");
+		}else{
+			document.getElementById('input-name-profile').value = '';
+			document.getElementById('input-email-profile').value = '';
+			document.getElementById('input-url-profile').value = '';
+			document.getElementById('input-ip-profile').value = '';
+			document.getElementById('input-time-profile').value = '';
+
+			var data = {
+				id: combobox_keyword_folder.value,
+			};
+			fetch('/get-name-profile/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				document.getElementById('input-name-profile').value= data.name_profile
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+		}
+	}
+
+	function button_add_folder() {
+		combobox_keyword = document.getElementById('combobox_keyword');
+		combobox_keyword_folder = document.getElementById('input-combobox-keyword');
+		combobox_keyword_conent = document.getElementById('add-video-text-content');
+
+		const add_key_word_folder = document.getElementById("input-keyword-folder").value.trim();
+
+		if (add_key_word_folder === '') {
+			alert("Vui lòng điền tên folder");
+		} else {
+			var data = {
+				name: add_key_word_folder,
+			};
+			
+			fetch('/add-folder-keyword/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if (data.success) {
+					alert("Tên folder Key world đã tồn tại, vui lòng tạo tên khác.");
+				} else {
+					alert(`Tạo Thành công thư mục có tên ${add_key_word_folder}.`);
+					// Tạo option mới cho combobox_keyword_folder
+				
+					var option = new Option(data.name,data.id); // Giả sử mỗi profile có 'name' và 'id'
+					combobox_keyword.add(option);
+
+					var option1 = new Option(data.name,data.id); // Giả sử mỗi profile có 'name' và 'id'
+					combobox_keyword_folder.add(option1);
+
+					var option2 = new Option(data.name,data.id); // Giả sử mỗi profile có 'name' và 'id'
+					combobox_keyword_conent.add(option2);
+
+					// Đóng modal và xử lý backdrop như đã mô tả trước đó
+					document.getElementById('exampleModalLive1').style.display = 'none';
+					document.body.classList.remove('modal-open');
+					const backdrops = document.getElementsByClassName('modal-backdrop');
+					while(backdrops.length > 0){
+						backdrops[0].parentNode.removeChild(backdrops[0]);
+					}
+				}
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+		}
+	}
+
+	function load_infor_profile_combobox(){
+		var combobox1 = document.getElementById('input-combobox-profile');
+		document.getElementById("input-name-profile").value = "";
+		document.getElementById('input-email-profile').value = ""; 
+		document.getElementById('input-url-profile').value = ""; 
+		document.getElementById('input-ip-profile').value = ""; 
+		document.getElementById('input-time-profile').value = ""; 
+		if(combobox1){
+			var data = {
+				id: combobox1.value,
+			};
+			fetch('/get-infor-prfile/',{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if(data.success){
+					document.getElementById('input-time-add-video-render-upload').value = data.profile.time_upload_channel;
+					document.getElementById('input-email-profile').value = data.profile.email_profile_channel; 
+					document.getElementById('input-url-profile').value = data.profile.url_profile_channel; 
+					document.getElementById('input-ip-profile').value = data.profile.ip_vps_upload; 
+					document.getElementById('input-time-profile').value = data.profile.time_upload_channel;
+				}
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+		}
+	}
+
+	function load_infor_profile(event) {
+		const keyword_id = document.getElementById('input-combobox-keyword');
+		const combobox_1 = document.getElementById('input-combobox-profile');
+		combobox_1.innerHTML = '';
+		document.getElementById("input-name-profile").value = "";
+		document.getElementById('input-email-profile').value = ""; 
+		document.getElementById('input-url-profile').value = ""; 
+		document.getElementById('input-ip-profile').value = ""; 
+		document.getElementById('input-time-profile').value = ""; 
+
+		if (keyword_id.value){
+			var data = {
+				id: keyword_id.value,
+			};
+			fetch('/get-prfile/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if(data.success){
+					data.profile.forEach(function(item) {
+						var option1 = new Option(item.name_profile_channel, item.id);
+						combobox_1.add(option1);
+					});
+				}
+				load_infor_profile_combobox()
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+		};
+
+	}
+
+	function load_infor_combobox(event) {
+		const keyword_id = document.getElementById('combobox_keyword');
+		const keyword_id_1 = document.getElementById('input-combobox-keyword');
+		const combobox = document.getElementById('combobox-profile');
+		const combobox_1 = document.getElementById('input-combobox-profile');
+		
+		document.getElementById('input-combobox-keyword').value = document.getElementById('combobox_keyword').value;
+		combobox.innerHTML = '';
+		combobox_1.innerHTML = '';
+		var tbody = document.getElementById('myTbody');
+		tbody.innerHTML = '';
+		document.getElementById('input-time-add-video-render-upload').value = "";
+		if (keyword_id.value){
+			var data = {
+				id: keyword_id.value,
+			};
+			fetch('/get-prfile/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if(data.success){
+					data.profile.forEach(function(item) {
+						var option = new Option(item.name_profile_channel, item.id);
+						combobox.add(option);
+
+						var option1 = new Option(item.name_profile_channel, item.id);
+						combobox_1.add(option1);
+					});
+					load_profile_combobox()
+				}
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+		};
+	}
+
+	function load_profile_combobox(event){
+		const combobox = document.getElementById('combobox-profile');
+		const combobox_1 = document.getElementById('input-combobox-profile');
+		document.getElementById('input-combobox-profile').value = document.getElementById('combobox-profile').value;
+		document.getElementById("input-name-profile").value = "";
+		document.getElementById('input-email-profile').value = ""; 
+		document.getElementById('input-url-profile').value = ""; 
+		document.getElementById('input-ip-profile').value = ""; 
+		document.getElementById('input-time-profile').value = ""; 
+
+
+		var tbody = document.getElementById('myTbody');
+		tbody.innerHTML = '';
+		if(combobox){
+			var data = {
+				id: combobox.value,
+			};
+			fetch('/get-infor-prfile/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if(data.success){
+					document.getElementById('input-time-add-video-render-upload').value = data.profile.time_upload_channel;
+					document.getElementById('input-email-profile').value = data.profile.email_profile_channel; 
+					document.getElementById('input-url-profile').value = data.profile.url_profile_channel; 
+					document.getElementById('input-ip-profile').value = data.profile.ip_vps_upload; 
+					document.getElementById('input-time-profile').value = data.profile.time_upload_channel;
+					show_video(data.videos);
+				}
+			})
+			.catch((error) => {
+				console.error('Error:', error);
+			});
+		}
+	}
+
+	function show_edit_video(videoId) {
+		var data = {
+			id : videoId,
+		};
+		fetch('/get_infor_video_edit/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+			body: JSON.stringify(data)
+		})
+		.then(response => {
+			return response.json().then(data => ({
+				ok: response.ok,
+				data,
+			}));
+		})
+		.then(({ ok, data }) => {
+			if (data.success) {
+				var imageUrl = data.videos.img_thumbnail_url || "https://st.depositphotos.com/2934765/53192/v/450/depositphotos_531920820-stock-illustration-photo-available-vector-icon-default.jpg";
+				document.getElementById('modal-infor-titel').value = data.videos.title;
+				document.getElementById('input-infor-video-description').value = data.videos.description;
+				document.getElementById('input-infor-video-keyword').value = data.videos.keykeyword;
+				document.getElementById('input-infor-date-upload').value = data.videos.date_upload;
+				document.getElementById('input-infor-time-upload').value = data.videos.time_upload;
+				document.getElementById('input-infor-video-text-content').value = data.videos.text_content;
+				document.getElementById('Image-Thumnail-infor-video').src =imageUrl;
+				document.getElementById('inputFileImageThumnail').value = '';
+				document.getElementById('UpdateInforVideo').value =data.videos.id;
+				$('#exampleModalXl').modal('show');
+			}else{
+				alert(data.error_message);
+			}
+		})
+		.catch((error) => {
+			alert('Error: ' + error.message);
+		});
+	}
+
+	function reload_video(videoId){
+		var data = {
+			id: videoId,
+		};
+		fetch('/reload-video/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+			body: JSON.stringify(data)
+		})
+		.then(response => {
+			return response.json().then(data => ({
+				ok: response.ok,
+				data,
+			}));
+		})
+		.then(({ ok, data }) => {
+			console.log('oki')
+			connecupdateinfor();
+		})
+		.catch((error) => {
+			alert('Error: ' + error.message);
+		});
+	}
+
+	function upload_video(videoId) {
+		var fileInput = document.getElementById(`fileInput-${videoId}`);
+		
+		// Đăng ký sự kiện 'change' để xử lý khi người dùng chọn file
+		fileInput.addEventListener('change', function() {
+			var file = fileInput.files[0];
+			if (!file) {
+				return;
+			}
+			var formData = new FormData();
+			formData.append('file', file);
+			formData.append('video_id', videoId);
+	
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', '/upload-file/', true);
+
+			xhr.setRequestHeader('X-CSRFToken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+			// Thiết lập sự kiện khi yêu cầu hoàn thành
+			xhr.upload.addEventListener("progress",function (ev) {
+				if(ev.lengthComputable){
+					  var percentage=(ev.loaded/ev.total*100|0);
+					document.getElementById(`progressbar-upload-video-${videoId}`).style["width"]=""+percentage+"%";
+					console.log("Uploaded : "+ev.loaded);
+					console.log("TOTAL : "+ev.total);
+					console.log(percentage)
+				}
+			 });
+			// Gửi dữ liệu FormData
+			xhr.send(formData);
+		});
+		// Mở hộp thoại chọn file
+		fileInput.click();
+		connecupdateinfor();
+	}
+	function delete_video(video_id) {
+		var data = {
+			id: video_id,
+		};
+		fetch('/delete-video/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+			body: JSON.stringify(data)
+		})
+		.then(response => {
+			return response.json().then(data => ({
+				ok: response.ok,
+				data,
+			}));
+		})
+		.then(({ok, data}) => {
+			if(ok) {
+				const element = document.getElementById(`video-${video_id}`);
+				if (element) {
+					element.remove(); // Xóa hàng từ bảng
+				}
+			} else {
+				alert(data.message);
+			}
+		})
+		.catch((error) => {
+			alert('Error: ' + error.message);
+		});
+	}
+	function show_edit_video(videoId){
+		var data = {
+			id : videoId,
+		};
+		fetch('/get_infor_video_edit/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+			body: JSON.stringify(data)
+		})
+		.then(response => {
+			return response.json().then(data => ({
+				ok: response.ok,
+				data,
+			}));
+		})
+		.then(({ ok, data }) => {
+			if (data.success) {
+				var imageUrl = data.videos.img_thumbnail_url || "https://st.depositphotos.com/2934765/53192/v/450/depositphotos_531920820-stock-illustration-photo-available-vector-icon-default.jpg";
+				document.getElementById('modal-infor-titel').value = data.videos.title;
+				document.getElementById('input-infor-video-description').value = data.videos.description;
+				document.getElementById('input-infor-video-keyword').value = data.videos.keykeyword;
+				document.getElementById('input-infor-date-upload').value = data.videos.date_upload;
+				document.getElementById('input-infor-time-upload').value = data.videos.time_upload;
+				document.getElementById('input-infor-video-text-content').value = data.videos.text_content;
+				document.getElementById('Image-Thumnail-infor-video').src =imageUrl;
+				document.getElementById('inputFileImageThumnail').value = '';
+				document.getElementById('UpdateInforVideo').value =data.videos.id;
+				$('#exampleModalXl').modal('show');
+			}else{
+				alert(data.error_message);
+			}
+		})
+		.catch((error) => {
+			alert('Error: ' + error.message);
+		});
+	}
+
+
+	function show_video(videos) {
+		var tbody = document.getElementById('myTbody');
+		tbody.innerHTML = '';
+		videos.forEach(item => {
+			var tr = document.createElement('tr');
+			tr.className = "align-middle";
+			tr.id = `video-${item.id}`;
+			var tdCheckbox = document.createElement('td');
+			tdCheckbox.className = "col-auto gap-0";
+			tdCheckbox.style.width = "10px";
+			tdCheckbox.style.paddingLeft = "1rem";
+			tdCheckbox.innerHTML = `<label>${item.id}</label>`;
+			tr.appendChild(tdCheckbox);
+
+			var thImage = document.createElement('th');
+			thImage.className = "col-auto";
+			var imageUrl = item.img_thumbnail_url || "https://st.depositphotos.com/2934765/53192/v/450/depositphotos_531920820-stock-illustration-photo-available-vector-icon-default.jpg";
+			thImage.innerHTML = `
+			<img class="btn-img-thumbnail" id="image-thumbnail-${item.id}" data-video-id="${item.id}" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);" src="${imageUrl}">
+			`;
+			tr.appendChild(thImage);
+	
+			var tdContent = document.createElement('td');
+			tdContent.className = "col-auto";
+			var progressBarHTML;
+			if (item.video_url && item.video_url.trim().length > 0) {
+				progressBarHTML = `<div class="progress-bar bg-success" id="progressbar-upload-video-${item.id}" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>`;
+			} else {
+				progressBarHTML = `<div class="progress-bar bg-success" id="progressbar-upload-video-${item.id}" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>`;
+			}
+			tdContent.innerHTML = `
+				<div class="col-form-label" id="title-${item.id}"> ${item.title} </div>
+				<div class="m-2" id="buttons-${item.id}">
+					<input class="form-control" style="display: none" type="file" id="fileInput-${item.id}" accept="video/*">
+					<button class="btn btn-outline-primary btn-airplay" id="btn-airplay-${item.id}" data-video-id="${item.id}" type="button"><svg class="icon"><use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use></svg></button>
+					<button class="btn btn-outline-primary btn-pencil" id="btn-pencil-${item.id}" data-video-id="${item.id}" type="button"><svg class="icon"><use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-pencil"></use></svg></button>
+					<button class="btn btn-outline-primary btn-reload" id="btn-reload-${item.id}" data-video-id="${item.id}" type="button"><svg class="icon"><use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use></svg></button>
+					<button class="btn btn-outline-primary btn-arrow"  id="btn-arrow-${item.id}" data-video-id="${item.id}" type="button"><svg class="icon"><use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-arrow-thick-from-bottom"></use></svg></button>
+					<button class="btn btn-outline-primary btn-trash"  id="btn-trash-${item.id}" data-video-id="${item.id}" type="button"><svg class="icon"><use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-trash"></use></svg></button>
+					<label class="col-form-label ps-sm-4" id="upload-date-${item.id}" >Ngày Upload: ${item.date_upload} Giờ : ${item.time_upload}</label>
+				</div>
+				<div class="progress progress-thin" id="progress-${item.id}">
+					${progressBarHTML}
+				</div>
+			`;
+			tr.appendChild(tdContent);
+	
+			var tdStatus = document.createElement('td');
+			tdStatus.className = "col text-center";
+
+			// Kiểm tra trạng thái và gán class tương ứng
+			var statusClass = '';
+			if (item.status_video.includes('Đang chờ cập nhật')) {
+				statusClass += 'status-waiting ';
+			}
+			if (item.status_video.includes('Đã cập nhật Xong')) {
+				statusClass += 'status-completed ';
+			}
+			if (item.status_video.includes('Đang Upload')) {
+				statusClass += 'status-uploading ';
+			}
+			if (item.status_video.includes('Lỗi Upload')) {
+				statusClass += 'status-error ';
+			}
+			if (item.status_video.includes('upload thành công')) {
+				statusClass += 'status-success ';
+			}
+
+			tdStatus.innerHTML = `<div id="status-${item.id}" class="${statusClass.trim()}">${item.status_video}</div>`;
+			tr.appendChild(tdStatus);
+
+			var tdEntries_id = document.createElement('td');
+
+
+			
+			tdEntries_id.className = "col text-center";
+			tdEntries_id.innerHTML = `<div id="name-file${item.id}">${item.name_file}</div>`;
+			tr.appendChild(tdEntries_id);
+
+			
+	
+			var tdEntries = document.createElement('td');
+			tdEntries.className = "col text-center";
+			tdEntries.innerHTML = `<div id="time-upload${item.id}" >${item.timenow} <br> ${item.updated_at}</div>`;
+			tr.appendChild(tdEntries);
+			// Thêm hàng vào tbody
+			tbody.appendChild(tr);
+
+			document.getElementById(`btn-airplay-${item.id}`).addEventListener('click', function() {
+				console.log('upload video');
+			});
+
+			document.getElementById(`btn-pencil-${item.id}`).addEventListener('click', function() {
+				show_edit_video(item.id);
+			});
+
+			document.getElementById(`btn-reload-${item.id}`).addEventListener('click', function() {
+				reload_video(item.id);
+			});
+			
+			document.getElementById(`btn-arrow-${item.id}`).addEventListener('click', function() {
+				upload_video(item.id);
+			});
+
+			document.getElementById(`btn-trash-${item.id}`).addEventListener('click', function() {
+				delete_video(item.id);
+			});	
+		});
+
+	}
+
+	document.getElementById('UpdateInforVideo').addEventListener('click', function() {
+		var fileInput = document.getElementById('inputFileImageThumnail');
+		var file = fileInput.files[0]; // Sửa tại đây: Lấy file đầu tiên từ input file
+		var videoId = this.value;
+	
+		var formData = new FormData();
+		formData.append('videoId', videoId); // Đính kèm ID video
+		formData.append('title', document.getElementById('modal-infor-titel').value);
+		formData.append('description', document.getElementById('input-infor-video-description').value);
+		formData.append('keykeyword', document.getElementById('input-infor-video-keyword').value);
+		formData.append('date_upload', document.getElementById('input-infor-date-upload').value);
+		formData.append('time_upload', document.getElementById('input-infor-time-upload').value);
+		formData.append('text_content', document.getElementById('input-infor-video-text-content').value);
+		// Chỉ đính kèm file nếu người dùng đã chọn file
+		if (file) {
+			formData.append('file', file); // Sửa tại đây: Đính kèm file thực tế
+		} 
+		// Gửi yêu cầu với FormData
+		fetch('/update-infor-video/', {
+			method: 'POST',
+			body: formData,
+			headers: {
+				'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+			},
+		})
+		.then(response => {
+			if(response.ok) {
+				return response.json();
+			}
+			throw new Error('Network response was not ok.');
+		})
+		.then(data => {
+			$('#exampleModalXl').modal('hide');
+			connecupdateinfor();
+		})
+		.catch(error => {
+			console.error('There was a problem with the fetch operation:', error);
+		});
+	});
+	
+	document.getElementById('inputFileImageThumnail').addEventListener('change', function() {
+		var file = this.files[0]; 
+		if (file) {
+			var reader = new FileReader(); 
+			reader.onload = function(e) {
+				// Khi tệp đã được đọc xong, cập nhật thuộc tính src của thẻ <img>
+				document.getElementById('Image-Thumnail-infor-video').src = e.target.result;
+			};
+			reader.readAsDataURL(file);
+			connecupdateinfor();
+		}
+	});
+
+	function connecupdateinfor() {
+		const combobox = document.getElementById('folder_name');
+		if(combobox){
+			var data = {
+				id: combobox.value,
+			};
+			fetch('/get-infor-prfile/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+				},
+				body: JSON.stringify(data)
+			})
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if(data.success){
+					alert(data.message);	
+				}
+			})
+		}
+	}
+
+	// Hàm cập nhật nội dung nếu nó khác biệt
+	function updateContentIfDifferent(elementId, newValue, isHTML = false) {
+		const element = document.getElementById(elementId);
+		if (element) {
+			const currentValue = isHTML ? element.innerHTML : element.textContent;
+			if (currentValue !== newValue) {
+				if (isHTML) {
+					element.innerHTML = newValue;
+				} else {
+					element.textContent = newValue;
+				}
+			}
+		}
+	}
+
+	// Hàm xác định lớp CSS cho từng trạng thái video
+	function getStatusClass(status) {
+		if (status.includes('Đang chờ cập nhật')) return 'status-waiting';
+		if (status.includes('Đã cập nhật Xong')) return 'status-completed';
+		if (status.includes('Đang Upload')) return 'status-uploading';
+		if (status.includes('Lỗi Upload')) return 'status-error';
+		if (status.includes('upload thành công')) return 'status-success';
+		return ''; // Mặc định không có lớp nào
+	}
+
+	// Hàm cập nhật thông tin video hiển thị
+	function update_video_show(videos) {
+		const elements = document.getElementsByClassName("align-middle");
+		const count = elements.length;
+		
+		if (count === videos.length) {
+			for (let i = 0; i < count; i++) {
+				const videoId = elements[i].id.split('-')[1];
+				const video = videos.find(video => video.id == videoId);
+				if (video) {
+					const imageUrl = video.img_thumbnail_url || "https://st.depositphotos.com/2934765/53192/v/450/depositphotos_531920820-stock-illustration-photo-available-vector-icon-default.jpg";
+
+					updateContentIfDifferent(`title-${videoId}`, video.title);
+					updateContentIfDifferent(`name-file${videoId}`, video.name_file);
+					updateContentIfDifferent(`status-${videoId}`, video.status_video, false);
+					updateContentIfDifferent(`upload-date-${videoId}`, `Ngày Upload: ${video.date_upload} Giờ : ${video.time_upload}`);
+					updateContentIfDifferent(`time-upload${videoId}`, `${video.timenow} <br> ${video.updated_at}`, true);
+					
+					// Cập nhật lớp CSS cho trạng thái
+					const statusElement = document.getElementById(`status-${videoId}`);
+					if (statusElement) {
+						statusElement.className = getStatusClass(video.status_video);
+					}
+					
+					// Cập nhật src cho ảnh thumbnail nếu khác
+					const imageElement = document.getElementById(`image-thumbnail-${videoId}`);
+					if (imageElement && imageElement.src !== imageUrl) {
+						imageElement.src = imageUrl;
+					}
+				}
+			}
+		} else {
+			// Hàm này cần được định nghĩa ở nơi khác để xử lý trường hợp số lượng videos không khớp
+			show_video(videos);
+		}
+	}
+
+	//setInterval(connecupdateinfor, 1000);
+
+</script>		
+{% endblock javascripts %}
