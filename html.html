@@ -1,0 +1,262 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %} Dashboard {% endblock %}
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+{% endblock stylesheets %}
+
+{% block content %}
+{% if request.user.is_editor or request.user.is_superuser%}
+<header class="header">
+    <div class="container-fluid ">
+        <div class="d-none d-md-flex  gap-3">
+            <div class="col-4">
+                <select class="form-select" id="folder_name">
+                    {% for item in folder %}
+                    <option value="{{ item.id}}">{{ item.folder_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-4">
+                <select class="form-select" id='channel_name'>
+                    {% for iteam in profiles %}
+                    <option value="{{iteam.id}}">{{ iteam.channel_name}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if request.user.is_superuser %}
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" type="button" data-coreui-toggle="modal"
+                    data-coreui-target="#show_infor">
+                    <svg class="icon">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-low-vision"></use>
+                    </svg>
+                </button>
+            </div>
+            {% endif %}
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" id="add-text-content" type="button" data-coreui-toggle="modal"
+                    data-coreui-target="#exampleModalLive3">Thêm Nội Dung</button>
+            </div>
+
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" id='add-videos' type="button" data-coreui-toggle="modal"
+                    data-coreui-target="#modal-videos">Thêm Nhiều videos</button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary" id='add-one-video' type="button" data-coreui-toggle="modal"
+                    data-coreui-target="#modal-infor-video">Thêm Videos</button>
+            </div>
+        </div>
+    </div>
+</header>
+{% endif %}
+
+<div class="card">
+    {% csrf_token %}
+    <table class="table table-hover">
+        <!-- Hiển thị thanh video -->
+        <tbody id="myTbody">
+        </tbody>
+    </table>
+    <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-end" id='page_bar'>
+            {{ page_bar_html }}
+        </ul>
+    </nav>
+</div>
+
+<!-- Hiển thị  thông tin kênh -->
+<div class="modal fade" id="show_infor" tabindex="-1" aria-labelledby="exampleModalPopoversLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalPopoversLabel">Thông Tin Profile</h5>
+                <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id='show-infor-profile'>
+                <div class="mb-3">
+                    <label class="form-label" for="exampleFormControlInput1">Email address</label>
+                    <input class="form-control" id="exampleFormControlInput1" value='{{ profile.channel_email_login }}'
+                        disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="exampleFormControlInput1">Link Channel</label>
+                    <input class="form-control" id="exampleFormControlInput1" value='{{ profile.channel_url }}'
+                        disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="exampleFormControlInput1">IP Vps Upload</label>
+                    <input class="form-control" id="exampleFormControlInput1" value='{{ profile.channel_vps_upload }}'
+                        disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="exampleFormControlInput1">Số Tiền Hiện Trên Kênh</label>
+                    <input class="form-control" id="exampleFormControlInput1" value='{{ profile.channel_money }}'
+                        disabled>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="exampleFormControlInput1">Views 28h/Kênh</label>
+                    <input class="form-control" id="exampleFormControlInput1" value='{{ profile.channel_view_count }}'
+                        disabled>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="exampleModalLive3" tabindex="-1" aria-labelledby="exampleModalLiveLabe" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLiveLabel">Thêm Nội Dung Chủ Đề</h5>
+                <button class="btn-close" id='close-modal-add-content' type="button" data-coreui-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-4">
+                            <select class="form-select" aria-label="Default select example" id="add-video-text-content">
+                                {% for iteam in folder %}
+                                <option value="{{iteam.id}}">{{ iteam.folder_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col">
+                            <input class="form-control" id='input-url-channel-folder' type="Url" placeholder="url video"
+                                aria-label="default input example">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-outline-primary" type="button" id="seach-url-channel">
+                                <svg class="icon">
+                                    <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-zoom"></use>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="exampleFormControlTextarea1">Nội Dung Video</label>
+                    <textarea class="form-control" id="exampleFormControlTextarea1" style="height:400px"
+                        rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+                <button class="btn btn-primary" type="button" id="save-text-video-conent">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modal-videos" tabindex="-1" aria-labelledby="exampleModalLiveLabe" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLiveLabel">ADD VIDEOS</h5>
+                <button class="btn-close" id="close-modal-add-videos" type="button" data-coreui-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body g-3">
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-3">
+                            <label class="col-form-label">Số Video :</label>
+                        </div>
+                        <div class="col-3">
+                            <input class="form-control" type="number" id="count-video" placeholder="nhập số lượng video"
+                                aria-label="First name" value='100'>
+                        </div>
+                        <div class="col">
+                            <input class="form-control" type="date" placeholder="Last name" aria-label="Last name"
+                                id="date-Input" value="{{ current_time }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="row">
+                        <div class="col-3">
+                            <label class="col-form-label">Số Ký Tự :</label>
+                        </div>
+                        <div class="col-3">
+                            <input class="form-control" id="count-text-video" type="number"
+                                placeholder="Nhập Số Lượng Ký tự" aria-label="First name" value='4000'>
+                        </div>
+                        <div class="col">
+                            <input class="form-control" id="input-time-add-video-render-upload" type="text"
+                                placeholder="Time Upload" aria-label="First name"
+                                value="{{ profile.channel_time_upload }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+                <button class="btn btn-primary" id="create_video_news" type="button">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-infor-video" tabindex="-1" aria-labelledby="exampleModalCenteredScrollableTitle"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+        <div class="modal-content  h-75">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalCenteredScrollableTitle">Nhập Thông Tin</h5>
+                <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id='edit-content-froms'>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <div class="col">
+                    <button class="btn btn-danger" id='button-back' style="width:150px;" type="button">Back</button>
+                    <button class="btn btn-danger" id='button-back-2' style="width:150px;" type="button">Back</button>
+                </div>
+                <div class="col-footer">
+                    <button class="btn btn-primary" id="next-cread-image" style="width:150px;" type="button">Tiếp
+                        Tục</button>
+                    <button class="btn btn-primary" id="edit_video" style="width:150px;" type="button">Tiếp Tục</button>
+                    <button class="btn btn-primary" id="save-text-video" style="width:150px;" type="button">Lưu
+                        Video</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-overlay" class='modal' style="background-color: rgba(0, 0, 0, 0.5);">
+    <div id="modal-image-content" class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+        <div class="modal-content h-75">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalCenteredScrollableTitle">image Video</h5>
+                <button class="btn-close close-modal-input-image" type="button" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id='modal-input-image'>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <input type="hidden" id="iteam-edit" value="none">
+                <button class="btn btn-primary col-1" id='check-delete-image' type="button">Bỏ Chọn</button>
+                <button class="btn btn-info col-1" id='choice_image' type="button">Chọn</button>
+                <button class="btn btn-danger col-1" id='delete-image' type="button">Xóa</button>
+                <button class="btn btn-secondary col-1 close-modal-input-image" type="button">close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script src="{% static 'assets/js/render.js'%}"></script>
+{% endblock javascripts %}
