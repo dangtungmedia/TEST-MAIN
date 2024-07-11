@@ -56,19 +56,16 @@ class FolderViewSet(viewsets.ModelViewSet):
 class VideoRenderViewSet(viewsets.ModelViewSet):
     serializer_class = RenderSerializer
     permission_classes = [IsAuthenticated]
-
     def get_queryset(self):
-        queryset = VideoRender.objects.none()
-        folder_id = self.request.query_params.get('folder_id', None)
         profile_id = self.request.query_params.get('profile_id', None)
-        if folder_id and profile_id:
-            queryset = VideoRender.objects.filter(folder_id=folder_id, profile_id=profile_id)
-        elif folder_id:
-            profile_ids = ProfileChannel.objects.filter(folder_id=folder_id).values_list('id', flat=True)
-            queryset = VideoRender.objects.filter(folder_id=folder_id, profile_id__in=profile_ids)
-        elif profile_id:
-            queryset = VideoRender.objects.filter(profile_id=profile_id)
-        return queryset
+        if profile_id:
+            return VideoRender.objects.filter(profile_id=profile_id)
+        
+        # Nếu không có profile_id nhưng vẫn cần lấy đối tượng cụ thể theo ID
+        if self.action == 'retrieve':
+            return VideoRender.objects.all()
+        return VideoRender.objects.none()  # Trả về queryset trống nếu không có profile_id và không phải là retrieve action
+
 
 class index(LoginRequiredMixin, TemplateView):
     login_url = '/login/'

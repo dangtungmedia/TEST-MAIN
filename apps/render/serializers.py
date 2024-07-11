@@ -20,7 +20,7 @@ class FolderSerializer(ModelSerializer):
 class RenderSerializer(ModelSerializer):
     class Meta:
         model = VideoRender
-        fields = ['id','name_video', 'status_video', 'url_thumbnail', 'url_video', 'time_upload', 'date_upload','title','timenow']
+        fields = '__all__'
         
     def to_representation(self, instance):
         representation = super().to_representation(instance)

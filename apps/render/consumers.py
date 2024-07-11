@@ -14,13 +14,13 @@ def notify_video_change(sender, instance, **kwargs):
     room_group_name = f"render_profile_{room_name}"
     
     # Gửi thông báo đến group
-    async_to_sync(channel_layer.group_send)(
-        room_group_name,
-        {
-            'type': 'video_change',
-            'message': 'update'
-        }
-    )
+    # async_to_sync(channel_layer.group_send)(
+    #     room_group_name,
+    #     {
+    #         'type': 'video_change',
+    #         'message': 'update'
+    #     }
+    # )
 
 class RenderConsumer(AsyncWebsocketConsumer):
     async def connect(self):

@@ -1,10 +1,12 @@
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded with JavaScript');
-
-
-
-
     get_video_render(1);
+
+    $('#channel_name').change(function () {
+        get_video_render(1);
+    });
+
+
 
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -15,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
         tr.className = 'align-middle';
         tr.innerHTML = `
             <td class="col-auto gap-0" style="width:40px; padding-left:1rem;">
-                <label class="col-form-label">${count}</label>
+                <label class="col-form-label">${video.id}</label>
             </td>
             <th class="col-auto">
                 <img class="id-thumbnail-video" data-id="${video.id}" src="${video.url_thumbnail}" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);">
@@ -78,7 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
     function show_page_bar(page, data) {
         const totalPages = Math.ceil(data.count / 50);
         const maxPagesToShow = 3;
-
         // Tạo thanh phân trang
         const pageBar = document.getElementById("page_bar");
 
@@ -176,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const folderId = folderElement.value;
         const channelId = channelElement.value;
 
-        const fetchUrl = `${protocol}//${host}/render-video/?folder_id=${folderId}&page=${page}&profile_id=${channelId}`;
+        const fetchUrl = `${protocol}//${host}/render-video/?page=${page}&profile_id=${channelId}`;
 
         fetch(fetchUrl, {
             method: 'GET',
@@ -212,5 +213,107 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => console.error('Error:', error));
     }
+    // Xử lý sự kiện click vào nút xem thông tin kênh
+
+    // xử lý sự kiện thêm nhiều video cùng lúc
+
+    // xử lý sự kiện thêm 1 video   
+
+    // Xử lý sự kiện click vào nút xem video
+
+    // Xử lý sự kiện click vào nút sửa video
+
+    $(document).on('click', '.btn-edit', function () {
+        var id = $(this).data('id');
+        show_infor_video(id);
+        $("#save-text-video").css('display', 'none');
+        $('#button-back').css('display', 'none');
+        $('#next-cread-image').css('display', 'block');
+        $('#button-back-2').css('display', 'none');
+        $('#edit_video').css('display', 'none');
+    });
+
+    $("#button-back").click(function () {
+        $('#input-infor-video').css('display', 'flex');
+        $('#input-image-and-text').css('display', 'none');
+        $('#save-text-video').css('display', 'none');
+        $('#next-cread-image').css('display', 'block');
+        $('#button-back').css('display', 'none');
+        $('#button-back2').css('display', 'none');
+        $('#edit_video').css('display', 'none');
+    });
+
+    $(document).on('click', '#next-cread-image', function () {
+        $('#input-infor-video').css('display', 'none');
+        $('#input-image-and-text').css('display', 'block');
+        $('#save-text-video').css('display', 'block');
+        $('#next-cread-image').css('display', 'none');
+        $('#button-back').css('display', 'block');
+        $('#button-back-2').css('display', 'none');
+        $('#save-text-video').css('display', 'none');
+        $('#edit_video').css('display', 'block');
+    });
+
+    $('#edit_video').click(function () {
+        $("#edit_video").css('display', 'none');
+        $("#input-image-and-text").css('display', 'none');
+        $('#button-back').css('display', 'none');
+        $('#edit_text_video').css('display', 'block');
+        $('#button-back-2').css('display', 'block');
+        $('#save-text-video').css('display', 'block');
+
+    });
+
+    $('#button-back-2').click(function () {
+        $('#edit_text_video').css('display', 'none');
+        $('#input-image-and-text').css('display', 'block');
+        $('#button-back').css('display', 'block');
+        $('#edit_video').css('display', 'block');
+        $('#button-back-2').css('display', 'none');
+        $('#save-text-video').css('display', 'none');
+    });
+
+    function show_infor_video(id) {
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const fetchUrl = `${protocol}//${host}/render-video/${id}/`;
+
+        fetch(fetchUrl, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data:', data);
+                $('#id-video-edit').val(data.id);
+                $('#Image-Thumnail-infor-video').attr('src', data.url_thumbnail);
+                $('#input-title').val(data.title);
+                $('#input-description').val(data.description);
+                $('#input-keyword').val(data.keywords);
+                $('#input-date-upload').val(data.date_upload);
+                $('#input-time-upload').val(data.time_upload);
+                $("#input-text-content").val(data.text_content);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+
+
+
+    // Xử lý sự kiện click vào nút render video
+
+    // Xử lý sự kiện click vào nút upload lại
+
+    // Xử lý sự kiện click vào nút xóa video
 
 });

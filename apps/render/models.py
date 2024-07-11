@@ -6,8 +6,8 @@ from apps.login.models import CustomUser
 class VideoRender(models.Model):
     folder_id = models.ForeignKey(Folder, on_delete=models.CASCADE)
     profile_id = models.ForeignKey(ProfileChannel, on_delete=models.CASCADE)
-    name_video = models.TextField(max_length=100)
-    url_video_youtube = models.TextField(max_length=100)
+    name_video = models.TextField(max_length=100, blank=True)
+    url_video_youtube = models.TextField(max_length=100, blank=True)
     text_content = models.TextField(default="",blank=True)
     text_content_2 = models.TextField(default="",blank=True)
     task_id = models.CharField(max_length=255, blank=True, null=True)
