@@ -9,9 +9,9 @@ from .views import index,VideoRenderViewSet, FolderViewSet
 router = DefaultRouter()
 router.register('folders', FolderViewSet, basename='folder')
 router.register('render-video', VideoRenderViewSet, basename='render-video')  
-app_name = 'render'
 
+app_name = 'video_render'
 urlpatterns = [
     path('', include(router.urls)),
-    path('render/', index.as_view(), name='home'),
+    path('render/', index.as_view(), name='render')
 ]

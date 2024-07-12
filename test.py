@@ -372,9 +372,13 @@ class index(LoginRequiredMixin, TemplateView):
                     text = text[:6] + '...' + text[-8:]
                     
                 images.append({'url': default_storage.url(f"data/{channel_name}/image/{file}"), 'name': text})
+
+
             image_html = render_to_string('render/input-image.html', {'images': images})
 
             return JsonResponse({'success': True, 'image_html': image_html})
+
+
 
         elif action == 'add-image-video':
             channel_name = request.POST.get('id-video-render')
@@ -618,10 +622,6 @@ class index(LoginRequiredMixin, TemplateView):
                 task = render_video.apply_async(args=[data])
                 video.task_id = task.id
                 video.save()
-
-
-                
-
             return JsonResponse({'success': True})
         
         elif action == 'get-text-video':

@@ -5,9 +5,6 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#channel_name').change(function () {
         get_video_render(1);
     });
-
-
-
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
     }
@@ -231,6 +228,9 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#next-cread-image').css('display', 'block');
         $('#button-back-2').css('display', 'none');
         $('#edit_video').css('display', 'none');
+        $('#edit_text_video').css('display', 'none');
+        $('#input-infor-video').css('display', 'flex');
+        $('#input-image-and-text').css('display', 'none');
     });
 
     $("#button-back").click(function () {
@@ -255,13 +255,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     $('#edit_video').click(function () {
+        update_text_edit();
         $("#edit_video").css('display', 'none');
         $("#input-image-and-text").css('display', 'none');
         $('#button-back').css('display', 'none');
         $('#edit_text_video').css('display', 'block');
         $('#button-back-2').css('display', 'block');
         $('#save-text-video').css('display', 'block');
-
     });
 
     $('#button-back-2').click(function () {
@@ -272,6 +272,82 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#button-back-2').css('display', 'none');
         $('#save-text-video').css('display', 'none');
     });
+
+    $('#btn-splitText').click(function () {
+        var text_content = $('#input-text-content').val();
+        var regexPattern = $('#splitText').val();
+        var result = subRegex(text_content, regexPattern);
+        $('#input-text-content').val(result);
+        show_count_text();
+
+    });
+
+    $('#btn-splitText-2').click(function () {
+        var text_content = $('#input-text-content').val();
+        var char = $('#splitText2').val();
+        var regexPattern = `(^.{0,100000}[${char}](?!$))(.{0,105000}$)`;
+
+        var result = subRegex(text_content, regexPattern);
+
+        var lines = result.split('\n\n');
+        var lineCount = lines.filter(function (line) {
+            return line.trim() !== ''; // Loại bỏ các dòng trống
+        });
+        $('#input-text-content').val(lineCount.join('\n\n'));
+        show_count_text();
+    });
+
+    $('#delete-characters').click(function () {
+        var text_content = $('#input-text-content').val();
+        var char = $('#splitText3').val();
+        var regexPattern = new RegExp(`[${char}]`, 'g');
+        var result = text_content.replace(regexPattern, "");
+        $('#input-text-content').val(result);
+    });
+
+    function show_count_text() {
+        var text_content = $('#input-text-content').val();
+        var count_text = text_content.length;
+
+        // Đếm số dòng
+        var lines = text_content.split('\n\n');
+        var lineCount = lines.filter(function (line) {
+            return line.trim() !== ''; // Loại bỏ các dòng trống
+        });
+
+        $('#count-text-content').text('Số Ký Tự ' + count_text + ' --- Số Dòng ' + lineCount.length);
+    }
+
+
+    function subRegex(e, t) {
+        var n = new RegExp("" + t, "m");
+        if (e.match(n))
+            for (e = e.replace(n, "$1\n\n$2"); e.match(n);)
+                e = e.replace(n, "$1\n\n$2");
+        return e;
+    }
+
+
+    function edit_text_video(data) {
+        $("#edit-iteam-video").empty();
+        const itemsString = data.text_content_2 || "[]";
+        // Chuyển đổi từ chuỗi JSON thành danh sách
+        const items = JSON.parse(itemsString);
+        items.forEach((item, i) => {
+            const tr = document.createElement('tr');
+            tr.className = 'iteam-text-video';
+            tr.innerHTML = `
+                <th class="text-center pt-4 iteam-id" data-id="${item.id}">${item.id}</th>
+                <td class="col m-3">
+                    <span class='iteam-text' data-id="${item.id}">${item.text}</span>
+                </td>
+                <td class="text-center">
+                    <img class='iteam-video-content' data-id="${item.id}" src="${item.url_video ? item.url_video : '/static/assets/img/no-image-available.png'}" 
+                        style="height: 75px; width: 133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);">
+                </td>`;
+            document.getElementById("edit-iteam-video").appendChild(tr);
+        });
+    }
 
     function show_infor_video(id) {
         const host = window.location.host;
@@ -294,7 +370,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then(data => {
-                console.log('Data:', data);
                 $('#id-video-edit').val(data.id);
                 $('#Image-Thumnail-infor-video').attr('src', data.url_thumbnail);
                 $('#input-title').val(data.title);
@@ -303,17 +378,380 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#input-date-upload').val(data.date_upload);
                 $('#input-time-upload').val(data.time_upload);
                 $("#input-text-content").val(data.text_content);
+                edit_text_video(data);
+                show_modal_image(data);
+
             })
             .catch(error => console.error('Error:', error));
     }
 
+    function update_text_edit() {
+        const text_content = $('#input-text-content').val();
+        const lines = text_content.split('\n\n');
+        const lineCount = lines.filter(function (line) {
+            return line.trim() !== ''; // Loại bỏ các dòng trống
+        });
+
+        var count = document.querySelectorAll('.iteam-text-video').length;
+
+        if (count > lineCount.length) {
+            var i = 0;
+            document.querySelectorAll('.iteam-text-video').forEach(function (item) {
+                if (i < lineCount.length) {
+                    const text = lineCount[i];
+                    item.querySelector('.iteam-text').textContent = text;
+                    i++;
+                } else {
+                    item.remove(); // Xóa các phần tử 'iteam-text-video' thừa đi
+                }
+            });
+        } else if (count < lineCount.length) {
+            for (let i = count; i < lineCount.length; i++) {
+                const item = lineCount[i];
+                const tr = document.createElement('tr');
+                tr.className = 'iteam-text-video';
+                tr.innerHTML = `
+                    <th class="text-center pt-4 iteam-id" data-id="${i + 1}">${i + 1}</th>
+                    <td class="col m-3">
+                        <span class='iteam-text' data-id="${i + 1}">${item}</span>
+                    </td>
+                    <td class="text-center">
+                        <img class='iteam-video-content' data-id="${i + 1}" src='/static/assets/img/no-image-available.png'
+                            style="height: 75px; width: 133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);">
+                    </td>`;
+                document.getElementById("edit-iteam-video").appendChild(tr);
+            }
+        } else {
+            document.querySelectorAll('.iteam-text-video').forEach(function (item, i) {
+                const text = lineCount[i];
+                item.querySelector('.iteam-text').textContent = text;
+            });
+        }
+    }
+
+    $(document).on('click', '#open-input-image', function () {
+        $('#modal-overlay').css('display', 'block');
+        $('#iteam-edit').val('none');
+    });
 
 
+    function show_modal_image(data) {
+        const images = data.video_image || []; // Ensure we have a valid array of images
+
+        // Remove existing .iteam-image elements before adding new ones
+        const iteamImageDivs = document.querySelectorAll('.iteam-image');
+        iteamImageDivs.forEach(div => div.remove());
+
+        images.forEach(imageUrl => {
+            // Create a div element to hold the HTML content
+            const div = document.createElement('div');
+            div.className = 'col iteam-image'; // Ensure correct class assignment
+            div.setAttribute('data-toggle', 'tick-icon');
+
+            // Extract file name using get_name_image_url function
+            const fileName = get_name_image_url(imageUrl, 12);
+
+            div.innerHTML = `
+                <div class="card border-success p-1 enlarge-on-hover" style="height: 150px; width: 150px;">
+                    <img class="card-img-top file-image-url" style="height: 90px;" src="${imageUrl}" alt="Image">
+                    <!-- Icon dấu tích -->
+                    <div class="tick-icon">
+                        <svg class="icon p-2" style="height: 50px; width: 50px; color: aqua;">
+                            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-chevron-circle-down-alt"></use>
+                        </svg>
+                    </div>
+                    <div class="progress progress-thin my-2" style="height: 5px;">
+                        <div class="progress-bar bg-success bg-success" role="progressbar" style="width: 100%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <ul class="nav justify-content-center">${fileName}</ul>
+                </div>
+            `;
+            // Append the newly created div to a container (assuming you have a container with id 'image-video')
+            document.getElementById("image-video").appendChild(div);
+
+
+        });
+    }
+
+    function get_name_image_url(url, maxLength) {
+        // Decode the URL to handle percent-encoded characters
+        const decodedUrl = decodeURIComponent(url);
+
+        // Split the URL by '/' to get the parts
+        const parts = decodedUrl.split('/');
+
+        // Get the last part which contains the file name
+        const fileNameWithParams = parts[parts.length - 1];
+
+        // Split the file name by '?' to remove parameters
+        const fileNameWithoutParams = fileNameWithParams.split('?')[0];
+
+        // Truncate the file name if it's longer than maxLength
+        if (fileNameWithoutParams.length > maxLength) {
+            const firstPart = fileNameWithoutParams.substring(0, 6); // First 6 characters
+            const lastPart = fileNameWithoutParams.substring(fileNameWithoutParams.length - 6); // Last 6 characters
+            return `${firstPart}...${lastPart}`;
+        } else {
+            return fileNameWithoutParams;
+        }
+    }
+
+    $('.close-modal-input-image').click(function () {
+        $('#modal-overlay').css('display', 'none');
+    });
+
+    $('#modal-overlay').click(function (event) {
+        // Kiểm tra xem phần tử mà sự kiện được kích hoạt có phải là phần nền mờ không
+        if (event.target === this) {
+            // Phóng to modal một chút
+            enlargeModal();
+        }
+    });
+
+    function enlargeModal() {
+        var modalContent = $('#modal-image-content .modal-content');
+        // Tăng kích thước modal
+        modalContent.css('transform', 'scale(1.1)');
+        modalContent.css('transition', 'transform 0.5s ease');
+
+        // Sau 0.5 giây, thu nhỏ modal về kích thước ban đầu
+        setTimeout(function () {
+            modalContent.css('transform', 'scale(1)');
+        }, 500);
+    }
+
+
+    $(document).on('click', '[data-toggle="tick-icon"]', function () {
+        // Ẩn tất cả các tick-icon cùng cấp
+        $(this).siblings().find('.tick-icon').hide();
+        // Hiển thị tick-icon trong cột được click
+        $(this).find('.tick-icon').show();
+    });
+
+    $(document).on('click', '#check-delete-image', function () {
+        // Xóa tất cả các cột đã chọn
+        $('[data-toggle="tick-icon"]').siblings().find('.tick-icon').hide();
+    });
+
+    $(document).on('change', '#input-image', function () {
+        var files = $(this)[0].files;
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var newCol = $('<div class="col iteam-image" data-toggle="tick-icon"></div>');
+            var newCard = $('<div class="card border-success p-1 enlarge-on-hover" style="height: 150px; width: 150px;"></div>');
+            var newTickIcon = $('<div class="tick-icon"></div>');
+            var newImage = $('<img class="card-img-top file-image-url" style="height:90px;" src="/static/assets/img/Animation.gif" alt="">');
+            var newProgress = $('<div class="progress progress-thin my-2" style="height:5px;"></div>');
+            var newProgressBar = $('<div class="progress-bar bg-success" role="progressbar" style="width:0" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>');
+            var newSmall = $('<ul class="nav justify-content-center file-image">Đang upload ...</ul>');
+
+            newTickIcon.append('<svg class="icon p-2" style="height: 50px; width: 50px;color: aqua;"><use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-chevron-circle-down-alt"></use></svg>');
+            newProgress.append(newProgressBar);
+            newCard.append(newImage, newTickIcon, newProgress, newSmall);
+            newCol.append(newCard);
+
+            $('.row.row-cols-1.row-cols-md-6.g-3.justify-content-center').prepend(newCol);
+
+            (function (newImage, newSmall, newProgressBar) { // Sử dụng hàm vô danh để bảo vệ giá trị
+                var formData = new FormData();
+                formData.append('file', file);
+                formData.append('id-video-render', $('#id-video-edit').val());
+                formData.append('action', 'add-image-video');
+                var xhr = new XMLHttpRequest();
+                console.log('Debug information');
+                console.log($('#id-video-edit').val());
+                console.log(file.name);
+
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        var response = JSON.parse(xhr.responseText);
+                        if (response.success === true) {
+                            newImage.attr('src', response.url);
+                            var name = get_name_image_url(response.url, 12);
+                            newSmall.text(name);
+
+                        } else {
+                            console.error('File upload failed.');
+                        }
+                    } else {
+                        console.error('File upload failed.');
+                    }
+                };
+
+                xhr.upload.onprogress = function (event) {
+                    if (event.lengthComputable) {
+                        var percentComplete = (event.loaded / event.total) * 100;
+                        newProgressBar.css('width', percentComplete + '%');
+                        newSmall.text('Đang upload ' + percentComplete.toFixed(0) + '%');
+                    }
+                };
+                const host = window.location.host;
+                const protocol = window.location.protocol;
+                xhr.open('POST', `${protocol}//${host}/render/`, true);
+                xhr.setRequestHeader('X-CSRFToken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+                xhr.send(formData);
+            })(newImage, newSmall, newProgressBar);
+        }
+        $('#input-click-image').prependTo('.row.row-cols-1.row-cols-md-6.g-3.justify-content-center');
+    });
+
+
+    $('#delete-image').click(function () {
+        // Xóa tất cả các cột chứa ảnh được chọn
+        $('[data-toggle="tick-icon"]').each(function () {
+            if ($(this).find('.tick-icon').css('display') !== 'none') {
+                $(this).remove();
+                var imageUrl = $(this).find('.file-image-url').attr('src');
+                if (imageUrl === '/static/assets/img/Animation.gif') {
+                    return;
+                }
+                var formData = new FormData();
+
+                formData.append('image_url', imageUrl);
+                formData.append('action', 'delete-image-video');
+                formData.append('id-video-render', $('#id-video-edit').val());
+                const host = window.location.host;
+                const protocol = window.location.protocol;
+                $.ajax({
+                    url: `${protocol}//${host}/render/`,
+                    type: 'POST',
+                    headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value },
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        if (response.success === true) {
+                            console.log(response);
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    }
+                });
+
+            }
+        });
+    });
+
+
+    $(document).on('click', '#random-image', function () {
+        var iteam_lines = $('tr.iteam-text-video').length;
+        var count_image = parseInt($('#count-image-video').val());
+        var images = document.querySelectorAll('.iteam-image');
+
+        if (images.length == 0) {
+            alert('không có ảnh nào được chọn');
+            return;
+        }
+
+        console.log(images);
+        console.log(count_image);
+        console.log(iteam_lines);
+
+        var list_images = [];
+        images.forEach(function (image) {
+            list_images.push(image.querySelector('.file-image-url').src);
+        });
+
+        // Tính toán số lượng hình ảnh và video
+        var valueForImages = Math.floor(iteam_lines * (count_image / 100)); // Giá trị cho hình ảnh
+        var valueForVideos = iteam_lines - valueForImages; // Giá trị còn lại cho video
+
+        var video = '/static/assets/img/no-image-available.png'; // Đường dẫn đến video mặc định
+
+        // Tạo danh sách ngẫu nhiên các hình ảnh và video
+        var selectedImages = getRandomChoices(list_images, valueForImages);
+        var selectedVideos = Array(valueForVideos).fill(video);
+
+        // Nối danh sách hình ảnh và video
+        var layerContents = selectedImages.concat(selectedVideos);
+
+        // Xáo trộn danh sách layerContents
+        layerContents = shuffleArray(layerContents);
+
+        // Đảm bảo không có hai hình ảnh liền kề giống nhau
+        layerContents = ensureNoAdjacentDuplicates(layerContents);
+
+        iteam_lines = $('tr.iteam-text-video');
+        for (let i = 0; i < iteam_lines.length; i++) {
+            const iteam = iteam_lines[i];
+            const image = layerContents[i];
+            iteam.querySelector('.iteam-video-content').src = image;
+        }
+    });
+
+    // Hàm xáo trộn mảng
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // Hàm lấy các phần tử ngẫu nhiên từ một mảng với khả năng trùng lặp
+    function getRandomChoices(array, num_elements) {
+        let choices = [];
+        for (let i = 0; i < num_elements; i++) {
+            const randomIndex = Math.floor(Math.random() * array.length);
+            choices.push(array[randomIndex]);
+        }
+        return choices;
+    }
+
+    // Hàm đảm bảo không có hai phần tử liền kề giống nhau
+    function ensureNoAdjacentDuplicates(array) {
+        for (let i = 1; i < array.length; i++) {
+            if (array[i] === array[i - 1]) {
+                // Tìm phần tử khác để đổi chỗ
+                for (let j = i + 1; j < array.length; j++) {
+                    if (array[j] !== array[i - 1]) {
+                        [array[i], array[j]] = [array[j], array[i]];
+                        break;
+                    }
+                }
+            }
+        }
+        return array;
+    }
+
+    $(document).on('click', '.iteam-video-content', function () {
+        var id = $(this).data('id');
+        $('#iteam-edit').val(id);
+        $('#modal-overlay').css('display', 'block');
+    });
+
+    $('#choice_image').click(function () {
+        var id = $('#iteam-edit').val();
+        if (id === 'none') {
+            return;
+        }
+        var image_url = $('.tick-icon:visible').siblings('.file-image-url').attr('src');
+
+        if (image_url === undefined) {
+            alert('Vui lòng chọn ảnh');
+            return;
+        }
+        $('img.iteam-video-content[data-id="' + id + '"]').attr('src', image_url);
+        $('#check-delete-image').click();
+        $('#modal-overlay').css('display', 'none');
+    });
+
+
+    $(document).on('click', '#save-text-video', function () {
+
+        alert('Đã lưu thành công');
+
+
+    });
 
     // Xử lý sự kiện click vào nút render video
 
     // Xử lý sự kiện click vào nút upload lại
 
     // Xử lý sự kiện click vào nút xóa video
+
 
 });

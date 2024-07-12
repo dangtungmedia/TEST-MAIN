@@ -12,7 +12,6 @@ from django.template.loader import render_to_string
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
-from django.template.loader import render_to_string
 from django.utils import timezone
 from pytube import YouTube
 import json ,re ,random ,string
@@ -64,7 +63,7 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         # Nếu không có profile_id nhưng vẫn cần lấy đối tượng cụ thể theo ID
         if self.action == 'retrieve':
             return VideoRender.objects.all()
-        return VideoRender.objects.none()  # Trả về queryset trống nếu không có profile_id và không phải là retrieve action
+        return VideoRender.objects.none() 
 
 
 class index(LoginRequiredMixin, TemplateView):
@@ -79,3 +78,29 @@ class index(LoginRequiredMixin, TemplateView):
             'profiles': profiles
         }
         return render(request, self.template_name, form)
+    
+    def get_filename_from_url(self,url):
+        parsed_url = urlparse(url)
+        path = unquote(parsed_url.path)
+        filename = path.split('/')[-1]
+        return filename
+    
+    def post(self, request):
+        action = request.POST.get('action')
+        if action == 'add-image-video':
+            print(action)
+            channel_name = request.POST.get('id-video-render')
+            profile = VideoRender.objects.get(id=channel_name)
+            image = request.FILES.get('file')
+            if image:
+                filename = image.name.strip().replace(" ", "_")
+                file_image = default_storage.save(f"data/{profile.id}/image/{filename}", image)
+                file_url = default_storage.url(file_image)
+                return JsonResponse({'success': True, 'url': file_url})
+            
+        elif action == 'delete-image-video':
+            channel_name = request.POST.get('id-video-render')
+            image = request.POST.get('image_url')
+            file_name = self.get_filename_from_url(image)
+            default_storage.delete(f"data/{channel_name}/image/{file_name}")
+            return JsonResponse({'success': True, 'message': 'Xóa ảnh thành công!'})

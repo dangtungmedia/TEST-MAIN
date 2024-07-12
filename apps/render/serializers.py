@@ -1,6 +1,7 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from .models import VideoRender
 from apps.home.models import Voice_language, syle_voice,Folder
+from django.core.files.storage import default_storage
 
 class VoicelanguageSerializer(ModelSerializer):
     class Meta:
@@ -26,7 +27,16 @@ class RenderSerializer(ModelSerializer):
         representation = super().to_representation(instance)
         if not representation['url_thumbnail']:
             representation['url_thumbnail'] = '/static/assets/img/no-image-available.png'  # Change this to your default thumbnail path
+        list_url_image = []
+        directory = f"data/{representation['id']}/image" 
+        # Liệt kê các thư mục và file trong thư mục chỉ định
+        directories, files = default_storage.listdir(directory)
+        for file in files:
+            list_url_image.append(default_storage.url(f"{directory}/{file}"))
+
+        representation['video_image'] = list_url_image
         return representation
+
 
 
 
