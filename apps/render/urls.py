@@ -4,10 +4,9 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 
 from apps.render import views
-from .views import index,VideoRenderViewSet, FolderViewSet
+from .views import index,VideoRenderViewSet
 
 router = DefaultRouter()
-router.register('folders', FolderViewSet, basename='folder')
 router.register('render-video', VideoRenderViewSet, basename='render-video')  
 
 app_name = 'video_render'

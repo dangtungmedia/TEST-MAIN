@@ -4,7 +4,6 @@ Open-source **[Django Dashboard](https://appseed.us/admin-dashboards/django/)** 
 
 - 👉 [CoreUI Django](https://appseed.us/product/coreui/django/) - `Product page`
 - 👉 [CoreUI Django](https://django-coreui.appseed-srv1.com/) - `LIVE Demo`
-  
 <br />
 
 ## Features

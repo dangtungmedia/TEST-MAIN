@@ -741,11 +741,77 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     $(document).on('click', '#save-text-video', function () {
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const fetchUrl = `${protocol}//${host}/render/`;
+        const { text_content, text_content_2 } = get_text_json();
+        images = get_image_iteam();
+        var formData = new FormData();
+        formData.append('id-video-render', $('#id-video-edit').val());
+        formData.append('title', $('#input-title').val());
+        formData.append('description', $('#input-description').val());
+        formData.append('keywords', $('#input-keyword').val());
+        formData.append('time_upload', $('#input-date-upload').val());
+        formData.append('date_upload', $('#input-time-upload').val());
+        formData.append('text_content', text_content);
+        formData.append('text_content_2', JSON.stringify(text_content_2));
+        formData.append('video_image', JSON.stringify(images));
+        var file = $('#input-Thumnail')[0].files[0];
+        formData.append('input-Thumnail', file);
 
-        alert('Đã lưu thành công');
-
-
+        $.ajax({
+            url: fetchUrl,
+            type: 'PATCH',
+            headers: { 'X-CSRFToken': csrfToken },
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success === true) {
+                    alert('Cập nhật thông tin video thành công');
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
     });
+
+
+    function get_image_iteam() {
+        const iteam_lines = document.querySelectorAll('.iteam-text-video');
+        const image_content = [];
+        iteam_lines.forEach(iteam => {
+            const id = iteam.querySelector('.iteam-id').textContent;
+            const url_video = iteam.querySelector('.iteam-video-content').src;
+            image_content.push({ id: id, url_video: url_video });
+        });
+        return image_content;
+
+
+    }
+
+    function get_text_json() {
+        const iteam_lines = document.querySelectorAll('.iteam-text-video');
+        let text_content = ''; // Sử dụng let để có thể gán lại giá trị sau này.
+        const text_content_2 = [];
+
+        iteam_lines.forEach(iteam => {
+            const id = iteam.querySelector('.iteam-id').textContent;
+            const text = iteam.querySelector('.iteam-text').textContent;
+            let url_video = iteam.querySelector('.iteam-video-content').src;
+            url_video = (url_video === "/static/assets/img/no-image-available.png") ? "" : url_video;
+
+            text_content_2.push({ id: id, text: text, url_video: url_video });
+            text_content += text + '\n\n';
+        });
+
+        return { text_content: text_content, text_content_2: text_content_2 };
+    }
+
 
     // Xử lý sự kiện click vào nút render video
 

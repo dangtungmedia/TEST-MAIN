@@ -34,23 +34,16 @@ import time
 from apps.render.task import render_video
 from celery.result import AsyncResult
 
-from .serializers import RenderSerializer,FolderSerializer
+from .serializers import RenderSerializer
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 
 from apps.render.cace_database import get_video_render_data_from_cache, update_video_render_data_from_cache, get_Data_Text_Video_data_from_cache, get_count_use_data_from_cache
     
 
-class FolderViewSet(viewsets.ModelViewSet):
-    queryset = Folder.objects.all()
-    serializer_class = FolderSerializer
-    permission_classes = [IsAuthenticated]
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
 class VideoRenderViewSet(viewsets.ModelViewSet):
     serializer_class = RenderSerializer
@@ -63,7 +56,8 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         # Nếu không có profile_id nhưng vẫn cần lấy đối tượng cụ thể theo ID
         if self.action == 'retrieve':
             return VideoRender.objects.all()
-        return VideoRender.objects.none() 
+        return VideoRender.objects.none()
+
 
 
 class index(LoginRequiredMixin, TemplateView):
@@ -104,3 +98,71 @@ class index(LoginRequiredMixin, TemplateView):
             file_name = self.get_filename_from_url(image)
             default_storage.delete(f"data/{channel_name}/image/{file_name}")
             return JsonResponse({'success': True, 'message': 'Xóa ảnh thành công!'})
+    
+
+
+
+
+    def handle_thumbnail(self,video, thumnail, video_id):
+        if video.url_thumbnail:
+            image = video.url_thumbnail
+            file_name = self.get_filename_from_url(image)
+            default_storage.delete(f"data/{video_id}/image/{file_name}")
+        filename = thumnail.name.strip().replace(" ", "_")
+        file_name = default_storage.save(f"data/{video_id}/thumnail/{filename}", thumnail)
+        file_url = default_storage.url(file_name)
+        video.url_thumbnail = file_url
+        return file_url
+
+    def update_video_info(self,video, input_data, date_formatted, json_text, thumnail, video_id):
+        video.title = input_data['title']
+        video.description = input_data['description']
+        video.keywords = input_data['keyword']
+        video.time_upload = input_data['time_upload']
+        video.date_upload = date_formatted
+        video.text_content = input_data['content']
+        video.video_image = input_data['video_image']
+        video.text_content_2 = json_text
+        if thumnail:
+            video.url_thumbnail = self.handle_thumbnail(video, thumnail, video_id)
+        video.save()
+
+
+    def patch(self, request):
+        input_data = {
+        'title': request.POST.get('title'),
+        'description': request.POST.get('description'),
+        'keyword': request.POST.get('keywords'),
+        'date_upload': request.POST.get('time_upload'),
+        'time_upload': request.POST.get('date_upload'),
+        'content': request.POST.get('text-content'),
+        'video_image' : request.POST.get('video_image')
+        }
+        thumnail = request.FILES.get('input-Thumnail')
+        json_text = request.POST.get('text_content_2')
+        video_id = request.POST.get('id-video-render')
+        video = VideoRender.objects.get(id=video_id)
+
+
+        date_upload_datetime = datetime.strptime(input_data['date_upload'], '%Y-%m-%d')
+        date_formatted = date_upload_datetime.strftime('%Y-%m-%d')
+        if not video:
+            return JsonResponse({'success': False, 'message': 'Video không tồn tại!'})
+
+        if request.user.is_superuser:
+            self.update_video_info(video, input_data, date_formatted, json_text, thumnail, video_id)
+            return JsonResponse({'success': True, 'message': 'Cập nhật video thành công!'})
+
+        is_edit_title = Count_Use_data.objects.filter(videoRender_id=video, creade_video=False, edit_title=True, edit_thumnail=False).first()
+        is_edit_thumnail = Count_Use_data.objects.filter(videoRender_id=video, creade_video=False, edit_title=False, edit_thumnail=True).first()
+
+        if (is_edit_title and is_edit_thumnail and is_edit_title.use != request.user and is_edit_thumnail.use != request.user):
+            return JsonResponse({'success': False, 'message': 'Video đang được chỉnh sửa bởi người khác!'})
+
+        if is_edit_title and is_edit_title.use != request.user and input_data['title'] != video.title and input_data['title'] and input_data['title'] != "Đang chờ cập nhật":
+            return JsonResponse({'success': False, 'message': 'Tiêu đề đang được chỉnh sửa bởi người khác!'})
+
+        if is_edit_thumnail and is_edit_thumnail.use != request.user and thumnail:
+            return JsonResponse({'success': False, 'message': 'Ảnh thumnail đang được chỉnh sửa bởi người khác!'})
+
+        return JsonResponse({'success': True, 'message': 'Cập nhật thành công!'})
