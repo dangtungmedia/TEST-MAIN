@@ -187,7 +187,7 @@ class index(LoginRequiredMixin, TemplateView):
             date_upload = datetime.strptime(date_upload, '%Y-%m-%d').date()
             time_slot_index = 0
             time_slots = time_upload.split(',') 
-                
+            selected_videos = []
             for videos in list_news:
                 count = 1
                 text_video = ""
@@ -377,8 +377,6 @@ class index(LoginRequiredMixin, TemplateView):
             image_html = render_to_string('render/input-image.html', {'images': images})
 
             return JsonResponse({'success': True, 'image_html': image_html})
-
-
 
         elif action == 'add-image-video':
             channel_name = request.POST.get('id-video-render')

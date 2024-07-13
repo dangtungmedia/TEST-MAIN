@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded with JavaScript');
     get_video_render(1);
-
+    createWebSocket()
     $('#channel_name').change(function () {
         get_video_render(1);
     });
@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function show_video(video, count) {
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
+        tr.setAttribute('data-id', video.id);
+
         tr.innerHTML = `
             <td class="col-auto gap-0" style="width:40px; padding-left:1rem;">
                 <label class="col-form-label">${video.id}</label>
@@ -58,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-trash"></use>
                         </svg>
                     </button>
-                    <label class="col-form-label time-upload-video">Ngày Upload ${video.date_upload} Giờ Upload ${video.time_upload}</label>
+                    <label class="col-form-label time-upload-video" data-id="${video.id}" >Ngày Upload ${video.date_upload} Giờ Upload ${video.time_upload}</label>
                 </div>
             </td>
             <td class="col text-center">
@@ -72,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </td>
         `;
         document.getElementById("myTbody").appendChild(tr);
+
     }
 
     function show_page_bar(page, data) {
@@ -176,6 +179,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const fetchUrl = `${protocol}//${host}/render-video/?page=${page}&profile_id=${channelId}`;
 
+
+
         fetch(fetchUrl, {
             method: 'GET',
             credentials: 'include',
@@ -191,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then(data => {
-                console.log('Data:', data);
 
                 // Kiểm tra dữ liệu trả về
                 if (!data.results || !Array.isArray(data.results)) {
@@ -207,12 +211,117 @@ document.addEventListener('DOMContentLoaded', function () {
                     show_video(item, i + 1);
                 });
                 show_page_bar(page, data);
+                updateStatus();
+
             })
             .catch(error => console.error('Error:', error));
     }
     // Xử lý sự kiện click vào nút xem thông tin kênh
 
     // xử lý sự kiện thêm nhiều video cùng lúc
+
+    $('#add-videos').click(function () {
+        console.log('Add videos');
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const fetchUrl = `${protocol}//${host}/profiles/${$('#channel_name').val()}/`;
+        console.log(fetchUrl);
+        fetch(fetchUrl, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data);
+                $('#input-time-upload').val(data.channel_time_upload);
+            })
+            .catch(error => console.error('Error:', error));
+    });
+
+    $("#create_videos_news").click(async function () {
+        console.log('Create videos');
+        const countVideos = parseInt($('#count-video').val());
+        let dateValue = $('#date-Input').val();
+        const timeValue = $('#input-time-upload').val().split(',');
+        const characters = $('#count-text-video').val();
+
+        $('#progress-bar-status').css('width', `${0}%`);
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const profile_id = $('#channel_name').val();
+        const fetchUrl = `${protocol}//${host}/profiles/${profile_id}/add_videos/`;
+
+        $('#progress-bar-status').css('display', 'block'); // Hiển thị thanh tiến trình
+        $('#cread-status-videos').text(`Đang tạo video ...1/${countVideos}`);
+
+        let errorOccurred = false;
+
+        for (let i = 0; i < countVideos && !errorOccurred; i++) {
+            const date = new Date(dateValue);
+            const date_upload_str = date.toISOString().split('T')[0];
+            const time = timeValue[i % timeValue.length].trim();
+            console.log('Date:', date_upload_str);
+            console.log('Time:', time);
+
+            const videoData = {
+                upload_time: time,
+                upload_date: date_upload_str,
+                characters: characters,
+            };
+
+            try {
+                const response = await fetch(fetchUrl, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(videoData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                $('#cread-status-videos').text(`Đang tạo video ...${i + 1}/${countVideos}`);
+                const progress = ((i + 1) / countVideos) * 100;
+                $('#progress-bar-status').css('width', `${progress}%`);
+                $('#progress-bar-status').attr('aria-valuenow', progress);
+                if (i + 1 === countVideos) {
+                    $('#cread-status-videos').text(`Đã tạo xong ${i + 1} video`);
+                }
+                console.log(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                $('#cread-status-videos').text(`Lỗi khi tạo video. Đã tạo được ${i} video.`);
+                errorOccurred = true; // Đánh dấu lỗi đã xảy ra
+            }
+
+            // Kiểm tra nếu đã sử dụng hết tất cả giá trị thời gian upload
+            if ((i + 1) % timeValue.length === 0) {
+                // Tăng ngày lên 1
+                dateValue = new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+            }
+        }
+
+        if (errorOccurred) {
+            $('#cread-status-videos').text(`Dừng lại do lỗi. Đã tạo được ${i} video.`);
+        }
+    });
 
     // xử lý sự kiện thêm 1 video   
 
@@ -436,21 +545,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     function show_modal_image(data) {
-        const images = data.video_image || []; // Ensure we have a valid array of images
+        let images;
 
-        // Remove existing .iteam-image elements before adding new ones
+        // Kiểm tra nếu data.video_image là chuỗi và có thể phân tích cú pháp JSON
+        if (typeof data.video_image === 'string') {
+            try {
+                images = JSON.parse(data.video_image);
+                console.log('Parsed JSON data.video_image:', images);
+            } catch (e) {
+                console.error('Error parsing JSON:', e);
+                images = [];
+            }
+        } else if (Array.isArray(data.video_image)) {
+            images = data.video_image;
+        } else {
+            images = [];
+        }
+
+        console.log('images:', images);
+
+        // Loại bỏ các phần tử .iteam-image hiện có trước khi thêm mới
         const iteamImageDivs = document.querySelectorAll('.iteam-image');
         iteamImageDivs.forEach(div => div.remove());
 
+        // Duyệt qua từng URL hình ảnh và tạo phần tử tương ứng
         images.forEach(imageUrl => {
-            // Create a div element to hold the HTML content
+            // Tạo phần tử div để chứa nội dung HTML
             const div = document.createElement('div');
-            div.className = 'col iteam-image'; // Ensure correct class assignment
+            div.className = 'col iteam-image'; // Đảm bảo gán đúng class
             div.setAttribute('data-toggle', 'tick-icon');
 
-            // Extract file name using get_name_image_url function
+            // Lấy tên tệp hình ảnh bằng hàm get_name_image_url
             const fileName = get_name_image_url(imageUrl, 12);
 
+            // Gán nội dung HTML vào div
             div.innerHTML = `
                 <div class="card border-success p-1 enlarge-on-hover" style="height: 150px; width: 150px;">
                     <img class="card-img-top file-image-url" style="height: 90px;" src="${imageUrl}" alt="Image">
@@ -461,15 +589,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         </svg>
                     </div>
                     <div class="progress progress-thin my-2" style="height: 5px;">
-                        <div class="progress-bar bg-success bg-success" role="progressbar" style="width: 100%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <ul class="nav justify-content-center">${fileName}</ul>
                 </div>
             `;
-            // Append the newly created div to a container (assuming you have a container with id 'image-video')
+            // Thêm div mới tạo vào container (giả sử bạn có container với id 'image-video')
             document.getElementById("image-video").appendChild(div);
-
-
         });
     }
 
@@ -558,9 +684,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 formData.append('id-video-render', $('#id-video-edit').val());
                 formData.append('action', 'add-image-video');
                 var xhr = new XMLHttpRequest();
-                console.log('Debug information');
-                console.log($('#id-video-edit').val());
-                console.log(file.name);
 
                 xhr.onload = function () {
                     if (xhr.status === 200) {
@@ -645,10 +768,6 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('không có ảnh nào được chọn');
             return;
         }
-
-        console.log(images);
-        console.log(count_image);
-        console.log(iteam_lines);
 
         var list_images = [];
         images.forEach(function (image) {
@@ -744,32 +863,37 @@ document.addEventListener('DOMContentLoaded', function () {
         const host = window.location.host;
         const protocol = window.location.protocol;
         const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render/`;
+        const fetchUrl = `${protocol}//${host}/render-video/${$('#id-video-edit').val()}/update_video/`;
         const { text_content, text_content_2 } = get_text_json();
         images = get_image_iteam();
+
+        console.log('Debug information');
+        console.log(images);
         var formData = new FormData();
-        formData.append('id-video-render', $('#id-video-edit').val());
         formData.append('title', $('#input-title').val());
         formData.append('description', $('#input-description').val());
         formData.append('keywords', $('#input-keyword').val());
-        formData.append('time_upload', $('#input-date-upload').val());
-        formData.append('date_upload', $('#input-time-upload').val());
+        formData.append('date_upload', $('#input-date-upload').val());
+        formData.append('time_upload', $('#input-time-upload').val());
         formData.append('text_content', text_content);
         formData.append('text_content_2', JSON.stringify(text_content_2));
         formData.append('video_image', JSON.stringify(images));
         var file = $('#input-Thumnail')[0].files[0];
-        formData.append('input-Thumnail', file);
-
+        if (file) {
+            formData.append('file-thumnail', file);
+        }
+        console.log('Debug information');
+        console.log($('#id-video-edit').val());
         $.ajax({
             url: fetchUrl,
-            type: 'PATCH',
+            type: 'POST',
             headers: { 'X-CSRFToken': csrfToken },
             data: formData,
             processData: false,
             contentType: false,
             success: function (response) {
                 if (response.success === true) {
-                    alert('Cập nhật thông tin video thành công');
+                    $('.btn-close').click();
                 } else {
                     alert(response.message);
                 }
@@ -780,18 +904,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-
     function get_image_iteam() {
-        const iteam_lines = document.querySelectorAll('.iteam-text-video');
+        var images = document.querySelectorAll('.iteam-image');
         const image_content = [];
-        iteam_lines.forEach(iteam => {
-            const id = iteam.querySelector('.iteam-id').textContent;
-            const url_video = iteam.querySelector('.iteam-video-content').src;
-            image_content.push({ id: id, url_video: url_video });
+        images.forEach(iteam => {
+            const url_video = iteam.querySelector('.file-image-url').src;
+            image_content.push(url_video);
         });
         return image_content;
-
-
     }
 
     function get_text_json() {
@@ -811,13 +931,82 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return { text_content: text_content, text_content_2: text_content_2 };
     }
-
-
     // Xử lý sự kiện click vào nút render video
 
     // Xử lý sự kiện click vào nút upload lại
 
     // Xử lý sự kiện click vào nút xóa video
 
+
+
+
+    // Web Socket
+    // Tạo kết nối với Web Socket
+
+    function createWebSocket() {
+        var socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');
+        socket.onopen = function () {
+            console.log("WebSocket is open now.");
+        };
+        socket.onmessage = function (e) {
+            console.log('Message:', e.data);
+            updateStatus();
+        }
+
+    }
+
+
+
+    // Cập NHập Trạng Thái của Web Socket
+    function updateStatus() {
+        var ID_VIDEOS = document.querySelectorAll('.align-middle');
+        var list_video = [];
+        ID_VIDEOS.forEach(item => {
+            const url_video = item.getAttribute('data-id');
+            list_video.push(url_video);
+        });
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const fetchUrl = `${protocol}//${host}/render-video/status/`;
+        var formData = new FormData();
+        formData.append('list_video', list_video);
+        $.ajax({
+            url: fetchUrl,
+            type: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success === true) {
+                    const data = response.data;
+                    console.log('Update status');
+                    $("#count-data").empty();
+                    $("#count-data").html(response.text);
+                    data.forEach(item => {
+                        var image = $('img.id-thumbnail-video[data-id="' + item.id + '"]');
+                        image.attr('src', item.url_thumbnail);
+
+                        var title = $('label.id-title-video[data-id="' + item.id + '"]');
+                        title.text(item.title);
+
+                        var status = $('div.status-video[data-id="' + item.id + '"]');
+                        status.text(item.status_video);
+
+                        var timeUpload = $('label.time-upload-video[data-id="' + item.id + '"]');
+                        timeUpload.text('Ngày Upload ' + item.date_upload + ' Giờ Upload ' + item.time_upload);
+                    });
+
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+
+    }
 
 });
