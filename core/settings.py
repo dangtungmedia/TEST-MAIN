@@ -27,8 +27,8 @@ DEBUG = env('DEBUG')
 ASSETS_ROOT = os.getenv('ASSETS_ROOT', '/static/assets') 
 
 # load production server from .env
-ALLOWED_HOSTS        = ['localhost', '127.0.0.1','171.241.54.230',env('SERVER', default='127.0.0.1') ]
-CSRF_TRUSTED_ORIGINS = ['http://localhost','http://127.0.0.1:5085','http://localhost:5085','http://127.0.0.1','http://' + env('SERVER', default='127.0.0.1') + ':5085' ]
+ALLOWED_HOSTS        = ['localhost', '127.0.0.1','171.241.54.230',env('SERVER', default='127.0.0.1'),'newspro.top','www.newspro.top' ]
+CSRF_TRUSTED_ORIGINS = ['http://localhost','http://127.0.0.1:5085','http://localhost:5085','http://127.0.0.1','http://' + env('SERVER', default='127.0.0.1') + ':5085','https://www.newspro.top','https://newspro.top' ]
 # Application definition
 
 INSTALLED_APPS = [
@@ -159,7 +159,7 @@ AUTH_USER_MODEL = 'login.CustomUser'
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 50,  # Số lượng kết quả trên mỗi trang
+    'PAGE_SIZE': 50,  # S? lu?ng k?t qu? tr�n m?i trang
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',

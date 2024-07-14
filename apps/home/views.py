@@ -22,7 +22,6 @@ import requests
 
 from  apps.render.models import VideoRender,DataTextVideo,video_url,Count_Use_data
 import os
-
 class Index(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'home/User-profile.html'

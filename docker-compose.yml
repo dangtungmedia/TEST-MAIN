@@ -1,51 +1,20 @@
 version: '3.8'
 services:
-  appseed:
-    container_name: appseed
-    restart: always
-    env_file: .env
-    build: .
-    volumes:
-      - ./media:/media
-    networks:
-      - db_network
-      - web_network
-    depends_on:
-      - redis2
   nginx:
     container_name: nginx_tung
     restart: always
     image: "nginx:latest"
     ports:
-      - "5085:5085"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx:/etc/nginx/conf.d
-    networks:
-      - web_network
-    depends_on:
-      - appseed
-
-  redis2:
-    container_name: redis2
-    image: "redis:latest"
-    ports:
-      - "6379:6379"
-    networks:
-      - db_network
-    command: redis-server --appendonly yes
-
+      - ./media:/media
+      - ./static:/static
   celery:
     container_name: celery_worker_tung
     build: .
-    volumes:
-      - ./media:/media
     command: celery -A core worker -l INFO --hostname=worker1@%h
-    networks:
-      - db_network
-      - web_network
-    depends_on:
-      - appseed
-      - redis2
 
   daphne:
     container_name: daphne
@@ -54,46 +23,15 @@ services:
     build: .
     volumes:
       - ./media:/media
-    networks:
-      - db_network
-      - web_network
-    depends_on:
-      - redis2
-
-  # voicevox_engine:
-  #   container_name: voicevox_engine
-  #   image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
-  #   ports:
-  #     - '50021:50021'
-  #   tty: true
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 1
-  #             capabilities: [ gpu ]
-  #   networks:
-  #     - db_network
-  #     - web_network
-
   flower:
     container_name: flower
     build: .
+    expose:
+      - "5555"
     ports:
       - "5555:5555"
-    networks:
-      - web_network
-      - db_network
-    depends_on:
-      - appseed
     command: celery -A core flower
+
 volumes:
   media_volume:
     driver: local
-
-networks:
-  db_network:
-    driver: bridge
-  web_network:
-    driver: bridge

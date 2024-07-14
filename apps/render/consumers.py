@@ -11,20 +11,21 @@ def notify_video_change(sender, instance, **kwargs):
     # Lấy layer kênh
     channel_layer = get_channel_layer()
     room_name = instance.profile_id.id
-    room_group_name = "update_data"
+    room_group_name = f"render_profile_{room_name}"
     
     # Gửi thông báo đến group
-    async_to_sync(channel_layer.group_send)(
-        room_group_name,
-        {
-            'type': 'video_change',
-            'message': 'update'
-        }
-    )
+    # async_to_sync(channel_layer.group_send)(
+    #     room_group_name,
+    #     {
+    #         'type': 'video_change',
+    #         'message': 'update'
+    #     }
+    # )
 
 class RenderConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_group_name = f"update_data"
+        self.room_name = self.scope['url_route']['kwargs']['room_name']
+        self.room_group_name = f"render_profile_{self.room_name}"
 
         # Thêm kênh vào group
         await self.channel_layer.group_add(
@@ -39,6 +40,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+
     @sync_to_async
     def get_video_data(self):
         videos = VideoRender.objects.filter(profile_id=self.room_name).values()
