@@ -23,23 +23,6 @@ services:
     build: .
     volumes:
       - ./media:/media
-
-  # voicevox_engine:
-  #   container_name: voicevox_engine
-  #   image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
-  #   ports:
-  #     - '50021:50021'
-  #   tty: true
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 1
-  #             capabilities: [ gpu ]
-  #   networks:
-  #     - db_network
-  #     - web_network
   flower:
     container_name: flower
     build: .
@@ -48,6 +31,7 @@ services:
     ports:
       - "5555:5555"
     command: celery -A core flower
+
 volumes:
   media_volume:
     driver: local
