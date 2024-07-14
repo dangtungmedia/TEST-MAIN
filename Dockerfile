@@ -19,5 +19,6 @@ COPY . .
 
 # Running migrations
 RUN python manage.py migrate
+EXPOSE 5504
 
 CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 5504 core.asgi:application"]
