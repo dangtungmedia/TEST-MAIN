@@ -954,9 +954,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
     }
-
-
-
     // Cập NHập Trạng Thái của Web Socket
     function updateStatus() {
         var ID_VIDEOS = document.querySelectorAll('.align-middle');
