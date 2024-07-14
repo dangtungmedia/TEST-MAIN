@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 dateValue = new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
             }
         }
-
+        get_video_render(1);
         if (errorOccurred) {
             $('#cread-status-videos').text(`Dừng lại do lỗi. Đã tạo được ${i} video.`);
         }
@@ -937,9 +937,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Xử lý sự kiện click vào nút xóa video
 
-
-
-
     // Web Socket
     // Tạo kết nối với Web Socket
 
@@ -954,8 +951,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
     }
-
-
 
     // Cập NHập Trạng Thái của Web Socket
     function updateStatus() {
