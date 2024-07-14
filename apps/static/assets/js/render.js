@@ -944,7 +944,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Tạo kết nối với Web Socket
 
     function createWebSocket() {
-        var socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');
+        var socket = new WebSocket('wss://' + window.location.host + '/ws/update_status/');
         socket.onopen = function () {
             console.log("WebSocket is open now.");
         };
