@@ -6,3 +6,4 @@ class ProfileChannelSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfileChannel
         fields = '__all__'
+

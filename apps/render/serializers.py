@@ -1,7 +1,9 @@
 from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from .models import VideoRender
-from apps.home.models import Voice_language, syle_voice,Folder
+from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
 from django.core.files.storage import default_storage
+
+
 
 class VoicelanguageSerializer(ModelSerializer):
     class Meta:
@@ -22,6 +24,8 @@ class RenderSerializer(ModelSerializer):
     class Meta:
         model = VideoRender
         fields = '__all__'
+        
+
 
 # class RenderSerializer(ModelSerializer):
     # voice_details = SerializerMethodField()

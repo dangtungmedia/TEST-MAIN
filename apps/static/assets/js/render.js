@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded with JavaScript');
     get_video_render(1);
-
+    createWebSocket()
     $('#channel_name').change(function () {
         get_video_render(1);
     });
@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
     function show_video(video, count) {
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
+        tr.setAttribute('data-id', video.id);
+
         tr.innerHTML = `
             <td class="col-auto gap-0" style="width:40px; padding-left:1rem;">
                 <label class="col-form-label">${video.id}</label>
@@ -58,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-trash"></use>
                         </svg>
                     </button>
-                    <label class="col-form-label time-upload-video">Ngày Upload ${video.date_upload} Giờ Upload ${video.time_upload}</label>
+                    <label class="col-form-label time-upload-video" data-id="${video.id}" >Ngày Upload ${video.date_upload} Giờ Upload ${video.time_upload}</label>
                 </div>
             </td>
             <td class="col text-center">
@@ -72,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </td>
         `;
         document.getElementById("myTbody").appendChild(tr);
+
     }
 
     function show_page_bar(page, data) {
@@ -176,6 +179,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const fetchUrl = `${protocol}//${host}/render-video/?page=${page}&profile_id=${channelId}`;
 
+
+
         fetch(fetchUrl, {
             method: 'GET',
             credentials: 'include',
@@ -191,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then(data => {
-                console.log('Data:', data);
 
                 // Kiểm tra dữ liệu trả về
                 if (!data.results || !Array.isArray(data.results)) {
@@ -207,6 +211,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     show_video(item, i + 1);
                 });
                 show_page_bar(page, data);
+                updateStatus();
+
             })
             .catch(error => console.error('Error:', error));
     }
@@ -214,7 +220,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // xử lý sự kiện thêm nhiều video cùng lúc
 
-<<<<<<< HEAD
     $('#add-videos').click(function () {
         console.log('Add videos');
         const host = window.location.host;
@@ -312,14 +317,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 dateValue = new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
             }
         }
-        get_video_render(1);
+
         if (errorOccurred) {
             $('#cread-status-videos').text(`Dừng lại do lỗi. Đã tạo được ${i} video.`);
         }
     });
 
-=======
->>>>>>> parent of ccd19b0 (update)
     // xử lý sự kiện thêm 1 video   
 
     // Xử lý sự kiện click vào nút xem video
@@ -542,21 +545,40 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     function show_modal_image(data) {
-        const images = data.video_image || []; // Ensure we have a valid array of images
+        let images;
 
-        // Remove existing .iteam-image elements before adding new ones
+        // Kiểm tra nếu data.video_image là chuỗi và có thể phân tích cú pháp JSON
+        if (typeof data.video_image === 'string') {
+            try {
+                images = JSON.parse(data.video_image);
+                console.log('Parsed JSON data.video_image:', images);
+            } catch (e) {
+                console.error('Error parsing JSON:', e);
+                images = [];
+            }
+        } else if (Array.isArray(data.video_image)) {
+            images = data.video_image;
+        } else {
+            images = [];
+        }
+
+        console.log('images:', images);
+
+        // Loại bỏ các phần tử .iteam-image hiện có trước khi thêm mới
         const iteamImageDivs = document.querySelectorAll('.iteam-image');
         iteamImageDivs.forEach(div => div.remove());
 
+        // Duyệt qua từng URL hình ảnh và tạo phần tử tương ứng
         images.forEach(imageUrl => {
-            // Create a div element to hold the HTML content
+            // Tạo phần tử div để chứa nội dung HTML
             const div = document.createElement('div');
-            div.className = 'col iteam-image'; // Ensure correct class assignment
+            div.className = 'col iteam-image'; // Đảm bảo gán đúng class
             div.setAttribute('data-toggle', 'tick-icon');
 
-            // Extract file name using get_name_image_url function
+            // Lấy tên tệp hình ảnh bằng hàm get_name_image_url
             const fileName = get_name_image_url(imageUrl, 12);
 
+            // Gán nội dung HTML vào div
             div.innerHTML = `
                 <div class="card border-success p-1 enlarge-on-hover" style="height: 150px; width: 150px;">
                     <img class="card-img-top file-image-url" style="height: 90px;" src="${imageUrl}" alt="Image">
@@ -567,15 +589,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         </svg>
                     </div>
                     <div class="progress progress-thin my-2" style="height: 5px;">
-                        <div class="progress-bar bg-success bg-success" role="progressbar" style="width: 100%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                     <ul class="nav justify-content-center">${fileName}</ul>
                 </div>
             `;
-            // Append the newly created div to a container (assuming you have a container with id 'image-video')
+            // Thêm div mới tạo vào container (giả sử bạn có container với id 'image-video')
             document.getElementById("image-video").appendChild(div);
-
-
         });
     }
 
@@ -664,9 +684,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 formData.append('id-video-render', $('#id-video-edit').val());
                 formData.append('action', 'add-image-video');
                 var xhr = new XMLHttpRequest();
-                console.log('Debug information');
-                console.log($('#id-video-edit').val());
-                console.log(file.name);
 
                 xhr.onload = function () {
                     if (xhr.status === 200) {
@@ -751,10 +768,6 @@ document.addEventListener('DOMContentLoaded', function () {
             alert('không có ảnh nào được chọn');
             return;
         }
-
-        console.log(images);
-        console.log(count_image);
-        console.log(iteam_lines);
 
         var list_images = [];
         images.forEach(function (image) {
@@ -850,32 +863,37 @@ document.addEventListener('DOMContentLoaded', function () {
         const host = window.location.host;
         const protocol = window.location.protocol;
         const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render/`;
+        const fetchUrl = `${protocol}//${host}/render-video/${$('#id-video-edit').val()}/update_video/`;
         const { text_content, text_content_2 } = get_text_json();
         images = get_image_iteam();
+
+        console.log('Debug information');
+        console.log(images);
         var formData = new FormData();
-        formData.append('id-video-render', $('#id-video-edit').val());
         formData.append('title', $('#input-title').val());
         formData.append('description', $('#input-description').val());
         formData.append('keywords', $('#input-keyword').val());
-        formData.append('time_upload', $('#input-date-upload').val());
-        formData.append('date_upload', $('#input-time-upload').val());
+        formData.append('date_upload', $('#input-date-upload').val());
+        formData.append('time_upload', $('#input-time-upload').val());
         formData.append('text_content', text_content);
         formData.append('text_content_2', JSON.stringify(text_content_2));
         formData.append('video_image', JSON.stringify(images));
         var file = $('#input-Thumnail')[0].files[0];
-        formData.append('input-Thumnail', file);
-
+        if (file) {
+            formData.append('file-thumnail', file);
+        }
+        console.log('Debug information');
+        console.log($('#id-video-edit').val());
         $.ajax({
             url: fetchUrl,
-            type: 'PATCH',
+            type: 'POST',
             headers: { 'X-CSRFToken': csrfToken },
             data: formData,
             processData: false,
             contentType: false,
             success: function (response) {
                 if (response.success === true) {
-                    alert('Cập nhật thông tin video thành công');
+                    $('.btn-close').click();
                 } else {
                     alert(response.message);
                 }
@@ -886,18 +904,14 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-
     function get_image_iteam() {
-        const iteam_lines = document.querySelectorAll('.iteam-text-video');
+        var images = document.querySelectorAll('.iteam-image');
         const image_content = [];
-        iteam_lines.forEach(iteam => {
-            const id = iteam.querySelector('.iteam-id').textContent;
-            const url_video = iteam.querySelector('.iteam-video-content').src;
-            image_content.push({ id: id, url_video: url_video });
+        images.forEach(iteam => {
+            const url_video = iteam.querySelector('.file-image-url').src;
+            image_content.push(url_video);
         });
         return image_content;
-
-
     }
 
     function get_text_json() {
@@ -917,15 +931,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return { text_content: text_content, text_content_2: text_content_2 };
     }
-
-
     // Xử lý sự kiện click vào nút render video
 
     // Xử lý sự kiện click vào nút upload lại
 
     // Xử lý sự kiện click vào nút xóa video
 
-<<<<<<< HEAD
+
+
+
     // Web Socket
     // Tạo kết nối với Web Socket
 
@@ -994,7 +1008,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
     }
-=======
->>>>>>> parent of ccd19b0 (update)
 
 });
