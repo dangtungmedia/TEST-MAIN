@@ -14,7 +14,7 @@ services:
     container_name: redis2
     image: "redis:latest"
     ports:
-      - "6530:6379"
+      - "6379:6530"
     networks:
       - db_network
     command: redis-server --appendonly yes
