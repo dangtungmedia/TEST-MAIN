@@ -14,12 +14,14 @@ document.addEventListener('DOMContentLoaded', function () {
         tr.className = 'align-middle';
         tr.setAttribute('data-id', video.id);
 
+        const thumbnailUrl = video.url_thumbnail ? video.url_thumbnail : '/static/assets/img/no-image-available.png';
+
         tr.innerHTML = `
             <td class="col-auto gap-0" style="width:40px; padding-left:1rem;">
                 <label class="col-form-label">${video.id}</label>
             </td>
             <th class="col-auto">
-                <img class="id-thumbnail-video" data-id="${video.id}" src="${video.url_thumbnail}" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);">
+                <img class="id-thumbnail-video" data-id="${video.id}" src="${thumbnailUrl}" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);" onerror="this.onerror=null; this.src='/static/assets/img/no-image-available.png';">
             </th>
             <td class="col">
                 <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>

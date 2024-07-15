@@ -257,7 +257,7 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
 
         # Kiểm tra điều kiện cho thumbnail
         if input_data.get('file-thumnail'):
-            if is_edit_thumnail and (not request.user.is_superuser or is_edit_thumnail.use != request.user):
+            if is_edit_thumnail and (not request.user.is_superuser and is_edit_thumnail.use != request.user):
                 return JsonResponse({'success': False, 'message': f'Thumbnail đang được chỉnh sửa bởi người khác ({is_edit_thumnail.use.username})!'})
 
         # Nếu tất cả điều kiện thỏa mãn, tiến hành cập nhật và lưu
@@ -332,8 +332,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             edit_thumnail = Count_Use_data.objects.filter(use=request.user, edit_thumnail=True, timenow=current_date).count()
             text = f'<span class="text-primary">{current_date}</span> ---- VIDEO: <span class="text-danger">{cread_video}</span> ---- Tiêu ĐỀ: <span class="text-danger">{edit_title}</span> ---- Thumnail: <span class="text-danger">{edit_thumnail}</span>'
         return JsonResponse({'success': True, 'data': data_list ,'text':text}, status=status.HTTP_200_OK)
-
-
 
 
 class index(LoginRequiredMixin, TemplateView):
