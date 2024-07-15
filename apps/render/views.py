@@ -42,12 +42,9 @@ from rest_framework.decorators import action
 
 from apps.render.cace_database import get_video_render_data_from_cache, update_video_render_data_from_cache, get_Data_Text_Video_data_from_cache, get_count_use_data_from_cache
     
-<<<<<<< HEAD
-=======
 
 
 
->>>>>>> parent of ccd19b0 (update)
 class VideoRenderViewSet(viewsets.ModelViewSet):
     serializer_class = RenderSerializer
     permission_classes = [IsAuthenticated]
@@ -60,11 +57,8 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return VideoRender.objects.all()
         return VideoRender.objects.none()
-<<<<<<< HEAD
-=======
 
 
->>>>>>> parent of ccd19b0 (update)
 
 class index(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
@@ -107,11 +101,8 @@ class index(LoginRequiredMixin, TemplateView):
     
 
 
-<<<<<<< HEAD
-=======
 
 
->>>>>>> parent of ccd19b0 (update)
     def handle_thumbnail(self,video, thumnail, video_id):
         if video.url_thumbnail:
             image = video.url_thumbnail
@@ -173,46 +164,5 @@ class index(LoginRequiredMixin, TemplateView):
 
         if is_edit_thumnail and is_edit_thumnail.use != request.user and thumnail:
             return JsonResponse({'success': False, 'message': 'Ảnh thumnail đang được chỉnh sửa bởi người khác!'})
-<<<<<<< HEAD
-        
-        if (is_edit_title and is_edit_thumnail and is_edit_title.use == request.user and is_edit_thumnail.use == request.user):
-            video.description = input_data['description']
-            video.keywords = input_data['keyword']
-            video.time_upload = input_data['time_upload']
-            video.date_upload = date_formatted
-            video.text_content = input_data['content']
-            if input_data['title'] != video.title and input_data['title'] and input_data['title'] != "Đang chờ cập nhật":
-                video.title = input_data['title']
-                video.save()
-                is_edit_title.title = input_data['title']
-                is_edit_title.save()
-            if thumnail:
-                video.url_thumbnail = self.handle_thumbnail(video, thumnail, video_id)
-                video.save()
-                is_edit_thumnail.url_thumnail = video.url_thumbnail
-                is_edit_thumnail.save()
-        elif is_edit_title and is_edit_title.use == request.user and input_data['title'] != video.title and input_data['title'] and input_data['title'] != "Đang chờ cập nhật":
-            self.update_video_info(video, input_data, date_formatted, json_text, thumnail, video_id)
-            is_edit_title.title = input_data['title']
-            is_edit_title.save()
-        elif is_edit_thumnail and is_edit_thumnail.use == request.user and thumnail:
-            self.update_video_info(video, input_data, date_formatted, json_text, thumnail, video_id)
-            is_edit_thumnail.url_thumnail = video.url_thumbnail
-            is_edit_thumnail.save()
-        else:
-            self.update_video_info(video, input_data, date_formatted, json_text, thumnail, video_id)
-            data = Count_Use_data.objects.create(
-                use=request.user,
-                videoRender_id=video,
-                edit_thumnail=bool(thumnail),
-                edit_title=not bool(thumnail),
-                creade_video=False,
-                title=input_data['title'],
-                url_thumnail=video.url_thumbnail if thumnail else None
-            )
-
-        return JsonResponse({'success': True, 'message': 'Cập nhật video thành công!'})
-=======
 
         return JsonResponse({'success': True, 'message': 'Cập nhật thành công!'})
->>>>>>> parent of ccd19b0 (update)
