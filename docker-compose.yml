@@ -69,8 +69,6 @@ services:
     networks:
       - web_network
       - db_network
-    depends_on:
-      - appseed
     command: celery -A core flower
 volumes:
   media_volume:
