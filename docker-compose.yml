@@ -1,17 +1,5 @@
 version: '3.8'
 services:
-  appseed:
-    container_name: appseed
-    restart: always
-    env_file: .env
-    build: .
-    volumes:
-      - ./media:/media
-    networks:
-      - db_network
-      - web_network
-    depends_on:
-      - redis2
   nginx:
     container_name: nginx_tung
     restart: always
@@ -22,9 +10,6 @@ services:
       - ./nginx:/etc/nginx/conf.d
     networks:
       - web_network
-    depends_on:
-      - appseed
-
   redis2:
     container_name: redis2
     image: "redis:latest"
