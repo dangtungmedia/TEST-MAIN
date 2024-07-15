@@ -215,12 +215,12 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             'keywords': request.data.get('keywords'),
             'date_upload': request.data.get('date_upload'),
             'time_upload': request.data.get('time_upload'),
-            'content': request.data.get('text-content'),
+            'content': request.data.get('text_content'),
             'content_2': request.data.get('text_content_2'),
             'video_image': request.data.get('video_image'),
             'file-thumnail': request.data.get('file-thumnail')
         }
-
+        print(input_data)
         date_upload = input_data['date_upload']
 
         try:
@@ -279,6 +279,8 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
                 video.date_upload = date_formatted
             if input_data.get('content'):
                 video.text_content = input_data['content']
+                print(input_data['content'])
+
             if input_data.get('content_2'):
                 video.text_content_2 = input_data['content_2']
             if input_data.get('video_image'):

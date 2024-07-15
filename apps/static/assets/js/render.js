@@ -545,7 +545,6 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#iteam-edit').val('none');
     });
 
-
     function show_modal_image(data) {
         let images;
 
@@ -647,7 +646,6 @@ document.addEventListener('DOMContentLoaded', function () {
             modalContent.css('transform', 'scale(1)');
         }, 500);
     }
-
 
     $(document).on('click', '[data-toggle="tick-icon"]', function () {
         // Ẩn tất cả các tick-icon cùng cấp
@@ -867,6 +865,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const csrfToken = getCSRFToken();
         const fetchUrl = `${protocol}//${host}/render-video/${$('#id-video-edit').val()}/update_video/`;
         const { text_content, text_content_2 } = get_text_json();
+
         images = get_image_iteam();
 
         console.log('Debug information');
@@ -930,7 +929,6 @@ document.addEventListener('DOMContentLoaded', function () {
             text_content_2.push({ id: id, text: text, url_video: url_video });
             text_content += text + '\n\n';
         });
-
         return { text_content: text_content, text_content_2: text_content_2 };
     }
     // Xử lý sự kiện click vào nút render video
@@ -938,9 +936,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Xử lý sự kiện click vào nút upload lại
 
     // Xử lý sự kiện click vào nút xóa video
-
-
-
 
     // Web Socket
     // Tạo kết nối với Web Socket
@@ -956,9 +951,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
     }
-
-
-
     // Cập NHập Trạng Thái của Web Socket
     function updateStatus() {
         var ID_VIDEOS = document.querySelectorAll('.align-middle');
