@@ -334,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
     $(document).on('click', '.btn-edit', function () {
         var id = $(this).data('id');
         show_infor_video(id);
+        $("#input-Thumnail").val('');
         $("#save-text-video").css('display', 'none');
         $('#button-back').css('display', 'none');
         $('#next-cread-image').css('display', 'block');
@@ -383,6 +384,25 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#button-back-2').css('display', 'none');
         $('#save-text-video').css('display', 'none');
     });
+
+
+    $('#input-Thumnail').change(function () {
+        var file = $(this)[0].files[0];
+
+        // Tạo một đối tượng FileReader để đọc tệp
+        var reader = new FileReader();
+
+        // Đặt hàm xử lý khi FileReader hoàn tất việc đọc tệp
+        reader.onload = function (e) {
+            // Cập nhật thuộc tính src của thẻ img để hiển thị hình ảnh
+            $('#Image-Thumnail-infor-video').attr('src', e.target.result);
+        }
+        // Đọc tệp hình ảnh dưới dạng URL dữ liệu
+        reader.readAsDataURL(file);
+
+    });
+
+
 
     $('#btn-splitText').click(function () {
         var text_content = $('#input-text-content').val();
@@ -860,14 +880,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     $(document).on('click', '#save-text-video', function () {
+
+        var file = $('#input-Thumnail')[0].files[0];
+        var id_video = $('#id-video-edit').val();
+
+        $('.btn-close').click();
+
         const host = window.location.host;
         const protocol = window.location.protocol;
         const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render-video/${$('#id-video-edit').val()}/update_video/`;
+        const fetchUrl = `${protocol}//${host}/render-video/${id_video}/update_video/`;
         const { text_content, text_content_2 } = get_text_json();
-
         images = get_image_iteam();
-
         console.log('Debug information');
         console.log(images);
         var formData = new FormData();
@@ -879,10 +903,22 @@ document.addEventListener('DOMContentLoaded', function () {
         formData.append('text_content', text_content);
         formData.append('text_content_2', JSON.stringify(text_content_2));
         formData.append('video_image', JSON.stringify(images));
-        var file = $('#input-Thumnail')[0].files[0];
+
         if (file) {
             formData.append('file-thumnail', file);
+
+            // Tạo một đối tượng FileReader để đọc tệp
+            var reader = new FileReader();
+
+            // Đặt hàm xử lý khi FileReader hoàn tất việc đọc tệp
+            reader.onload = function (e) {
+                var image = $('img.id-thumbnail-video[data-id="' + id_video + '"]');
+                image.attr('src', e.target.result);
+            }
+            // Đọc tệp hình ảnh dưới dạng URL dữ liệu
+            reader.readAsDataURL(file);
         }
+
         console.log('Debug information');
         console.log($('#id-video-edit').val());
         $.ajax({
@@ -894,7 +930,8 @@ document.addEventListener('DOMContentLoaded', function () {
             contentType: false,
             success: function (response) {
                 if (response.success === true) {
-                    $('.btn-close').click();
+                    console('Cập nhật video thành công');
+                    updateStatus();
                 } else {
                     alert(response.message);
                 }
@@ -923,7 +960,7 @@ document.addEventListener('DOMContentLoaded', function () {
         iteam_lines.forEach(iteam => {
             const id = iteam.querySelector('.iteam-id').textContent;
             const text = iteam.querySelector('.iteam-text').textContent;
-            let url_video = item.querySelector('.iteam-video-content').src;
+            let url_video = iteam.querySelector('.iteam-video-content').src;
             const host = window.location.host;
             const protocol = window.location.protocol;
             const noImageUrl = `${protocol}//${host}/static/assets/img/no-image-available.png`;
