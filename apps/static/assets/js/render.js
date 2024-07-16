@@ -934,6 +934,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     updateStatus();
                 } else {
                     alert(response.message);
+                    updateStatus();
                 }
             },
             error: function (error) {
