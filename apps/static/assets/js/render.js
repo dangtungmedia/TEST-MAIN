@@ -923,8 +923,11 @@ document.addEventListener('DOMContentLoaded', function () {
         iteam_lines.forEach(iteam => {
             const id = iteam.querySelector('.iteam-id').textContent;
             const text = iteam.querySelector('.iteam-text').textContent;
-            let url_video = iteam.querySelector('.iteam-video-content').src;
-            url_video = (url_video === "/static/assets/img/no-image-available.png") ? "" : url_video;
+            let url_video = item.querySelector('.iteam-video-content').src;
+            const host = window.location.host;
+            const protocol = window.location.protocol;
+            const noImageUrl = `${protocol}//${host}/static/assets/img/no-image-available.png`;
+            url_video = (url_video === noImageUrl) ? "" : url_video;
 
             text_content_2.push({ id: id, text: text, url_video: url_video });
             text_content += text + '\n\n';
