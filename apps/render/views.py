@@ -62,9 +62,6 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
             profile = ProfileChannel.objects.select_related('folder_name').get(id=pk)
 
             folder_id = profile.folder_name.id
-            print(folder_id)
-            print(profile.id)
-
             cache_key = f'video_render_{profile.id}'
             cached_video_url = cache.get(cache_key)
 
@@ -133,7 +130,6 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
                 text_video += video.text_video
                 count += 1
                 videos = videos.exclude(id=video.id)
-            print("search database")
             # Lưu các video đã chọn vào cache
             cache.set(cache_key, videos, 30)
 
@@ -143,7 +139,6 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
             else:
                 return JsonResponse({'error': 'No suitable video found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            print(e)
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def cread_video_render(self, folder_id, profile, text_video, url_id, upload_time, upload_date):
@@ -279,10 +274,9 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
                 video.date_upload = date_formatted
             if input_data.get('content'):
                 video.text_content = input_data['content']
-                print(input_data['content'])
-
             if input_data.get('content_2'):
                 video.text_content_2 = input_data['content_2']
+                print(input_data['content_2'])
             if input_data.get('video_image'):
                 video.video_image = input_data['video_image']
 
@@ -320,7 +314,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         data_list = list(data.values())
 
         current_date = timezone.now().date()
-        
         # Lọc theo ngày hiện tại
         if request.user.is_superuser:
             cread_video = Count_Use_data.objects.filter(creade_video=True, timenow=current_date).count()

@@ -906,7 +906,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (file) {
             formData.append('file-thumnail', file);
-
             // Tạo một đối tượng FileReader để đọc tệp
             var reader = new FileReader();
 
@@ -930,7 +929,7 @@ document.addEventListener('DOMContentLoaded', function () {
             contentType: false,
             success: function (response) {
                 if (response.success === true) {
-                    console('Cập nhật video thành công');
+                    console.log('Cập nhật video thành công');
                     updateStatus();
                 } else {
                     alert(response.message);
@@ -954,19 +953,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function get_text_json() {
-        const iteam_lines = document.querySelectorAll('.iteam-text-video');
+        let iteam_lines = document.querySelectorAll('.iteam-text-video');
         let text_content = ''; // Sử dụng let để có thể gán lại giá trị sau này.
-        const text_content_2 = [];
+        let text_content_2 = [];
 
         iteam_lines.forEach(iteam => {
-            const id = iteam.querySelector('.iteam-id').textContent;
-            const text = iteam.querySelector('.iteam-text').textContent;
+            let id = iteam.querySelector('.iteam-id').textContent;
+            let text = iteam.querySelector('.iteam-text').textContent;
             let url_video = iteam.querySelector('.iteam-video-content').src;
-            const host = window.location.host;
-            const protocol = window.location.protocol;
-            const noImageUrl = `${protocol}//${host}/static/assets/img/no-image-available.png`;
-            url_video = (url_video === noImageUrl) ? "" : url_video;
+            let host = window.location.host;
+            let protocol = window.location.protocol;
+            let noImageUrl = `${protocol}//${host}/static/assets/img/no-image-available.png`;
 
+            url_video = (url_video === noImageUrl) ? "" : url_video;
             text_content_2.push({ id: id, text: text, url_video: url_video });
             text_content += text + '\n\n';
         });
@@ -1020,8 +1019,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     $("#count-data").empty();
                     $("#count-data").html(response.text);
                     data.forEach(item => {
+                        const thumbnailUrl = item.url_thumbnail ? item.url_thumbnail : '/static/assets/img/no-image-available.png';
                         var image = $('img.id-thumbnail-video[data-id="' + item.id + '"]');
-                        image.attr('src', item.url_thumbnail);
+                        image.attr('src', thumbnailUrl);
 
                         var title = $('label.id-title-video[data-id="' + item.id + '"]');
                         title.text(item.title);

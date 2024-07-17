@@ -12,6 +12,7 @@ services:
       - web_network
   redis2:
     container_name: redis2
+    restart: always
     image: "redis:latest"
     ports:
       - "6530:6379"
@@ -22,6 +23,7 @@ services:
   celery:
     container_name: celery_worker_tung
     build: .
+    restart: always
     volumes:
       - ./media:/media
     command: celery -A core worker -l INFO --hostname=worker1@%h
@@ -64,6 +66,7 @@ services:
   flower:
     container_name: flower
     build: .
+    restart: always
     ports:
       - "5555:5555"
     networks:
