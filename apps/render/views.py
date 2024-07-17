@@ -189,9 +189,6 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
 class VideoRenderViewSet(viewsets.ModelViewSet):
     queryset = VideoRender.objects.all()
     serializer_class = RenderSerializer
@@ -334,7 +331,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             edit_thumnail = Count_Use_data.objects.filter(use=request.user, edit_thumnail=True, timenow=current_date).count()
             text = f'<span class="text-primary">{current_date}</span> ---- VIDEO: <span class="text-danger">{cread_video}</span> ---- Tiêu ĐỀ: <span class="text-danger">{edit_title}</span> ---- Thumnail: <span class="text-danger">{edit_thumnail}</span>'
         return JsonResponse({'success': True, 'data': data_list ,'text':text}, status=status.HTTP_200_OK)
-
 
 class index(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
