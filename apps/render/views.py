@@ -1,3 +1,4 @@
+from django.http.request import HttpRequest as HttpRequest
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -394,5 +395,115 @@ class index(LoginRequiredMixin, TemplateView):
             video.url_thumbnail = self.handle_thumbnail(video, thumnail, video_id)
         video.save()
 
+
+class VideoRenderList(LoginRequiredMixin, TemplateView):
+    login_url = '/login/'
+    template_name = 'render/count_data_use.html'
+    def get(self, request):
+        current_date = timezone.now().date()
+        data = []
+        date = current_date.strftime("%Y-%m-%d")
+        all_users = CustomUser.objects.all()
+        for user in all_users:
+            cread_video = Count_Use_data.objects.filter(use=user, creade_video=True, timenow=current_date).count()
+            edit_title = Count_Use_data.objects.filter(use=user, edit_title=True, timenow=current_date).count()
+            edit_thumnail = Count_Use_data.objects.filter(use=user, edit_thumnail=True, timenow=current_date).count()
+            data.append({
+                'user': user.username,
+                'cread_video': cread_video,
+                'edit_title': edit_title,
+                'edit_thumnail': edit_thumnail
+            })
+        return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
+    
+    def post(self, request):
+        action = request.POST.get('action')
+        if action == 'Seach':
+            date_upload_old = request.POST.get('date_upload_old')
+            date_upload_new = request.POST.get('date_upload_new')
+
+            # Chuyển đổi chuỗi ngày tháng thành đối tượng datetime
+            date_upload_old = timezone.datetime.strptime(date_upload_old, '%Y-%m-%d').date()
+            date_upload_new = timezone.datetime.strptime(date_upload_new, '%Y-%m-%d').date()
+
+            date_old = date_upload_old.strftime("%Y-%m-%d")
+            date_new = date_upload_new.strftime("%Y-%m-%d")
+            data = []
+            all_users = CustomUser.objects.all()
+
+            for user in all_users:
+                cread_video = Count_Use_data.objects.filter(use=user, creade_video=True, timenow__range=[date_upload_old, date_upload_new]).count()
+                edit_title = Count_Use_data.objects.filter(use=user, edit_title=True, timenow__range=[date_upload_old, date_upload_new]).count()
+                edit_thumnail = Count_Use_data.objects.filter(use=user, edit_thumnail=True, timenow__range=[date_upload_old, date_upload_new]).count()
+                data.append({
+                    'user': user.username,
+                    'cread_video': cread_video,
+                    'edit_title': edit_title,
+                    'edit_thumnail': edit_thumnail
+                })
+
+            return render(request, self.template_name, {'data': data, 'current_date_old': date_old, 'current_date_new': date_new})
+        
+        if action == 'Date-Yesterday':
+            current_date = timezone.now().date() - timedelta(days=1)
+            date = current_date.strftime("%Y-%m-%d")
+            data = []
+            all_users = CustomUser.objects.all()
+            for user in all_users:
+                cread_video = Count_Use_data.objects.filter(use=user, creade_video=True, timenow=current_date).count()
+                edit_title = Count_Use_data.objects.filter(use=user, edit_title=True, timenow=current_date).count()
+                edit_thumnail = Count_Use_data.objects.filter(use=user, edit_thumnail=True, timenow=current_date).count()
+                data.append({
+                    'user': user.username,
+                    'cread_video': cread_video,
+                    'edit_title': edit_title,
+                    'edit_thumnail': edit_thumnail
+                })
+            return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
+        
+        if action == 'Date-Today':
+            current_date = timezone.now().date()
+            date = current_date.strftime("%Y-%m-%d")
+            data = []
+            all_users = CustomUser.objects.all()
+            for user in all_users:
+                cread_video = Count_Use_data.objects.filter(use=user, creade_video=True, timenow=current_date).count()
+                edit_title = Count_Use_data.objects.filter(use=user, edit_title=True, timenow=current_date).count()
+                edit_thumnail = Count_Use_data.objects.filter(use=user, edit_thumnail=True, timenow=current_date).count()
+                data.append({
+                    'user': user.username,
+                    'cread_video': cread_video,
+                    'edit_title': edit_title,
+                    'edit_thumnail': edit_thumnail
+                })
+            return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
+        
+        if action == "Date-Month":
+            current_date = timezone.now().date()
+            first_day = current_date.replace(day=1)
+            last_day = current_date.replace(day=calendar.monthrange(current_date.year, current_date.month)[1])
+            date_old = first_day.strftime("%Y-%m-%d")
+            date_new = last_day.strftime("%Y-%m-%d")
+            data = []
+            all_users = CustomUser.objects.all()
+
+            for user in all_users:
+                cread_video = Count_Use_data.objects.filter(use=user, creade_video=True, timenow__range=[first_day, last_day]).count()
+                edit_title = Count_Use_data.objects.filter(use=user, edit_title=True, timenow__range=[first_day, last_day]).count()
+                edit_thumnail = Count_Use_data.objects.filter(use=user, edit_thumnail=True, timenow__range=[first_day, last_day]).count()
+                data.append({
+                    'user': user.username,
+                    'cread_video': cread_video,
+                    'edit_title': edit_title,
+                    'edit_thumnail': edit_thumnail
+                })
+
+            return render(request, self.template_name, {
+                'data': data, 
+                'current_date_old': date_old, 
+                'current_date_new': date_new
+            })
+
+    
 
     
