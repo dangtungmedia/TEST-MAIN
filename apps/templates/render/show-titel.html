@@ -1,9 +1,9 @@
 {% for item in page_obj %}
-    {% if item %}
+    {% if item.videoRender_id%}
         <tr>
             <th scope="row">{{ forloop.counter }}</th>
-            <td class="col-1 text-center">{{ item.name_video }}</td>
-            <td  class="col">{{ item.title }}</td>
+            <td class="col-1 text-center">{{ item.videoRender_id.name_video }}</td>
+            <td  class="col">{{ item.videoRender_id.title }}</td>
         </tr>
     {% else %}
         <tr>

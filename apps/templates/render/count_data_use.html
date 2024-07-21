@@ -1,5 +1,5 @@
 {% extends "layouts/base.html" %}
-
+{% load static %}
 {% block title %} Dashboard {% endblock %} 
 
 <!-- Specific Page CSS goes HERE  -->
@@ -49,7 +49,7 @@
                 <tr>
                     <th scope="row">{{ forloop.counter }}</th>
                     <th class="col text-center">
-                        <label>{{ item.user }}</label>
+                        <label>{{ item.user.username }}</label>
                     </th>
                     <td class="col text-center">
                         <label class="bg-success btn-sm" style='width:100px;'>{{ item.cread_video }}</label>
@@ -123,5 +123,6 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+<script src="{% static 'assets/js/countdata.js'%}"></script>
 {% endblock javascripts %}
 
