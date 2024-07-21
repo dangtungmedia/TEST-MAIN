@@ -524,11 +524,18 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
             page = request.POST.get('page')
             date_upload_old = request.POST.get('current_date_old')
             date_upload_new = request.POST.get('current_date_new')
+
+            # Chuyển đổi chuỗi ngày tháng thành đối tượng datetime
+            date_upload_old = timezone.datetime.strptime(date_upload_old, '%Y-%m-%d').date()
+            date_upload_new = timezone.datetime.strptime(date_upload_new, '%Y-%m-%d').date()
+
             user = CustomUser.objects.get(id=id)
             data = Count_Use_data.objects.filter(use=user, edit_title=True, timenow__range=[date_upload_old, date_upload_new])
-            paginator = Paginator(data,10)
+            paginator = Paginator(data, 10)
             page_obj = paginator.get_page(page)
-            title = render_to_string('render/show-title.html', {'page_obj': paginator}, request)
-            page_obj = render_to_string('render/title_page_bar_template.html', {'page_obj': page_obj}, request)
-            return JsonResponse({'success': True, 'title_html': title, 'page_bar_html': page_obj})
-    
+
+            # Sử dụng page_obj thay vì paginator khi gọi render_to_string
+            title_html = render_to_string('render/show-title.html', {'page_obj': page_obj}, request)
+            page_bar_html = render_to_string('render/title_page_bar_template.html', {'page_obj': page_obj}, request)
+
+            return JsonResponse({'success': True, 'title_html': title_html, 'page_bar_html': page_bar_html})
