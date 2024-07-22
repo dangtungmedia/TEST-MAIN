@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   nginx:
-    container_name: nginx_tung
+    container_name: newspro
     restart: always
     image: "nginx:latest"
     ports:
@@ -12,6 +12,7 @@ services:
       - web_network
   redis2:
     container_name: redis2
+    restart: always
     image: "redis:latest"
     ports:
       - "6530:6379"
@@ -22,6 +23,7 @@ services:
   celery:
     container_name: celery_worker_tung
     build: .
+    restart: always
     volumes:
       - ./media:/media
     command: celery -A core worker -l INFO --hostname=worker1@%h
@@ -64,12 +66,27 @@ services:
   flower:
     container_name: flower
     build: .
+    restart: always
     ports:
       - "5555:5555"
     networks:
       - web_network
       - db_network
     command: celery -A core flower
+
+  celery_beat:
+    container_name: celery_beat
+    build:
+      context: .
+    volumes:
+      - .:/app
+    command: celery -A core beat -l info
+    networks:
+      - db_network
+      - web_network
+    depends_on:
+      - redis2
+
 volumes:
   media_volume:
     driver: local

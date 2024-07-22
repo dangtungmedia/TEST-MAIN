@@ -6,7 +6,6 @@ from django.core.files.storage import default_storage
 from apps.home.models import Folder, Font_Text, syle_voice, Voice_language, ProfileChannel
 from django.core.cache import cache
 from apps.render.models import VideoRender
-from apps.render.cace_database import get_video_render_data_from_cache, update_video_render_data_from_cache, get_Data_Text_Video_data_from_cache, get_count_use_data_from_cache
 import requests
 import json
 import subprocess,random
@@ -32,7 +31,6 @@ def worker_shutdown_handler(sender, **kwargs):
         if "Đang Render" in video.status_video or "Đang Chờ Render" in video.status_video:
             video.status_video = f'Worker bị tắt đột ngột {worker_id}'
             video.save()
-            update_video_render_data_from_cache(video.id)
 
 
 @shared_task(bind=True)
@@ -61,6 +59,7 @@ def render_video(self,data):
     cread_subtitles(data)
 
     create_input_file_video(data)
+
     update_status_video("Render Xong : chờ upload lên kênh",video_id,task_id,worker_id) 
 
 
@@ -564,18 +563,17 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
 
-@shared_task
+@shared_task(queue='check_worker_status')
 def check_worker_status():
-    print("Kiểm tra trạng thái của các worker...")
     inspector = Celery('core').control.inspect()
     active_workers = inspector.active() or {}
     active_worker_hostnames = set(active_workers.keys())
     videos_in_progress = VideoRender.objects.filter(status_video__in=["Đang Render", "Đang Chờ Render"])
     for video in videos_in_progress:
         if video.worker_id not in active_worker_hostnames:
-            video.status_video = f'Worker {video.worker_id} không hoạt động'
+            video.status_video = f'Lỗi Render: Worker {video.worker_id} không hoạt động'
             video.save()
-            update_video_render_data_from_cache(video.id)
+    print("Worker status checked successfully.")
 
 
 def update_status_video(status_video,video_id,task_id,worker_id):
