@@ -370,15 +370,32 @@ class index(LoginRequiredMixin, TemplateView):
 
         elif action == "render-video":
             channel_name = request.POST.get('id-video-render')
-            profile = VideoRender.objects.get(id=channel_name)
-            if profile.is_render_start:
-                return JsonResponse({'success': False, 'message': 'Video đang được render!'})
-            profile.status_video = "Đang chờ render"
-            profile.save()
+            videos = VideoRender.objects.get(id=channel_name)
 
+            if "render" in videos.status_video:
+                videos.status_video = "Đang chờ render"
+                videos.save()
+                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
+            
+            elif "Đang Chờ Render" in videos.status_video or "Đang Render" in videos.status_video:
+                videos.status_video = "Render Thât Bại : Lỗi Dừng Render"
+                videos.save()
+                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
+            
+            elif "Render Thành Công" in videos.status_video:
+                videos.status_video = "Đang chờ render : Render Lại"
+                videos.save()
+                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
+            
+            elif "Render Thất Bại" in videos.status_video:
+                videos.status_video = "Đang chờ render : Render Lại"
+                videos.save()
+                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
+            
+            elif "Đang Upload Lên VPS" in videos.status_video or "Upload VPS Thành Công" in videos.status_video or "Upload VPS Thất Bại" in videos.status_video:
+                videos.status_video = "Đang chờ render"
+                videos.save()
             return JsonResponse({'success': True, 'message': 'Video đang được render!'})
-    
-
     
     def handle_thumbnail(self,video, thumnail, video_id):
         if video.url_thumbnail:

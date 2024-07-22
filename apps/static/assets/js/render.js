@@ -38,11 +38,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     </button>
                     <button class="btn btn-outline-primary btn-render" type="button" data-id="${video.id}">
                         ${video.status_video.includes('Đang chờ render video!') || video.status_video.includes('Đang Render') ? `
-                            <svg class="icon">
+                            <svg class="icon bg-warring">
                                 <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-pause"></use>
                             </svg>
                         ` : `
-                            <svg class="icon">
+                            <svg class="icon bg-green">
                                 <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-play"></use>
                             </svg>
                         `}
@@ -214,6 +214,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 show_page_bar(page, data);
                 updateStatus();
+                change_color_status();
+
 
             })
             .catch(error => console.error('Error:', error));
@@ -978,16 +980,20 @@ document.addEventListener('DOMContentLoaded', function () {
         const protocol = window.location.protocol;
         const csrfToken = getCSRFToken();
         const fetchUrl = `${protocol}//${host}/render/`;
+
         var formData = new FormData();
         formData.append('id-video-render', id);
         formData.append('action', 'render-video');
+
         $.ajax({
             url: fetchUrl,
-            type: 'GET',
+            type: 'POST',
             headers: { 'X-CSRFToken': csrfToken },
+            data: formData,
+            processData: false,
+            contentType: false,
             success: function (response) {
                 if (response.success === true) {
-                    console.log('Render video thành công');
                     updateStatus();
                 } else {
                     alert(response.message);
@@ -998,7 +1004,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
 
     // Xử lý sự kiện click vào nút upload lại
 
@@ -1071,4 +1076,43 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }
 
+    function change_color_status() {
+        // Lấy tất cả các phần tử có class "status-video"
+        const textstatuss = document.querySelectorAll('.status-video');
+        // Duyệt qua từng phần tử
+        textstatuss.forEach(textstatus => {
+            // Lấy trạng thái văn bản
+            const status = textstatus.textContent.trim();
+
+            // Thay đổi màu nền dựa trên trạng thái
+            switch (status) {
+                case 'render':
+                    textstatus.classList.add('text-info'); // Thêm lớp màu cho trạng thái 'render'
+                    break;
+                case 'Đang Chờ Render':
+                    textstatus.classList.add('text-secondary');
+                    break;
+                case 'Đang Render':
+                    textstatus.classList.add('text-Lime');
+                    break;
+                case 'Render Thành Công':
+                    textstatus.classList.add('text-success');
+                    break;
+                case 'Render Thất Bại':
+                    textstatus.classList.add('text-danger');
+                    break;
+                case 'Đang Upload Lên VPS':
+                    textstatus.classList.add('text-info');
+                    break;
+                case 'Upload VPS Thành Công':
+                    textstatus.classList.add('text-success');
+                    break;
+                case 'Upload VPS Thất Bại':
+                    textstatus.classList.add('text-danger');
+                    break;
+                default:
+                    textstatus.classList.add('text-primary'); // Màu mặc định cho các trạng thái không xác định
+            }
+        });
+    }
 });
