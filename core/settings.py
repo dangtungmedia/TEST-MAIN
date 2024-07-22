@@ -4,6 +4,9 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 import os, environ
+from celery.schedules import crontab
+from kombu import Queue
+from celery.schedules import schedule
 
 env = environ.Env(
     # set casting, default value
@@ -209,4 +212,6 @@ AWS_SECRET_ACCESS_KEY = 'EtuAUr7hiyOQr3LGRbIJvWAlA25oX4GSfahDCCBE'
 AWS_STORAGE_BUCKET_NAME = '19425936-media'
 AWS_S3_ENDPOINT_URL = 'https://s3-hcm5-r1.longvan.net/'
 AWS_QUERYSTRING_EXPIRE = 31*24*3600*1000
+
+
 

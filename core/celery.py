@@ -1,6 +1,9 @@
 import os
 
 from celery import Celery
+from celery.schedules import crontab
+from kombu import Queue
+from celery.schedules import schedule
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
@@ -16,12 +19,21 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
 
+
+
+
+# Celery Beat schedule
 app.conf.beat_schedule = {
-    'check-worker-status-every-60-seconds': {
-        'task': 'apps.render.task.check_worker_status',
-        'schedule': 15,
+    'check_worker_status': {
+        'task': 'apps.render.tasks.check_worker_status',
+        'schedule': crontab(minute='*'),
+        'options': {
+            'queue': 'check_worker_status',
+        },
     },
 }
+
+
 
 app.conf.timezone = 'UTC'
 

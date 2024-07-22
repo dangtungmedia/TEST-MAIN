@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   nginx:
-    container_name: nginx_tung
+    container_name: newspro
     restart: always
     image: "nginx:latest"
     ports:
@@ -73,6 +73,20 @@ services:
       - web_network
       - db_network
     command: celery -A core flower
+
+  celery_beat:
+    container_name: celery_beat
+    build:
+      context: .
+    volumes:
+      - .:/app
+    command: celery -A core beat -l info
+    networks:
+      - db_network
+      - web_network
+    depends_on:
+      - redis2
+
 volumes:
   media_volume:
     driver: local
