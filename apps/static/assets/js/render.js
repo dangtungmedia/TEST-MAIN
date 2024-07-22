@@ -972,6 +972,33 @@ document.addEventListener('DOMContentLoaded', function () {
         return { text_content: text_content, text_content_2: text_content_2 };
     }
     // Xử lý sự kiện click vào nút render video
+    $(document).on('click', '.btn-render', function () {
+        var id = $(this).data('id');
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const fetchUrl = `${protocol}//${host}/render/`;
+        var formData = new FormData();
+        formData.append('id-video-render', id);
+        formData.append('action', 'render-video');
+        $.ajax({
+            url: fetchUrl,
+            type: 'GET',
+            headers: { 'X-CSRFToken': csrfToken },
+            success: function (response) {
+                if (response.success === true) {
+                    console.log('Render video thành công');
+                    updateStatus();
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+    });
+
 
     // Xử lý sự kiện click vào nút upload lại
 

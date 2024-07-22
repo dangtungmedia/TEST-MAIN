@@ -366,6 +366,19 @@ class index(LoginRequiredMixin, TemplateView):
             file_name = self.get_filename_from_url(image)
             default_storage.delete(f"data/{channel_name}/image/{file_name}")
             return JsonResponse({'success': True, 'message': 'Xóa ảnh thành công!'})
+        
+
+        elif action == "render-video":
+            channel_name = request.POST.get('id-video-render')
+            profile = VideoRender.objects.get(id=channel_name)
+            if profile.is_render_start:
+                return JsonResponse({'success': False, 'message': 'Video đang được render!'})
+            profile.status_video = "Đang chờ render"
+            profile.save()
+
+            return JsonResponse({'success': True, 'message': 'Video đang được render!'})
+    
+
     
     def handle_thumbnail(self,video, thumnail, video_id):
         if video.url_thumbnail:
