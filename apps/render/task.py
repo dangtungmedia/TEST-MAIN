@@ -214,7 +214,6 @@ def create_video_file(data, task_id, worker_id):
 
     try:
         result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"ffmpeg output: {result.stdout}")
     except subprocess.CalledProcessError as e:
         print(f"ffmpeg failed with error: {e.stderr}")
         return
@@ -295,7 +294,7 @@ def create_subtitles(data, task_id, worker_id):
         color_backrought = data.get('color_backrought')
         color_border = data.get('stroke')
         font_text = data.get("font_name")
-        font_size = data.get('font_name')
+        font_size = data.get('font_size')
         stroke_text = data.get('stroke_size')
         text  = data.get('text_content')
         font_name = os.path.basename(font_text).split('.')[0]
