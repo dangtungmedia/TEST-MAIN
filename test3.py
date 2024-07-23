@@ -165,8 +165,6 @@ def get_audio_duration(file_path):
         print(f"Lỗi khi lấy thông tin từ file âm thanh: {e}")
         return None
 
-
-
 def translate_text(text, src_lang='auto', dest_lang='en'):
     translator = Translator()
     translation = translator.translate(text, src=src_lang, dest=dest_lang)
@@ -201,7 +199,6 @@ def search_pixabay_videos(api_key, query, min_duration):
                         filtered_videos.append(video['url'])
     return filtered_videos
 
-
 def get_video_random(data,duration,input_text,file_name):
     translated_text = translate_text(input_text)
     # Find the main keywords in the translated sentence
@@ -227,10 +224,6 @@ def get_video_random(data,duration,input_text,file_name):
                 f.write(chunk)
 
         return video_path
-
-
-
-
 
 # Get video free pik
 def cread_video(data):
@@ -309,6 +302,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
     except subprocess.CalledProcessError as e:
         print(f"lỗi chạy FFMPEG {e}")
 
+
 def image_to_video_zoom_in(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])
     base_video = get_random_video_from_directory(overlay_video)
@@ -382,7 +376,6 @@ def create_input_file(data):
             '-safe', '0',
             '-i', f'media/{video_id}/input_files.txt',
             '-c', 'copy',
-
             f'media/{video_id}/cache.wav'
         ]
         # Chạy lệnh FFmpeg
@@ -448,8 +441,6 @@ def create_input_file(data):
     ]
     subprocess.run(ffmpeg_encode_command, check=True)
 
-
-
 def create_input_file_video(data):
     video_id = data.get('video_id')
     font_text = data.get("font_name")
@@ -458,49 +449,42 @@ def create_input_file_video(data):
 
     # Tạo file subtitles.ass
     ass_file_path = f'media/{video_id}/subtitles.ass'
-
     # Tạo file input_files_video.txt
     input_files_video_path = f'media/{video_id}/input_files_video.txt'
+    os.makedirs(os.path.dirname(input_files_video_path), exist_ok=True)
     with open(input_files_video_path, 'w') as file:
         for item in json.loads(text):
             file.write(f"file 'video/{item['id']}.mp4'\n")
 
     audio_file = f'media/{video_id}/audio.wav'
     fonts_dir = os.path.dirname(font_text)
-    
+
     # Kiểm tra sự tồn tại của file audio
     if not os.path.exists(audio_file):
         print(f"Audio file not found: {audio_file}")
         return
     
-    # Lệnh ffmpeg để nối video và chèn subtitles
     ffmpeg_command = [
-    'ffmpeg',
-    '-f', 'concat',
-    '-safe', '0',
-    '-i', input_files_video_path,
-    '-i', audio_file,
-    '-c:v', 'libx264',
-    '-preset', 'ultrafast',
-    '-crf', '18',
-    '-c:a', 'aac',
-    '-b:a', '192k',
-    '-ac', '2',
-    '-strict', 'experimental',
-    '-vf', f"ass={ass_file_path}:fontsdir={fonts_dir}",
-    '-r', '30',
-    '-shortest',
-    '-y',
-    f"media/{video_id}/{name_video}.mp4"
+        'ffmpeg',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', input_files_video_path,
+        '-i', audio_file,
+        '-vf', f"ass={ass_file_path}:fontsdir={fonts_dir}",
+        '-c:v','libx264',
+        '-map', '0:v', 
+        '-map', '1:a', 
+        '-y',
+        f"media/{video_id}/{name_video}.mp4"
     ]
 
     try:
-        result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(f"ffmpeg output: {result.stdout.decode()}")
+        result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(f"ffmpeg output: {result.stdout}")
     except subprocess.CalledProcessError as e:
-        print(f"ffmpeg failed with error: {e.stderr.decode()}")
+        print(f"ffmpeg failed with error: {e.stderr}")
+        return
     
-
 def download_voice(data):
     language = data.get('language')
     video_id = data.get('video_id')
@@ -620,6 +604,7 @@ def get_random_video_from_directory(directory_path):
     video_files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
     return os.path.join(directory_path, random.choice(video_files))
 
+
 def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video):
     video_length = get_video_duration(input_video)
     start_time = random.uniform(0, video_length - duration)
@@ -642,13 +627,14 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "-filter_complex", f"[0:v]scale={scale_width}:{scale_height}[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay[outv]",
             "-map", "[outv]",
             '-r', '30',
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "18",
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',
             "-an",
-            "-y",
+            '-y',  # Overwrite output file if exists
             output_video
         ]
+
+        
     else:
         cmd = [
             "ffmpeg",
@@ -657,11 +643,10 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "-i", input_video,
             "-vf", f"scale={scale_width}:{scale_height}",
             '-r', '30',
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "18",
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',
             "-an",
-            "-y",
+            '-y',  # Overwrite output file if exists
             output_video
         ]
     try:
@@ -671,11 +656,12 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
         print(f"An error occurred: {e}")
 
 
+
 text = '[{"id":"1","text":"안녕하세요, 저는 미국 챈들러 시의 작은 마을에서 살고 있는 킨슬리라고 합니다. 1111","url_video":"https://s3-hcm5-r1.longvan.net/19425936-media/data/234/image/438271633_425260880366527_5894690682966802905_n.jpg?AWSAccessKeyId=AUQESQVFF01YMVGUPVF9&Signature=VUoi5kDmj0BOIfZiFp1wcJ1a2ZY%3D&Expires=4400032607"},{"id":"2","text":"제겐 정말 괴짜 같은 아빠가 있는데요,","url_video":""},{"id":"3","text":"아빠는 한국 브랜드인 삼성에서 돈을 받은 것도 아닌데,","url_video":"https://s3-hcm5-r1.longvan.net/19425936-media/data/234/image/438271633_425260880366527_5894690682966802905_n.jpg?AWSAccessKeyId=AUQESQVFF01YMVGUPVF9&Signature=VUoi5kDmj0BOIfZiFp1wcJ1a2ZY%3D&Expires=4400032607"},{"id":"4","text":"마을 이곳저곳에 삼성을 홍보하고 다니고 있고,","url_video":""},{"id":"5","text":"한국 기업의 제품이라면 일단 구매부터 해보는 등,","url_video":"https://s3-hcm5-r1.longvan.net/19425936-media/data/234/image/438271633_425260880366527_5894690682966802905_n.jpg?AWSAccessKeyId=AUQESQVFF01YMVGUPVF9&Signature=VUoi5kDmj0BOIfZiFp1wcJ1a2ZY%3D&Expires=4400032607"},{"id":"6","text":"남들이 봤을 때는 도통 이해할 수 없는 행동을 하시곤 했죠.","url_video":""}]'
 
 image = ["https://s3-hcm5-r1.longvan.net/19425936-media/data/234/image/438271633_425260880366527_5894690682966802905_n.jpg?AWSAccessKeyId=AUQESQVFF01YMVGUPVF9&Signature=VUoi5kDmj0BOIfZiFp1wcJ1a2ZY%3D&Expires=4400032607"]
 
-font_text = "apps/static/assets/fonts/Korea/Sokcho Bada Dotum TTF.ttf"
+font_text = r"apps/static/assets/fonts/Korea/Sokcho Bada Dotum TTF.ttf"
 
 data = {
     'video_id': 234,
@@ -683,10 +669,10 @@ data = {
     'text': text,
     'images': image,
     'font_name': font_text,
-    'font_size': 50,
-    'color': 'white',
-    'color_backrought': 'black',
-    'color_border': 'black',
+    'font_size': 90,
+    'color': '&H00FFFFFF&',
+    'color_backrought': '&H00FFFFFF&',
+    'color_border': '&H00000000&',
     'stroke_text': 2,
     'language': 'Korea-TTS',
     'voice_id': '1',
@@ -694,6 +680,8 @@ data = {
 }
 
 # download_image(data)
+
+# download_voice(data)
 
 # cread_video(data)
 
@@ -703,6 +691,5 @@ data = {
 
 # create_input_file_video(data)
 
-# render_video(data)
+render_video(data)
 
-# download_voice(data)

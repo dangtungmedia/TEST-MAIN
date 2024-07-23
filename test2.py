@@ -21,7 +21,6 @@ def merge_audio_video(video_path, audio_path, output_path):
         '-y',
         output_path
     ]
-
     try:
         process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()

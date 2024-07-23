@@ -72,7 +72,6 @@ $ pip3 install -r requirements.txt
 ```
 
 <br />
-
 > Set Up Database
 
 ```bash

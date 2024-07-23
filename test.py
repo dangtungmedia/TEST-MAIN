@@ -38,7 +38,4 @@ print(f"Original text: {input_text}")
 print(f"Translated text: {translated_text}")
 print(f"Keywords: {keywords}")
 
-
-
-
 # https://www.pexels.com/_next/data/xxlKmaj_HcAZ7qYWjlvew/en-US/search/videos/korea.json?query=korea
