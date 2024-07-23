@@ -3,7 +3,6 @@ from celery import shared_task,Celery
 import os, shutil,urllib
 import time
 from django.core.files.storage import default_storage
-from apps.home.models import Folder, Font_Text, syle_voice, Voice_language, ProfileChannel
 from django.core.cache import cache
 from apps.render.models import VideoRender
 import requests
@@ -16,6 +15,34 @@ import base64
 from celery.signals import task_failure, worker_shutdown
 from celery.utils.log import get_task_logger
 import os, environ
+
+from gtts import gTTS
+
+import edge_tts
+import asyncio
+
+from pydub import AudioSegment
+from pydub.silence import detect_nonsilent
+import math
+
+import os
+import requests
+import urllib
+
+import edge_tts,random,subprocess
+import asyncio,json,shutil
+from pydub import AudioSegment
+import nltk
+from googletrans import Translator
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.probability import FreqDist
+from pydub import AudioSegment
+from pydub.silence import detect_nonsilent
+import math
+from datetime import timedelta
+from pydub import AudioSegment
+from PIL import Image, ImageDraw, ImageFont
 
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
@@ -35,80 +62,163 @@ def worker_shutdown_handler(sender, **kwargs):
 
 @shared_task(bind=True)
 def render_video(self,data):
-    pass
-    print(data)
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
-    update_status_video("Đang Render",video_id,task_id,worker_id) 
 
-    if not os.path.exists('media'):
-        os.makedirs('media')
+    update_status_video("Đang Render : Đang load thông tin video", data['video_id'], task_id, worker_id)
+    success =  create_or_reset_directory(f'media/{video_id}')
 
-    create_or_reset_directory(f'media/{video_id}')
+    if not success:
+        update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Tạo thư mục thành công", data['video_id'], task_id, worker_id)
+
+    # Tải xuống hình ảnh
+    success = download_image(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể tải xuống hình ảnh", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
+
+    # Tải xuống âm thanh
+    success = download_audio(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
 
 
-    download_image(data)
+    # Tạo video
+    success = create_video(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể tạo video", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Tạo video thành công", data['video_id'], task_id, worker_id)
 
-    download_voice(data)
 
-    cread_video(data)
+    #nối giọng đọc và chèn nhạc nền
+    success = merge_audio_video(data, task_id, worker_id)
 
-    create_input_file(data)
+    if not success:
+        update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
 
-    cread_subtitles(data)
 
-    create_input_file_video(data)
+    # Tạo phụ đề cho video
+    success = create_subtitles(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể tạo phụ đề", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Tạo phụ đề thành công", data['video_id'], task_id, worker_id)
 
-    update_status_video("Render Xong : chờ upload lên kênh",video_id,task_id,worker_id) 
+    # Tạo file
+    success = create_video_file(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể tạo file", data['video_id'], task_id, worker_id)
+        return
+    
+    update_status_video("Đang Render : Tạo file thành công", data['video_id'], task_id, worker_id)
+    time.sleep(5)
 
-def get_filename_from_url(url):
-    parsed_url = urllib.parse.urlparse(url)
-    path = parsed_url.path
-    filename = path.split('/')[-1]
-    return filename
+    success = upload_video(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
+        return
+    
+    update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
-def cread_subtitles(data):
+def upload_video(data, task_id, worker_id):
+    try:
+        video_id = data.get('video_id')
+        name_video = data.get('name_video')
+        video_path = f'media/{video_id}/{name_video}.mp4'
+        SECRET_KEY = "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
+        SERVER = '127.0.0.1:8000'
+        url = f'http://{SERVER}/api/{video_id}/'
+        
+        payload = {
+            'video_id': video_id,
+            'action': 'upload',
+            'secret_key': SECRET_KEY
+        }
+
+        def create_multipart_encoder(file_path, fields):
+            return MultipartEncoder(
+                fields={**fields, 'file': (name_video + '.mp4', open(file_path, 'rb'), 'video/mp4')}
+            )
+
+        def create_multipart_monitor(encoder):
+            monitor = MultipartEncoderMonitor(encoder, progress_callback)
+            return monitor
+
+        def progress_callback(monitor):
+            progress = (monitor.bytes_read / monitor.len) * 100
+            update_status_video(f"Đang Render : Đang Upload File Lên Sever {progress:.2f}%", video_id, task_id, worker_id)
+
+        encoder = create_multipart_encoder(video_path, payload)
+        monitor = create_multipart_monitor(encoder)
+
+        headers = {'Content-Type': monitor.content_type}
+
+        response = requests.post(url, data=monitor, headers=headers)
+        
+        
+
+        if response.status_code == 201:
+            return True
+        else:
+            print(f"Failed to upload: {response.status_code}, {response.text}")
+            return False
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+
+def create_video_file(data, task_id, worker_id):
     video_id = data.get('video_id')
-    subtitle_file = f'media/{video_id}/subtitles.ass'
-    color = data.get('color')
-    color_backrought = data.get('color_backrought')
-    color_border = data.get('color_border')
     font_text = data.get("font_name")
-    font_size = data.get('font_size')
-    stroke_text = data.get('stroke_text')
-    text  = data.get('text')
-    font_name = os.path.basename(font_text).split('.')[0]
+    name_video = data.get('name_video')
+    text = data.get('text_content')
 
-    with open(subtitle_file, 'w', encoding='utf-8') as ass_file:
-        # Viết header cho file ASS
-        ass_file.write("[Script Info]\n")
-        ass_file.write("Title: Subtitles\n")
-        ass_file.write("ScriptType: v4.00+\n")
-        ass_file.write("WrapStyle: 0\n")
-        ass_file.write("ScaledBorderAndShadow: yes\n")
-        ass_file.write("YCbCr Matrix: TV.601\n")
-        ass_file.write(f"PlayResX: 1920\n")
-        ass_file.write(f"PlayResY: 1080\n\n")
+    # Tạo file subtitles.ass
+    ass_file_path = f'media/{video_id}/subtitles.ass'
+    # Tạo file input_files_video.txt
+    input_files_video_path = f'media/{video_id}/input_files_video.txt'
+    os.makedirs(os.path.dirname(input_files_video_path), exist_ok=True)
+    with open(input_files_video_path, 'w') as file:
+        for item in json.loads(text):
+            file.write(f"file 'video/{item['id']}.mp4'\n")
 
-        ass_file.write("[V4+ Styles]\n")
-        ass_file.write("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
-        ass_file.write(f"Style: Default,{font_name},{font_size},{color},{color_backrought},&H00000000,{color_border},0,0,0,0,100,100,0,0,1,{stroke_text},0,2,10,10,10,0\n\n")
+    audio_file = f'media/{video_id}/audio.wav'
+    fonts_dir = os.path.dirname(font_text)
 
-        ass_file.write("[Events]\n")
-        ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")
+    # Kiểm tra sự tồn tại của file audio
+    if not os.path.exists(audio_file):
+        print(f"Audio file not found: {audio_file}")
+        return
+    
+    ffmpeg_command = [
+        'ffmpeg',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', input_files_video_path,
+        '-i', audio_file,
+        '-vf', f"ass={ass_file_path}:fontsdir={fonts_dir}",
+        '-c:v','libx264',
+        '-map', '0:v', 
+        '-map', '1:a', 
+        '-y',
+        f"media/{video_id}/{name_video}.mp4"
+    ]
 
-        start_time = timedelta(0)
-        for iteam in json.loads(text):
-            # audio = AudioSegment.from_wav(f'media/{video.id}/voice/{iteam["id"]}.wav')
-            duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
-            print(duration)
-            duration_milliseconds = duration * 1000
-            end_time = start_time + timedelta(milliseconds=duration_milliseconds)
-            # end_time = start_time + duration
-            # Viết phụ đề
-            ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
-            start_time = end_time
+    try:
+        result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(f"ffmpeg output: {result.stdout}")
+    except subprocess.CalledProcessError as e:
+        print(f"ffmpeg failed with error: {e.stderr}")
+        return
+    return True
 
 def get_text_lines(data,text):
     current_line = ""
@@ -176,6 +286,156 @@ def format_timedelta_ass(ms):
     seconds = int(seconds)
     return "{:01}:{:02}:{:02}.{:02}".format(int(hours), int(minutes), seconds, milliseconds)
 
+
+def create_subtitles(data, task_id, worker_id):
+    try:
+        video_id = data.get('video_id')
+        subtitle_file = f'media/{video_id}/subtitles.ass'
+        color = data.get('font_color')
+        color_backrought = data.get('color_backrought')
+        color_border = data.get('stroke')
+        font_text = data.get("font_name")
+        font_size = data.get('font_name')
+        stroke_text = data.get('stroke_size')
+        text  = data.get('text_content')
+        font_name = os.path.basename(font_text).split('.')[0]
+
+        with open(subtitle_file, 'w', encoding='utf-8') as ass_file:
+            # Viết header cho file ASS
+            ass_file.write("[Script Info]\n")
+            ass_file.write("Title: Subtitles\n")
+            ass_file.write("ScriptType: v4.00+\n")
+            ass_file.write("WrapStyle: 0\n")
+            ass_file.write("ScaledBorderAndShadow: yes\n")
+            ass_file.write("YCbCr Matrix: TV.601\n")
+            ass_file.write(f"PlayResX: 1920\n")
+            ass_file.write(f"PlayResY: 1080\n\n")
+
+            ass_file.write("[V4+ Styles]\n")
+            ass_file.write("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
+            ass_file.write(f"Style: Default,{font_name},{font_size},{color},{color_backrought},&H00000000,{color_border},0,0,0,0,100,100,0,0,1,{stroke_text},0,2,10,10,10,0\n\n")
+
+            ass_file.write("[Events]\n")
+            ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")
+
+            start_time = timedelta(0)
+            for iteam in json.loads(text):
+                # audio = AudioSegment.from_wav(f'media/{video.id}/voice/{iteam["id"]}.wav')
+                duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
+                print(duration)
+                duration_milliseconds = duration * 1000
+                end_time = start_time + timedelta(milliseconds=duration_milliseconds)
+                # end_time = start_time + duration
+                # Viết phụ đề
+                ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+                start_time = end_time
+        return True
+    except:
+        return False
+
+def merge_audio_video(data, task_id, worker_id):
+    try:
+        update_status_video("Đang Render : đang nghép giọng đọc ", data['video_id'], task_id, worker_id)
+        fade_duration=2000
+        video_id = data.get('video_id')
+        ffmpeg_command = [
+                'ffmpeg',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', f'media/{video_id}/input_files.txt',
+                '-c', 'copy',
+                f'media/{video_id}/cache.wav'
+            ]
+            # Chạy lệnh FFmpeg
+        subprocess.run(ffmpeg_command, check=True)
+        
+        music_path = random.choice([f for f in os.listdir('music_background') if os.path.isfile(os.path.join('music_background', f))])
+        music_path = os.path.join('music_background',music_path)
+
+        voice = AudioSegment.from_file(f'media/{video_id}/cache.wav')
+        music = AudioSegment.from_file(music_path)
+
+        # Lặp lại nhạc nền để đảm bảo đủ độ dài
+        while len(music) < len(voice):
+            music += music
+        
+        # Chỉnh âm lượng nhạc nền
+        db_reduction_during_speech = 20 * math.log10(0.10)  # Giảm âm lượng nhạc nền xuống 6%
+        db_reduction_without_speech = 20 * math.log10(0.14)  # Giảm âm lượng nhạc nền xuống 14%
+        
+        # Phát hiện các đoạn không im lặng trong giọng nói
+        nonsilent_ranges = detect_nonsilent(voice, min_silence_len=500, silence_thresh=voice.dBFS-16)
+
+
+        # Tạo bản sao của nhạc nền để điều chỉnh
+        adjusted_music = AudioSegment.silent(duration=len(voice))
+
+        current_position = 0
+        for start, end in nonsilent_ranges:
+            # Chèn nhạc nền trong khoảng trước đoạn giọng nói (nếu có)
+            if start > current_position:
+                segment = music[current_position:start].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2).fade_out(fade_duration // 2)
+                adjusted_music = adjusted_music.overlay(segment, position=current_position)
+            
+            # Chèn nhạc nền trong đoạn có giọng nói
+            segment = music[start:end].apply_gain(db_reduction_during_speech)
+            adjusted_music = adjusted_music.overlay(segment, position=start)
+            
+            current_position = end
+        
+        # Chèn nhạc nền sau đoạn giọng nói cuối cùng (nếu có)
+        if current_position < len(voice):
+            segment = music[current_position:].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2)
+            adjusted_music = adjusted_music.overlay(segment, position=current_position)
+        
+        # Thêm giọng nói vào nhạc nền đã điều chỉnh
+        combined = adjusted_music.overlay(voice, loop=False)
+        
+        
+
+        output_wav_path = f'media/{video_id}/chace1.wav'
+        
+        # Xuất file âm thanh kết hợp
+        combined.export(output_wav_path, format="wav")
+
+        # Mã hóa âm thanh đầu ra thành định dạng MP3
+        output_mp3_path = f'media/{video_id}/audio.wav'
+        ffmpeg_encode_command = [
+            'ffmpeg',
+            '-i', output_wav_path,
+            '-codec:a', 'libmp3lame',
+            '-q:a', '2',
+            output_mp3_path
+        ]
+        subprocess.run(ffmpeg_encode_command, check=True)
+        return True
+    except Exception as e:
+        return False
+
+
+def get_video_duration(video_path):
+    # Lệnh ffprobe để lấy thông tin video dưới dạng JSON
+    command = [
+        "ffprobe",
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=duration",
+        "-of", "json",
+        video_path
+    ]
+    
+    # Chạy lệnh ffprobe và lấy đầu ra
+    result = subprocess.run(command, capture_output=True, text=True)
+    
+    # Chuyển đổi đầu ra từ JSON thành dictionary
+    result_json = json.loads(result.stdout)
+    
+    # Lấy thời lượng từ dictionary
+    duration = float(result_json['streams'][0]['duration'])
+    
+    return duration
+
+
 def get_audio_duration(file_path):
     try:
         # Gọi lệnh ffprobe để lấy thông tin về file âm thanh
@@ -186,39 +446,164 @@ def get_audio_duration(file_path):
         print(f"Lỗi khi lấy thông tin từ file âm thanh: {e}")
         return None
 
-def cread_video(data):
-    list_video = []
+
+def format_time(seconds):
+    """Chuyển đổi thời gian từ giây thành định dạng hh:mm:ss.sss"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = seconds % 60
+    return f"{hours:02}:{minutes:02}:{secs:06.3f}"
+
+
+def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video):
+    video_length = get_video_duration(input_video)
+    start_time = random.uniform(0, video_length - duration)
+    end_time = start_time + duration
+    start_time_str = format_time(start_time)
+    end_time_str = format_time(end_time)
+    base_video = get_random_video_from_directory(overlay_video)
+    is_overlay_video = random.choice([True, False])
+    
+    if is_overlay_video:
+        cmd = [
+            "ffmpeg",
+            "-ss", start_time_str,
+            "-to", end_time_str,
+            "-i", input_video,
+            "-ss", start_time_str,
+            "-to", end_time_str,
+            "-i", base_video,
+            '-framerate','30',
+            "-filter_complex", f"[0:v]scale={scale_width}:{scale_height}[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay[outv]",
+            "-map", "[outv]",
+            '-r', '30',
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',
+            "-an",
+            '-y',  # Overwrite output file if exists
+            output_video
+        ]
+
+        
+    else:
+        cmd = [
+            "ffmpeg",
+            "-ss", start_time_str,
+            "-to", end_time_str,
+            "-i", input_video,
+            "-vf", f"scale={scale_width}:{scale_height}",
+            '-r', '30',
+            '-c:v', 'libx264',
+            '-pix_fmt', 'yuv420p',
+            "-an",
+            '-y',  # Overwrite output file if exists
+            output_video
+        ]
+    try:
+        # Chạy lệnh FFmpeg
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred: {e}")
+
+
+def translate_text(text, src_lang='auto', dest_lang='en'):
+    translator = Translator()
+    translation = translator.translate(text, src=src_lang, dest=dest_lang)
+    return translation.text
+
+def find_keywords(text, num_keywords=5):
+    # Tokenize the text
+    tokens = word_tokenize(text)
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    filtered_tokens = [word for word in tokens if word.lower() not in stop_words]
+    # Compute the frequency distribution
+    freq_dist = FreqDist(filtered_tokens)
+    # Get the most common keywords
+    keywords = [word for word, freq in freq_dist.most_common(num_keywords)]
+    return keywords
+
+def search_pixabay_videos(api_key, query, min_duration):
+     
+    filtered_videos = []
+    for page in range(1,2):
+        url = f"https://pixabay.com/api/videos/?key={api_key}&q={query}&per_page=200&page={page}"
+        print(url)
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            for item in data['hits']:
+                for video in item['videos'].values():
+                    if video['height'] == 1080 and item['duration'] >= min_duration:
+                        filtered_videos.append(video['url'])
+    return filtered_videos
+
+
+def get_video_random(data,duration,input_text,file_name):
+    translated_text = translate_text(input_text)
+    # Find the main keywords in the translated sentence
+    keywords = find_keywords(translated_text)
+    # Tìm video từ Pixabay
+    api_key = "38396855-7183824f50d61fd232c569758" 
+
+    list_url = []
+    for keyword in keywords:
+        result = search_pixabay_videos(api_key, keyword, duration)
+        list_url.extend(result)
+    list_url.extend(result)
+
     video_id = data.get('video_id')
-    text  = data.get('text')
-    create_or_reset_directory(f'media/{video_id}/video')
-    for iteam in json.loads(text):
-        duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
-        files = [f for f in os.listdir('video') if os.path.isfile(os.path.join('video', f))]
-        out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
-        if iteam['url_video'] == '':
-            while True:
-                try:
-                    random_file = random.choice(files)
-                    video_path = os.path.join('video', random_file)
-                    if os.path.exists(video_path):
-                        video_duration = get_video_duration(video_path)
-                        print(f"Duration: {video_duration},{duration}")
-                        if random_file not in list_video and duration < video_duration:
-                            list_video.append(random_file)
-                            break
-                    else:
-                        print(f"File not found: {video_path}")
-                except Exception as e:
-                    print(f"Error processing file {random_file}: {e}")
-            cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
-        else:
-            randoom_choice = random.choice([True, False])
-            file = get_filename_from_url(iteam['url_video'])
-            image_file = f'media/{video_id}/image/{file}'
-            if randoom_choice:
-                image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
+    create_or_reset_directory(f'media/{video_id}/videodownload')
+    choice = random.choice(list_url)
+    
+    response = requests.get(choice, stream=True)
+    if response.status_code == 200:
+        video_path = f'media/{video_id}/videodownload/{file_name}.mp4'
+        with open(video_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=1024):
+                f.write(chunk)
+
+        return video_path
+
+
+def create_video(data, task_id, worker_id):
+    try:
+        video_id = data.get('video_id')
+        text  = data.get('text_content')
+
+        create_or_reset_directory(f'media/{video_id}/video')
+        processed_entries = 0
+        total_entries = len(json.loads(text))
+        for iteam in json.loads(text):
+            duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
+            out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
+
+            if iteam['url_video'] == '':
+                video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
+                cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
+
             else:
-                image_to_video_zoom_out(image_file, out_file, duration, 1920, 1080, 'video_screen')
+                randoom_choice = random.choice([True, False])
+                file = get_filename_from_url(iteam['url_video'])
+                image_file = f'media/{video_id}/image/{file}'
+                if randoom_choice:
+                    image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
+                else:
+                    image_to_video_zoom_out(image_file, out_file, duration, 1920, 1080, 'video_screen')
+            processed_entries += 1
+            percent_complete = (processed_entries / total_entries) * 100
+            update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+        return True  
+    except Exception as e:
+        return False
+
+
+
+def get_random_video_from_directory(directory_path):
+    video_files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
+    return os.path.join(directory_path, random.choice(video_files))
+
 
 def image_to_video_zoom_out(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])
@@ -259,6 +644,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
         subprocess.run(ffmpeg_command, check=True)
     except subprocess.CalledProcessError as e:
         print(f"lỗi chạy FFMPEG {e}")
+
 
 def image_to_video_zoom_in(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])
@@ -302,245 +688,151 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
     except subprocess.CalledProcessError as e:
         print(f"lỗi chạy FFMPEG {e}")
 
-def get_video_duration(video_path):
-    # Lệnh ffprobe để lấy thông tin video dưới dạng JSON
-    command = [
-        "ffprobe",
-        "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "stream=duration",
-        "-of", "json",
-        video_path
-    ]
-    
-    # Chạy lệnh ffprobe và lấy đầu ra
-    result = subprocess.run(command, capture_output=True, text=True)
-    
-    # Chuyển đổi đầu ra từ JSON thành dictionary
-    result_json = json.loads(result.stdout)
-    
-    # Lấy thời lượng từ dictionary
-    duration = float(result_json['streams'][0]['duration'])
-    
-    return duration
 
-def create_input_file(data):
-    video_id = data.get('video_id')
-    ffmpeg_command = [
-            'ffmpeg',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', f'media/{video_id}/input_files.txt',
-            '-c', 'copy',
-            f'media/{video_id}/audio.wav'
-        ]
-        # Chạy lệnh FFmpeg
-    subprocess.run(ffmpeg_command, check=True)
+def download_audio(data, task_id, worker_id):
+    try:
+        language = data.get('language')
+        video_id = data.get('video_id')
+        text = data.get('text_content')
 
-def create_input_file_video(data):
-    video_id = data.get('video_id')
-    font_text = data.get("font_name")
-    name_video = data.get('name_video')
-    text = data.get('text')
+        text_entries = json.loads(text)
+        total_entries = len(text_entries)
+        processed_entries = 0
 
-    # Tạo file subtitles.ass
-    ass_file_path = f'media/{video_id}/subtitles.ass'
+        if language == 'Japanese-VoiceVox':
+            with open(f'media/{video_id}/input_files.txt', 'w') as file:
+                for text_entry in text_entries:
+                    file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
+                    get_voice_japanese(data, text_entry['text'], file_name)
+                    processed_entries += 1
+                    percent_complete = (processed_entries / total_entries) * 100
+                    update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+                    file.write(f"file 'voice/{text_entry['id']}.wav'\n")
 
-    # Tạo file input_files_video.txt
-    with open(f'media/{video_id}/input_files_video.txt', 'w') as file:
-        for item in json.loads(text):
-            file.write(f"file 'video/{item['id']}.mp4'\n")
-    
-    audio_file = f'media/{video_id}/audio.wav'
-    fonts_dir = os.path.dirname(font_text)
-    
-    # Lệnh ffmpeg để nối video và chèn subtitles
-    ffmpeg_command = [
-        'ffmpeg',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', f'media/{video_id}/input_files_video.txt',
-        '-i', audio_file,
-        '-vf', f"ass={ass_file_path}:fontsdir={fonts_dir}",
-        '-r', '30',
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '18',
-        '-c:a', 'aac',
-        '-strict', 'experimental',
-        '-shortest',
-        '-y',
-        f"media/{video_id}/{name_video}.mp4"
-    ]
+        elif language == 'Korea-TTS':
+            with open(f'media/{video_id}/input_files.txt', 'w') as file:
+                for text_entry in text_entries:
+                    file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
+                    get_voice_korea(data, text_entry['text'], file_name)
+                    processed_entries += 1
+                    percent_complete = (processed_entries / total_entries) * 100
+                    update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+                    file.write(f"file 'voice/{text_entry['id']}.wav'\n")
+        return True
+    except Exception as e:
+        return False
 
-    subprocess.run(ffmpeg_command, check=True)
+async def text_to_speech(text, voice, output_file):
+    communicate = edge_tts.Communicate(text=text, voice=voice)
+    await communicate.save(output_file)
 
-def download_voice(data):
-    language = data.get('language')
-    video_id = data.get('video_id')
-    text  = data.get('text')
-    if language == 'Japanese-VoiceVox':
-        with open(f'media/{video_id}/input_files.txt', 'w') as file:
-            for text in json.loads(text):
-                file_name = f'media/{video_id}/voice/{text["id"]}.wav'
-                get_voice_japanese(data,text['text'],file_name)
-                print(f"Đã tải xuống giọng nói cho văn bản '{text['text']}' thành công.")
-                file.write(f"file 'voice/{text['id']}.wav'\n")
-
-    elif language == 'Korea-TTS':
-        with open(f'media/{video_id}/input_files.txt', 'w') as file:
-            for text in json.loads(text):
-                file_name = f'media/{video_id}/voice/{text["id"]}.wav'
-                get_voice_korea(data,text['text'],file_name)
-                print(f"Đã tải xuống giọng nói cho văn bản '{text['text']}' thành công.")
-                file.write(f"file 'voice/{text['id']}.wav'\n")
-
-def  get_voice_korea(data, text, file_name):
-    voice_id = data.get('voice_id')
-    api_key = data.get('api_voice_korea')
-    url = 'https://api.ttsmaker.com/v1/create-tts-order'
-    headers = {'Content-Type': 'application/json; charset=utf-8'}
-    params = {
-        'token': api_key,
-        'text': text,
-        'voice_id': voice_id,
-        'audio_format': 'wav',
-        'audio_speed': "1.0",
-        'audio_volume':  0,
-        'text_paragraph_pause_time': 0
-    }
-    response = requests.post(url, headers=headers, data=json.dumps(params))
-
-
-    # Tạo thư mục nếu chưa tồn tại
+def get_voice_korea(data, text, file_name):
     directory = os.path.dirname(file_name)
+    name_langue = data.get('name_langue')
     if not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True)
-        
-    if response.status_code == 200:
-        data =  response.json()
-        response = requests.get(data['audio_file_url'])
-        with open(file_name, 'wb') as f:
-            f.write(response.content)
-            
+    asyncio.run(text_to_speech(text,name_langue, file_name))
+
+
 def get_voice_japanese(data, text, file_name):
-    voice_id = data.get('voice_id')
+    try:
+        voice_id = data.get('voice_id')
 
-    url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
-    response_query = requests.post(url_query, params={'text': text})
-    query_json = response_query.json()
+        url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
+        response_query = requests.post(url_query, params={'text': text})
+        response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
+        
+        query_json = response_query.json()
 
-    # Bước 3: Thay đổi giá trị speedScale trong tệp JSON
-    query_json["speedScale"] = 1.0
-    # Bước 4: Gửi yêu cầu POST để tạo tệp âm thanh với tốc độ đã thay đổi
-    url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
-    headers = {"Content-Type": "application/json"}
-    response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
+        # Thay đổi giá trị speedScale trong tệp JSON
+        query_json["speedScale"] = 1.0
 
-    # Tạo thư mục nếu chưa tồn tại
-    directory = os.path.dirname(file_name)
-    if not os.path.exists(directory):
-        os.makedirs(directory, exist_ok=True)
+        # Gửi yêu cầu POST để tạo tệp âm thanh với tốc độ đã thay đổi
+        url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
+        headers = {"Content-Type": "application/json"}
+        response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
+        response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
 
-    # Ghi nội dung phản hồi vào tệp
-    with open(file_name, 'wb') as f:
-        f.write(response_synthesis.content)
-    
-    print(f"Kết quả đã được lưu tại {file_name}")
+        # Tạo thư mục nếu chưa tồn tại
+        directory = os.path.dirname(file_name)
+        if not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
 
-def download_image(data):
+        # Ghi nội dung phản hồi vào tệp
+        with open(file_name, 'wb') as f:
+            f.write(response_synthesis.content)
+    except requests.RequestException as e:
+        pass
+    except Exception as e:
+        pass
+
+
+def get_filename_from_url(url):
+    parsed_url = urllib.parse.urlparse(url)
+    path = parsed_url.path
+    filename = path.split('/')[-1]
+    return filename
+
+
+def download_image(data, task_id, worker_id):
     video_id = data.get('video_id')
-    images = data.get('images')
+    update_status_video(f"Đang Render : Bắt đầu tải xuống hình ảnh", video_id, task_id, worker_id)
+
     local_directory = os.path.join('media', str(video_id), 'image')
     os.makedirs(local_directory, exist_ok=True)
-    for image in images:
-        response = requests.get(image, stream=True)
-        file_path = os.path.join(local_directory, get_filename_from_url(image))
-        if response.status_code == 200:
-            with open(file_path, 'wb') as file:
-                for chunk in response.iter_content(1024):
-                    file.write(chunk)
-            print(f"Tải xuống thành công: {file_path}")
-            break
-        else:
-            print(f"Lỗi tải xuống, mã trạng thái: {response.status_code}")
+
+    success = True  # Biến để theo dõi trạng thái tải xuống
+    images_str = data.get('images')
+    if not images_str:
+        return True
+    
+    for image in json.loads(data.get('images')):
+        image_downloaded = False
+        for attempt in range(30):
+            try:
+                response = requests.get(image, stream=True)
+                if response.status_code == 200:
+                    file_path = os.path.join(local_directory, get_filename_from_url(image))
+                    with open(file_path, 'wb') as file:
+                        for chunk in response.iter_content(1024):
+                            file.write(chunk)
+                    image_downloaded = True
+                    update_status_video(f"Đang Render : Tải xuống hình ảnh thành công", video_id, task_id, worker_id)
+                    break
+                else:
+                    pass
+            except requests.RequestException as e:
+                pass
+            except Exception as e:
+                pass
+            time.sleep(1)
+        # Nếu không tải được hình ảnh sau 30 lần thử, thay đổi trạng thái thành False
+        if not image_downloaded:
+            success = False
+            update_status_video(f"Đang Render : Không thể tải xuống hình ảnh", video_id, task_id, worker_id)
+    return success
+
 
 def create_or_reset_directory(directory_path):
-    # Kiểm tra xem thư mục có tồn tại hay không
-    if os.path.exists(directory_path):
-        # Kiểm tra xem thư mục có trống hay không
-        if os.listdir(directory_path):
-            # Nếu không trống, xóa thư mục và toàn bộ nội dung bên trong
-            shutil.rmtree(directory_path)
-            print(f"Đã xóa thư mục '{directory_path}' và toàn bộ nội dung.")
-        else:
-            # Nếu trống, chỉ xóa thư mục
-            os.rmdir(directory_path)
-            print(f"Đã xóa thư mục trống '{directory_path}'.")
-    # Tạo lại thư mục
-    os.makedirs(directory_path)
-    print(f"Đã tạo lại thư mục '{directory_path}'.")
-
-def format_time(seconds):
-    """Chuyển đổi thời gian từ giây thành định dạng hh:mm:ss.sss"""
-    hours = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    secs = seconds % 60
-    return f"{hours:02}:{minutes:02}:{secs:06.3f}"
-
-def get_random_video_from_directory(directory_path):
-    video_files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
-    return os.path.join(directory_path, random.choice(video_files))
-
-def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video):
-    video_length = get_video_duration(input_video)
-    start_time = random.uniform(0, video_length - duration)
-    end_time = start_time + duration
-    start_time_str = format_time(start_time)
-    end_time_str = format_time(end_time)
-    base_video = get_random_video_from_directory(overlay_video)
-    is_overlay_video = random.choice([True, False])
-    
-    if is_overlay_video:
-        cmd = [
-            "ffmpeg",
-            "-ss", start_time_str,
-            "-to", end_time_str,
-            "-i", input_video,
-            "-ss", start_time_str,
-            "-to", end_time_str,
-            "-i", base_video,
-            '-framerate','30',
-            "-filter_complex", f"[0:v]scale={scale_width}:{scale_height}[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay[outv]",
-            "-map", "[outv]",
-            '-r', '30',
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "18",
-            "-an",
-            "-y",
-            output_video
-        ]
-    else:
-        cmd = [
-            "ffmpeg",
-            "-ss", start_time_str,
-            "-to", end_time_str,
-            "-i", input_video,
-            "-vf", f"scale={scale_width}:{scale_height}",
-            '-r', '30',
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "18",
-            "-an",
-            "-y",
-            output_video
-        ]
     try:
-        # Chạy lệnh FFmpeg
-        subprocess.run(cmd, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred: {e}")
+        # Kiểm tra xem thư mục có tồn tại hay không
+        if os.path.exists(directory_path):
+            # Kiểm tra xem thư mục có trống hay không
+            if os.listdir(directory_path):
+                # Nếu không trống, xóa thư mục và toàn bộ nội dung bên trong
+                shutil.rmtree(directory_path)
+                print(f"Đã xóa thư mục '{directory_path}' và toàn bộ nội dung.")
+            else:
+                # Nếu trống, chỉ xóa thư mục
+                os.rmdir(directory_path)
+                print(f"Đã xóa thư mục trống '{directory_path}'.")
+        # Tạo lại thư mục
+        os.makedirs(directory_path)
+        return True
+    except Exception as e:
+        print(f"Lỗi: {e}")
+        return False
+    
 
 @shared_task(queue='check_worker_status')
 def check_worker_status():
@@ -563,8 +855,10 @@ def update_status_video(status_video,video_id,task_id,worker_id):
         'status': status_video,
         'task_id': task_id,
         'worker_id': worker_id,
-        'secret_key': SECRET_KEY
+        'secret_key': SECRET_KEY,
+        'action': 'update_status'
     }
+
     response = requests.post(url, json=data)
 
     # Kiểm tra phản hồi từ server

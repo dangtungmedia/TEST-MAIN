@@ -227,7 +227,6 @@ def get_video_random(data,duration,input_text,file_name):
 
 # Get video free pik
 def cread_video(data):
-    list_video = []
     video_id = data.get('video_id')
     text  = data.get('text')
     create_or_reset_directory(f'media/{video_id}/video')
@@ -235,24 +234,11 @@ def cread_video(data):
         duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
         files = [f for f in os.listdir('video') if os.path.isfile(os.path.join('video', f))]
         out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
-        if iteam['url_video'] == '':
-            while True:
-                try:
-                    random_file = random.choice(files)
-                    video_path = os.path.join('video', random_file)
-                    if os.path.exists(video_path):
-                        video_duration = get_video_duration(video_path)
-                        print(f"Duration: {video_duration},{duration}")
-                        if random_file not in list_video and duration < video_duration:
-                            list_video.append(random_file)
-                            break
-                    else:
-                        print(f"File not found: {video_path}")
-                except Exception as e:
-                    print(f"Error processing file {random_file}: {e}")
 
+        if iteam['url_video'] == '':
             video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
             cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
+
         else:
             randoom_choice = random.choice([True, False])
             file = get_filename_from_url(iteam['url_video'])
@@ -261,6 +247,9 @@ def cread_video(data):
                 image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
             else:
                 image_to_video_zoom_out(image_file, out_file, duration, 1920, 1080, 'video_screen')
+
+
+
 
 def image_to_video_zoom_out(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])

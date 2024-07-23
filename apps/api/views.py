@@ -8,8 +8,6 @@ import os
 import shutil
 import tempfile
 import requests
-
-from apps.render.cace_database import get_video_render_data_from_cache, update_video_render_data_from_cache, get_Data_Text_Video_data_from_cache, get_count_use_data_from_cache
 from apps.home.models import Voice_language, syle_voice,ProfileChannel
 from apps.render.models import VideoRender
 import json
@@ -23,14 +21,26 @@ class ApiApp(APIView):
         task_id = data.get('task_id')
         worker_id = data.get('worker_id')
         secret_key = data.get('secret_key')
+        action = data.get('action')
         if secret_key != "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%":
             return Response({"error": "Invalid secret key"}, status=403)
-
-        else:
+        elif action == "update_status":
             video = VideoRender.objects.get(id=video_id)
             video.status_video = status
             video.task_id = task_id
             video.worker_id = worker_id
             video.save()
-            update_video_render_data_from_cache(video.id)
             return Response({"message": "Hello, world!"})
+        elif action == "upload":
+            video = VideoRender.objects.get(id=video_id)
+            video.task_id = task_id
+            video.worker_id = worker_id
+            file_obj = request.FILES['file']
+            if file_obj:
+                file_image = default_storage.save(f"data/{video.id}/{file_obj}", file_obj)
+                file_url = default_storage.url(file_image)
+                video.file_video = file_url
+            video.save()
+            return Response({"message": "Hello, world!"})
+        
+        

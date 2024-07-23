@@ -350,7 +350,6 @@ class index(LoginRequiredMixin, TemplateView):
     def post(self, request):
         action = request.POST.get('action')
         if action == 'add-image-video':
-            print(action)
             channel_name = request.POST.get('id-video-render')
             profile = VideoRender.objects.get(id=channel_name)
             image = request.FILES.get('file')
@@ -366,36 +365,48 @@ class index(LoginRequiredMixin, TemplateView):
             file_name = self.get_filename_from_url(image)
             default_storage.delete(f"data/{channel_name}/image/{file_name}")
             return JsonResponse({'success': True, 'message': 'Xóa ảnh thành công!'})
-        
 
         elif action == "render-video":
             channel_name = request.POST.get('id-video-render')
-            videos = VideoRender.objects.get(id=channel_name)
+            video = VideoRender.objects.get(id=channel_name)
+            data = self.get_inforender(video.id)
 
-            if "render" in videos.status_video:
-                videos.status_video = "Đang chờ render"
-                videos.save()
+            if "render" in video.status_video:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render"
+                video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
-            elif "Đang Chờ Render" in videos.status_video or "Đang Render" in videos.status_video:
-                videos.status_video = "Render Thât Bại : Lỗi Dừng Render"
-                videos.save()
+            elif "Render Thành Công" in video.status_video:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Render Lại"
+                video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
-            elif "Render Thành Công" in videos.status_video:
-                videos.status_video = "Đang chờ render : Render Lại"
-                videos.save()
+            elif "Render Lỗi" in video.status_video:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Render Lại"
+                video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
-            elif "Render Thất Bại" in videos.status_video:
-                videos.status_video = "Đang chờ render : Render Lại"
-                videos.save()
+            
+            elif "Đang Chờ Render" in video.status_video or "Đang Render" in video.status_video:
+                result = AsyncResult(video.task_id)
+                result.revoke(terminate=True)
+                video.task_id = ''
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
-            elif "Đang Upload Lên VPS" in videos.status_video or "Upload VPS Thành Công" in videos.status_video or "Upload VPS Thất Bại" in videos.status_video:
-                videos.status_video = "Đang chờ render"
-                videos.save()
-            return JsonResponse({'success': True, 'message': 'Video đang được render!'})
+            elif "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render"
+                video.save()
+                return JsonResponse({'success': True, 'message': 'Video đang được render!'})
     
     def handle_thumbnail(self,video, thumnail, video_id):
         if video.url_thumbnail:
@@ -422,6 +433,46 @@ class index(LoginRequiredMixin, TemplateView):
         video.save()
 
 
+    def get_inforender(self,id_video):
+        video = VideoRender.objects.get(id=id_video)
+        language = Voice_language.objects.get(id=video.voice)
+        voice = syle_voice.objects.get(id=video.voice_style)
+        data  = {
+            'video_id': video.id,
+            'name_video': video.name_video,
+            'text_content': video.text_content_2,
+            'images': video.video_image,
+            'font_name': video.font_text,
+            'font_size': video.font_size,
+            'font_bold': video.font_bold,
+            'font_italic': video.font_italic,
+            'font_underline': video.font_underline,
+            'font_strikeout': video.font_strikeout,
+            'font_color': self.convert_color_to_ass(video.font_color,video.font_color_opacity),
+            'color_backrought': self.convert_color_to_ass(video.font_background,video.channel_font_background_opacity),
+            'stroke': self.convert_color_to_ass(video.font_color_troke,video.font_color_troke_opacity),
+            'stroke_size': video.stroke_text,
+            'language': language.name,
+            'style': voice.id_style,
+            'name_langue': voice.name_voice,
+            'url_audio': video.url_audio,
+            'url_subtitle': video.url_subtitle,
+            }
+        return data
+        
+    def convert_color_to_ass(self,color_hex, opacity):
+        # Chuyển đổi mã màu HEX sang RGB
+        r = int(color_hex[1:3], 16)
+        g = int(color_hex[3:5], 16)
+        b = int(color_hex[5:7], 16)
+        
+        # Tính giá trị Alpha từ độ trong suốt
+        alpha = round(255 * (1 - opacity / 100))
+        
+        # Định dạng lại thành mã màu ASS
+        ass_color = f"&H{alpha:02X}{b:02X}{g:02X}{r:02X}&"
+        
+        return ass_color
 class VideoRenderList(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'render/count_data_use.html'
@@ -530,7 +581,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'current_date_new': date_new
             })
 
-        
         elif action == 'show-thumnail':
             id = request.POST.get('id')
             page = request.POST.get('page')
