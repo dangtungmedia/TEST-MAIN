@@ -62,7 +62,6 @@ def render_video(self,data):
 
     update_status_video("Render Xong : chờ upload lên kênh",video_id,task_id,worker_id) 
 
-
 def get_filename_from_url(url):
     parsed_url = urllib.parse.urlparse(url)
     path = parsed_url.path
@@ -388,33 +387,13 @@ def download_voice(data):
                 print(f"Đã tải xuống giọng nói cho văn bản '{text['text']}' thành công.")
                 file.write(f"file 'voice/{text['id']}.wav'\n")
 
-    elif language == 'Korea-ttsmaker':
+    elif language == 'Korea-TTS':
         with open(f'media/{video_id}/input_files.txt', 'w') as file:
             for text in json.loads(text):
                 file_name = f'media/{video_id}/voice/{text["id"]}.wav'
                 get_voice_korea(data,text['text'],file_name)
                 print(f"Đã tải xuống giọng nói cho văn bản '{text['text']}' thành công.")
                 file.write(f"file 'voice/{text['id']}.wav'\n")
-
-
-
-    # language = Voice_language.objects.get(id=video.voice)
-    # if language.name == 'Japanese-VoiceVox':
-    #     print('giọng đọc tiếng nhật')
-    #     with open(f'media/{video.id}/input_files.txt', 'w') as file:
-    #         for text in json.loads(video.text_content_2):
-    #             file_name = f'media/{video.id}/voice/{text["id"]}.wav'
-    #             get_voice_japanese(video,text['text'],file_name)
-    #             print(f"Đã tải xuống giọng nói cho văn bản '{text['text']}' thành công.")
-    #             file.write(f"file 'voice/{text['id']}.wav'\n")
-
-    # elif language.name == 'Korea-ttsmaker':
-    #     with open(f'media/{video.id}/input_files.txt', 'w') as file:
-    #         for text in json.loads(video.text_content_2):
-    #             file_name = f'media/{video.id}/voice/{text["id"]}.wav'
-    #             get_voice_korea(video,text['text'],file_name)
-    #             print(f"Đã tải xuống giọng nói cho văn bản '{text['text']}' thành công.")
-    #             file.write(f"file 'voice/{text['id']}.wav'\n")
 
 def  get_voice_korea(data, text, file_name):
     voice_id = data.get('voice_id')
@@ -574,7 +553,6 @@ def check_worker_status():
             video.status_video = f'Lỗi Render: Worker {video.worker_id} không hoạt động'
             video.save()
     print("Worker status checked successfully.")
-
 
 def update_status_video(status_video,video_id,task_id,worker_id):
     SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"

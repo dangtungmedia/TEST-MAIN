@@ -1,47 +1,45 @@
-from pydub import AudioSegment
-from pydub.silence import detect_nonsilent
-import numpy as np
+import subprocess
 
-def adjust_background_music(voice_path, music_path, output_path):
-    # Đọc file âm thanh
-    voice = AudioSegment.from_file(voice_path)
-    music = AudioSegment.from_file(music_path)
-    
-    # Chỉnh âm lượng nhạc nền
-    db_reduction_during_speech = 20 * math.log10(0.03)  # Giảm âm lượng nhạc nền xuống 6%
-    db_reduction_without_speech = 20 * math.log10(0.15)  # Giảm âm lượng nhạc nền xuống 14%
-    
-    # Phát hiện các đoạn không im lặng trong giọng nói
-    nonsilent_ranges = detect_nonsilent(voice, min_silence_len=500, silence_thresh=voice.dBFS-16)
-    
-    # Tạo bản sao của nhạc nền để điều chỉnh
-    adjusted_music = AudioSegment.silent(duration=len(voice))
-    
-    current_position = 0
-    for start, end in nonsilent_ranges:
-        # Chèn nhạc nền trong khoảng trước đoạn giọng nói (nếu có)
-        if start > current_position:
-            segment = music[current_position:start].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2).fade_out(fade_duration // 2)
-            adjusted_music = adjusted_music.overlay(segment, position=current_position)
-        
-        # Chèn nhạc nền trong đoạn có giọng nói
-        segment = music[start:end].apply_gain(db_reduction_during_speech)
-        adjusted_music = adjusted_music.overlay(segment, position=start,loop=True)
-        
-        current_position = end
-    
-    # Chèn nhạc nền sau đoạn giọng nói cuối cùng (nếu có)
-    if current_position < len(voice):
-        segment = music[current_position:].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2)
-        adjusted_music = adjusted_music.overlay(segment, position=current_position)
-    
-    # Thêm giọng nói vào nhạc nền đã điều chỉnh
-    combined = adjusted_music.overlay(voice, loop=False)
-music_path = 'background_music.mp3'
-output_path = 'output_with_music.mp3'
+def merge_audio_video(video_path, audio_path, output_path):
+    """
+    Merges an audio file into a video file using FFmpeg.
 
-music_path = 'news-time-141357.mp3'
-output_path = 'out.mp3'
+    Parameters:
+    video_path (str): The path to the input video file.
+    audio_path (str): The path to the input audio file.
+    output_path (str): The path to the output video file.
+    """
+    ffmpeg_command = [
+        'ffmpeg',
+        '-i', video_path,
+        '-i', audio_path,
+        '-c:v', 'copy',
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-strict', 'experimental',
+        '-shortest',
+        '-y',
+        output_path
+    ]
 
+    try:
+        process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
 
-adjust_background_music(voice_path, music_path, output_path)
+        print("FFmpeg stdout:\n", stdout.decode())
+        print("FFmpeg stderr:\n", stderr.decode())
+
+        if process.returncode != 0:
+            raise Exception("FFmpeg command failed with return code {}".format(process.returncode))
+        else:
+            print(f"Successfully merged audio and video into {output_path}")
+    
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Example usage
+video_path = "media/234/PQKOBYZ98Q.mp4"
+audio_path = "media/234/audio.wav"
+output_path = "media/234/final_video.mp4"
+
+merge_audio_video(video_path, audio_path, output_path)
