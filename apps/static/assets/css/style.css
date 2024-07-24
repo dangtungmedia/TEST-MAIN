@@ -10523,3 +10523,7 @@ html:not([dir="rtl"]) .rounded-start {
     font-family: 'Korea-Sokcho Bada Dotum';
     src: url('/static/assets/fonts/Korea/Sokcho Bada Dotum.otf') format('opentype');
 }
+
+.hidden {
+  display: none;
+}

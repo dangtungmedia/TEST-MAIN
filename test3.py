@@ -16,6 +16,7 @@ import math
 from datetime import timedelta
 from pydub import AudioSegment
 from PIL import Image, ImageDraw, ImageFont
+from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 
 # Download the necessary NLTK data files
 nltk.download('punkt')
@@ -39,6 +40,58 @@ def render_video(data):
     cread_subtitles(data)
 
     create_input_file_video(data)
+
+
+
+def upload_video(data, task_id, worker_id):
+    try:
+        video_id = data.get('video_id')
+        name_video = data.get('name_video')
+        video_path = f'media/{video_id}/{name_video}.mp4'
+        SECRET_KEY = "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
+        SERVER = '127.0.0.1:8000'
+        url = f'http://{SERVER}/api/{video_id}/'
+        
+        payload = {
+            'video_id': str(video_id),
+            'action': 'upload',
+            'secret_key': SECRET_KEY
+        }
+
+        def create_multipart_encoder(file_path, fields):
+            # Ensure all field values are strings
+            fields = {key: str(value) for key, value in fields.items()}
+            return MultipartEncoder(
+                fields={**fields, 'file': (file_path, open(file_path, 'rb'), 'video/mp4')}
+            )
+
+        def create_multipart_monitor(encoder, progress_callback):
+            monitor = MultipartEncoderMonitor(encoder, progress_callback)
+            return monitor
+
+        def progress_callback(monitor):
+            progress = (monitor.bytes_read / monitor.len) * 100
+            print(f"Upload progress: {progress:.2f}%")
+            # update_status_video(f"Đang Render : Đang Upload File Lên Sever {progress:.2f}%", video_id, task_id, worker_id)
+
+        with open(video_path, 'rb') as f:
+            encoder = create_multipart_encoder(video_path, payload)
+            monitor = create_multipart_monitor(encoder, progress_callback)
+            headers = {'Content-Type': monitor.content_type}
+
+            response = requests.post(url, data=monitor, headers=headers)
+
+            if response.status_code == 201:
+                return True
+            else:
+                print(f"Failed to upload: {response.status_code}, {response.text}")
+                return False
+        
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+
+
 
 
 def get_filename_from_url(url):
@@ -247,8 +300,6 @@ def cread_video(data):
                 image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
             else:
                 image_to_video_zoom_out(image_file, out_file, duration, 1920, 1080, 'video_screen')
-
-
 
 
 def image_to_video_zoom_out(input_image, output_video, duration, scale_width, scale_height, overlay_video):
@@ -678,7 +729,9 @@ data = {
 
 # cread_subtitles(data)
 
-create_input_file_video(data)
+# create_input_file_video(data)
 
 # render_video(data)
 
+
+upload_video(data,'none','none')

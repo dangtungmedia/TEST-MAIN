@@ -371,17 +371,20 @@ class index(LoginRequiredMixin, TemplateView):
             video = VideoRender.objects.get(id=channel_name)
             data = self.get_inforender(video.id)
 
+            #  In các tệp trong thư mục cụ thể
+            # folder_path = f"data/{video.id}"
+            # _, files = default_storage.listdir(folder_path)
+            # if files:
+            #     print(files)
+            #     for file in files:
+            #         default_storage.delete(f"{folder_path}/{file}")
+            #         print(f"Đã xóa tệp {file}")
+            # return JsonResponse({'success': True, 'message': 'Video đang được render!'})
+
             if "render" in video.status_video:
                 task = render_video.apply_async(args=[data])
                 video.task_id = task.id
                 video.status_video = "Đang chờ render"
-                video.save()
-                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
-            
-            elif "Render Thành Công" in video.status_video:
-                task = render_video.apply_async(args=[data])
-                video.task_id = task.id
-                video.status_video = "Đang chờ render : Render Lại"
                 video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
@@ -392,7 +395,6 @@ class index(LoginRequiredMixin, TemplateView):
                 video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
-            
             elif "Đang Chờ Render" in video.status_video or "Đang Render" in video.status_video:
                 result = AsyncResult(video.task_id)
                 result.revoke(terminate=True)
@@ -401,10 +403,14 @@ class index(LoginRequiredMixin, TemplateView):
                 video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
-            elif "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
+            elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
                 task = render_video.apply_async(args=[data])
                 video.task_id = task.id
                 video.status_video = "Đang chờ render"
+                folder_path = f"data/{video.id}"
+                file =  self.get_filename_from_url(video.url_video)
+                default_storage.delete(f"{folder_path}/{file}")
+                video.url_video =''
                 video.save()
                 return JsonResponse({'success': True, 'message': 'Video đang được render!'})
     

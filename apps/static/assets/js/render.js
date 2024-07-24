@@ -5,16 +5,42 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#channel_name').change(function () {
         get_video_render(1);
     });
+
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
     }
 
+    // Hàm để lấy SVG logo dựa trên trạng thái
     function show_video(video, count) {
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
         tr.setAttribute('data-id', video.id);
-
         const thumbnailUrl = video.url_thumbnail ? video.url_thumbnail : '/static/assets/img/no-image-available.png';
+        const isDisabled = video.url_video === '' ? 'disabled' : '';
+
+        function getLogoByStatus(status) {
+            if (status.includes('Đang chờ render video!') || status.includes('Đang Render')) {
+                return `
+                    <svg class="icon bg-warring">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-pause"></use>
+                    </svg>
+                `;
+            } else if (status.includes('Render') || status.includes('Render Thành Công') ||
+                status.includes('Đang Upload Lên VPS') || status.includes('Upload VPS Thành Công') ||
+                status.includes('Upload Lỗi')) {
+                return `
+                    <svg class="icon bg-green">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-play"></use>
+                    </svg>
+                `;
+            } else {
+                return `
+                    <svg class="icon bg-default">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-play"></use>
+                    </svg>
+                `;
+            }
+        }
 
         tr.innerHTML = `
             <td class="col-auto gap-0" style="width:40px; padding-left:1rem;">
@@ -26,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <td class="col">
                 <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>
                 <div>
-                    <button class="btn btn-outline-primary" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary btn-play-video" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video" ${isDisabled}>
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use>
                         </svg>
@@ -37,15 +63,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         </svg>
                     </button>
                     <button class="btn btn-outline-primary btn-render" type="button" data-id="${video.id}">
-                        ${video.status_video.includes('Đang chờ render video!') || video.status_video.includes('Đang Render') ? `
-                            <svg class="icon bg-warring">
-                                <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-pause"></use>
-                            </svg>
-                        ` : `
-                            <svg class="icon bg-green">
-                                <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-play"></use>
-                            </svg>
-                        `}
+                        ${getLogoByStatus(video.status_video)}
                     </button>
                     <button class="btn btn-outline-primary" type="button" data-id="${video.id}">
                         <svg class="icon">
@@ -62,11 +80,14 @@ document.addEventListener('DOMContentLoaded', function () {
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-trash"></use>
                         </svg>
                     </button>
-                    <label class="col-form-label time-upload-video" data-id="${video.id}" >Ngày Upload ${video.date_upload} Giờ Upload ${video.time_upload}</label>
+                    <label class="col-form-label time-upload-video" data-id="${video.id}">Ngày Upload ${video.date_upload} Giờ Upload ${video.time_upload}</label>
                 </div>
             </td>
             <td class="col text-center">
-                <div class="col-form-label status-video" data-id="${video.id}">${video.status_video}</div>
+                <div class="col-form-label status-video" style="width:300px;"data-id="${video.id}">
+                    ${video.status_video}
+
+                </div>
             </td>
             <td class="col text-center">
                 <div class="col-form-label">${video.name_video}</div>
@@ -76,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </td>
         `;
         document.getElementById("myTbody").appendChild(tr);
-
+        change_color_status();
     }
 
     function show_page_bar(page, data) {
@@ -214,9 +235,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 show_page_bar(page, data);
                 updateStatus();
-                change_color_status();
-
-
             })
             .catch(error => console.error('Error:', error));
     }
@@ -251,6 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => console.error('Error:', error));
     });
+
 
     $("#create_videos_news").click(async function () {
         console.log('Create videos');
@@ -345,6 +364,8 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#edit_text_video').css('display', 'none');
         $('#input-infor-video').css('display', 'flex');
         $('#input-image-and-text').css('display', 'none');
+
+
     });
 
     $("#button-back").click(function () {
@@ -387,7 +408,6 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#save-text-video').css('display', 'none');
     });
 
-
     $('#input-Thumnail').change(function () {
         var file = $(this)[0].files[0];
 
@@ -406,6 +426,77 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+    $('#inputAudio').change(function () {
+        var file = $(this)[0].files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $('#inputAudio').css('display', 'block');
+                $('#url-audio').css('display', 'none');
+                $('#btnChangeFileAudio').css('display', 'block');
+                $('#btnDeleteFileAudio').css('display', 'block');
+                $('#input-text-content').prop('disabled', true); // Sửa đổi chỗ này
+            }
+            reader.readAsDataURL(file);
+        } else {
+            $('#inputAudio').css('display', 'block');
+            $('#btnChangeFileAudio').css('display', 'none');
+            $('#btnDeleteFileAudio').css('display', 'none');
+            $('#url-audio').css('display', 'none');
+            $('#input-text-content').prop('disabled', false);
+        }
+    });
+
+
+    $('#inputSrt').change(function () {
+
+        var file = $(this)[0].files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                $('#inputSrt').css('display', 'block');
+                $('#url-srt').css('display', 'none');
+                $('#btnChangeFileSrt').css('display', 'block');
+                $('#btnDeleteFileSrt').css('display', 'block');
+                $('#input-text-content').prop('disabled', true); // Sửa đổi chỗ này
+            }
+            reader.readAsDataURL(file);
+        } else {
+            $('#inputSrt').css('display', 'block');
+            $('#btnChangeFileSrt').css('display', 'none');
+            $('#btnDeleteFileSrt').css('display', 'none');
+            $('#url-srt').css('display', 'none');
+            $('#input-text-content').prop('disabled', false);
+        }
+    });
+
+
+
+    function FileUpload() {
+        var file_audio = $('#inputAudio')[0].files[0];
+        var file_srt = $('#inputSrt')[0].files[0];
+        var url_audio = $('#url-audio').val();
+        var url_srt = $('#url-srt').val();
+
+
+        if (file_audio && file_srt) {
+            $('#input-text-content').prop('disabled', true);
+
+
+
+
+
+        }
+
+
+    }
+
+
+
+
+
+
+    //chia dòng
     $('#btn-splitText').click(function () {
         var text_content = $('#input-text-content').val();
         var regexPattern = $('#splitText').val();
@@ -415,6 +506,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     });
 
+    //chia thao ký tự
     $('#btn-splitText-2').click(function () {
         var text_content = $('#input-text-content').val();
         var char = $('#splitText2').val();
@@ -430,6 +522,7 @@ document.addEventListener('DOMContentLoaded', function () {
         show_count_text();
     });
 
+    //Xóa Ký Tự
     $('#delete-characters').click(function () {
         var text_content = $('#input-text-content').val();
         var char = $('#splitText3').val();
@@ -437,6 +530,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var result = text_content.replace(regexPattern, "");
         $('#input-text-content').val(result);
     });
+
 
     function show_count_text() {
         var text_content = $('#input-text-content').val();
@@ -511,6 +605,33 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#input-date-upload').val(data.date_upload);
                 $('#input-time-upload').val(data.time_upload);
                 $("#input-text-content").val(data.text_content);
+
+                if (data.url_audio) {
+                    $('#inputAudio').css('display', 'none');
+                    $('#url-audio').css('display', 'block');
+                    $('#btnChangeFileAudio').css('display', 'block');
+                    $('#btnDeleteFileAudio').css('display', 'block');
+
+                } else {
+                    $('#inputAudio').css('display', 'block');
+                    $('#btnChangeFileAudio').css('display', 'none');
+                    $('#btnDeleteFileAudio').css('display', 'none');
+                    $('#url-audio').css('display', 'none');
+                }
+
+                if (data.url_subtitle) {
+                    $('#inputSrt').css('display', 'none');
+                    $('#url-srt').css('display', 'block');
+                    $('#btnChangeFileSrt').css('display', 'block');
+                    $('#btnDeleteFileSrt').css('display', 'block');
+                } else {
+                    $('#inputSrt').css('display', 'block');
+                    $('#url-srt').css('display', 'none');
+                    $('#btnChangeFileSrt').css('display', 'none');
+                    $('#btnDeleteFileSrt').css('display', 'none');
+                }
+
+
                 edit_text_video(data);
                 show_modal_image(data);
 
@@ -1012,6 +1133,21 @@ document.addEventListener('DOMContentLoaded', function () {
     // Web Socket
     // Tạo kết nối với Web Socket
 
+    $(document).on('click', '.btn-play-video', function () {
+        let iframe = document.getElementById('videoIframe');
+        const videoUrl = this.getAttribute('data-url');
+        iframe.src = videoUrl;
+    });
+
+
+    // dừng play video xem thử
+    $(document).on('click', '.btn-close-play-video', function () {
+        let iframe = document.getElementById('videoIframe');
+        iframe.src = '';
+    });
+
+
+
     function createWebSocket() {
         var socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');
         socket.onopen = function () {
@@ -1055,11 +1191,24 @@ document.addEventListener('DOMContentLoaded', function () {
                         var image = $('img.id-thumbnail-video[data-id="' + item.id + '"]');
                         image.attr('src', thumbnailUrl);
 
+                        $('div.btn-play-video[data-id="' + item.id + '"]');
+                        $('div.btn-play-video[data-id="' + item.url_video + '"]');
+
+                        // Check if the item has a URL for the video
+                        if (item.url_video === '') {
+                            // Disable the button if no video URL is present
+                            $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', true);
+                        } else {
+                            // Enable the button if a video URL is present
+                            $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', false);
+                        }
+
                         var title = $('label.id-title-video[data-id="' + item.id + '"]');
                         title.text(item.title);
 
                         var status = $('div.status-video[data-id="' + item.id + '"]');
                         status.text(item.status_video);
+                        change_color_status();
 
                         var timeUpload = $('label.time-upload-video[data-id="' + item.id + '"]');
                         timeUpload.text('Ngày Upload ' + item.date_upload + ' Giờ Upload ' + item.time_upload);
@@ -1084,35 +1233,145 @@ document.addEventListener('DOMContentLoaded', function () {
             // Lấy trạng thái văn bản
             const status = textstatus.textContent.trim();
 
+            // Biến để lưu phần đầu và phần còn lại của trạng thái
+            let frontPart = '';
+            let backPart = '';
+
+            // Tách phần đầu và phần còn lại của trạng thái
+            if (status.includes(':')) {
+                const parts = status.split(':');
+                frontPart = parts[0].trim();
+                backPart = parts.slice(1).join(':').trim();
+            } else {
+                frontPart = status;
+            }
+
+            // Tạo phần tử span cho phần đầu và phần còn lại
+            const frontSpan = document.createElement('span');
+            const backSpan = document.createElement('span');
+
+            frontSpan.textContent = frontPart;
+            backSpan.textContent = backPart;
+
             // Thay đổi màu nền dựa trên trạng thái
-            switch (status) {
-                case 'render':
-                    textstatus.classList.add('text-info'); // Thêm lớp màu cho trạng thái 'render'
-                    break;
-                case 'Đang Chờ Render':
-                    textstatus.classList.add('text-secondary');
-                    break;
-                case 'Đang Render':
-                    textstatus.classList.add('text-Lime');
-                    break;
-                case 'Render Thành Công':
-                    textstatus.classList.add('text-success');
-                    break;
-                case 'Render Thất Bại':
-                    textstatus.classList.add('text-danger');
-                    break;
-                case 'Đang Upload Lên VPS':
-                    textstatus.classList.add('text-info');
-                    break;
-                case 'Upload VPS Thành Công':
-                    textstatus.classList.add('text-success');
-                    break;
-                case 'Upload VPS Thất Bại':
-                    textstatus.classList.add('text-danger');
-                    break;
-                default:
-                    textstatus.classList.add('text-primary'); // Màu mặc định cho các trạng thái không xác định
+            if (frontPart.includes('render')) {
+                frontSpan.classList.add('text-info');
+            } else if (frontPart.includes('Đang Chờ Render')) {
+                frontSpan.classList.add('text-secondary');
+            } else if (frontPart.includes('Đang Render')) {
+                frontSpan.classList.add('text-warning');
+            } else if (frontPart.includes('Render Thành Công') || frontPart.includes('Upload VPS Thành Công')) {
+                frontSpan.classList.add('text-success');
+            } else if (frontPart.includes('Render Lỗi') || frontPart.includes('Upload Vps Lỗi')) {
+                frontSpan.classList.add('text-danger');
+            } else if (frontPart.includes('Đang Upload Lên VPS')) {
+                frontSpan.classList.add('text-info');
+            } else {
+                frontSpan.classList.add('text-dark'); // Màu mặc định cho các trạng thái không xác định
+            }
+            // Thêm các thuộc tính font-weight và font-style
+            frontSpan.style.fontWeight = 'bold';
+            frontSpan.style.fontStyle = 'italic';
+
+            // Đổi màu phần sau thành màu tím
+            backSpan.style.color = 'purple';
+
+            // Xóa nội dung cũ và thêm các phần tử span mới
+            textstatus.textContent = '';
+            textstatus.appendChild(frontSpan);
+
+            if (backPart) {
+                textstatus.appendChild(document.createTextNode(' : ')); // Thêm dấu hai chấm và khoảng trắng
+                textstatus.appendChild(backSpan);
             }
         });
     }
+
+    document.getElementById('addAudioButton').addEventListener('click', function () {
+        const container = document.getElementById('audioInputsContainer');
+
+        // Kiểm tra xem input audio đã tồn tại chưa
+        if (container.children.length > 0) {
+            alert('Bạn chỉ có thể thêm một file audio!');
+            return;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'row mb-3';
+
+        const colAudio = document.createElement('div');
+        colAudio.className = 'custom-file col-sm-auto';
+        const inputAudio = document.createElement('input');
+        inputAudio.type = 'file';
+        inputAudio.className = 'custom-file-input';
+        inputAudio.accept = 'audio/*';
+        const labelAudio = document.createElement('label');
+        labelAudio.className = 'custom-file-label';
+        labelAudio.textContent = 'Chọn file audio';
+
+        colAudio.appendChild(inputAudio);
+        colAudio.appendChild(labelAudio);
+
+        const colRemove = document.createElement('div');
+        colRemove.className = 'col-sm-auto';
+        const removeButton = document.createElement('button');
+        removeButton.className = 'btn btn-danger';
+        removeButton.type = 'button';
+        removeButton.textContent = 'Xóa';
+
+        removeButton.addEventListener('click', function () {
+            container.removeChild(row);
+        });
+
+        colRemove.appendChild(removeButton);
+
+        row.appendChild(colAudio);
+        row.appendChild(colRemove);
+
+        container.appendChild(row);
+    });
+
+    document.getElementById('addSrtButton').addEventListener('click', function () {
+        const container = document.getElementById('srtInputsContainer');
+
+        // Kiểm tra xem input SRT đã tồn tại chưa
+        if (container.children.length > 0) {
+            alert('Bạn chỉ có thể thêm một file SRT!');
+            return;
+        }
+        const row = document.createElement('div');
+        row.className = 'row mb-3';
+
+        const colSrt = document.createElement('div');
+        colSrt.className = 'custom-file col-sm-auto';
+        const inputSrt = document.createElement('input');
+        inputSrt.type = 'file';
+        inputSrt.className = 'custom-file-input';
+        inputSrt.accept = '.srt';
+        const labelSrt = document.createElement('label');
+        labelSrt.className = 'custom-file-label';
+        labelSrt.textContent = 'Chọn file SRT';
+
+        colSrt.appendChild(inputSrt);
+        colSrt.appendChild(labelSrt);
+
+        const colRemove = document.createElement('div');
+        colRemove.className = 'col-sm-auto';
+        const removeButton = document.createElement('button');
+        removeButton.className = 'btn btn-danger';
+        removeButton.type = 'button';
+        removeButton.textContent = 'Xóa';
+
+        removeButton.addEventListener('click', function () {
+            container.removeChild(row);
+        });
+
+        colRemove.appendChild(removeButton);
+
+        row.appendChild(colSrt);
+        row.appendChild(colRemove);
+
+        container.appendChild(row);
+    });
+
 });

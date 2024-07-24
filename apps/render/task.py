@@ -43,6 +43,10 @@ import math
 from datetime import timedelta
 from pydub import AudioSegment
 from PIL import Image, ImageDraw, ImageFont
+from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
+
+
+
 
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
@@ -129,51 +133,57 @@ def render_video(self,data):
     
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
+
 def upload_video(data, task_id, worker_id):
     try:
+    
         video_id = data.get('video_id')
         name_video = data.get('name_video')
         video_path = f'media/{video_id}/{name_video}.mp4'
         SECRET_KEY = "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
         SERVER = '127.0.0.1:8000'
         url = f'http://{SERVER}/api/{video_id}/'
+        update_status_video(f"Đang Render : Đang Upload File Lên Sever", video_id, task_id, worker_id)
         
         payload = {
-            'video_id': video_id,
+            'video_id': str(video_id),
             'action': 'upload',
             'secret_key': SECRET_KEY
         }
 
         def create_multipart_encoder(file_path, fields):
+            # Ensure all field values are strings
+            fields = {key: str(value) for key, value in fields.items()}
             return MultipartEncoder(
-                fields={**fields, 'file': (name_video + '.mp4', open(file_path, 'rb'), 'video/mp4')}
+                fields={**fields, 'file': (file_path, open(file_path, 'rb'), 'video/mp4')}
             )
 
-        def create_multipart_monitor(encoder):
+        def create_multipart_monitor(encoder, progress_callback):
             monitor = MultipartEncoderMonitor(encoder, progress_callback)
             return monitor
 
         def progress_callback(monitor):
             progress = (monitor.bytes_read / monitor.len) * 100
-            update_status_video(f"Đang Render : Đang Upload File Lên Sever {progress:.2f}%", video_id, task_id, worker_id)
+            print(f"Upload progress: {progress:.2f}%")
+            
 
-        encoder = create_multipart_encoder(video_path, payload)
-        monitor = create_multipart_monitor(encoder)
+        with open(video_path, 'rb') as f:
+            encoder = create_multipart_encoder(video_path, payload)
+            monitor = create_multipart_monitor(encoder, progress_callback)
+            headers = {'Content-Type': monitor.content_type}
 
-        headers = {'Content-Type': monitor.content_type}
+            response = requests.post(url, data=monitor, headers=headers)
 
-        response = requests.post(url, data=monitor, headers=headers)
+            if response.status_code == 201:
+                return False
+            else:
+                shutil.rmtree(f'media/{video_id}')
+                return True
         
-        
-
-        if response.status_code == 201:
-            return True
-        else:
-            print(f"Failed to upload: {response.status_code}, {response.text}")
-            return False
     except Exception as e:
-        print(f"An error occurred: {e}")
         return False
+
+    
 
 def create_video_file(data, task_id, worker_id):
     video_id = data.get('video_id')
@@ -553,8 +563,13 @@ def get_video_random(data,duration,input_text,file_name):
     list_url.extend(result)
 
     video_id = data.get('video_id')
-    create_or_reset_directory(f'media/{video_id}/videodownload')
     choice = random.choice(list_url)
+
+
+    path = f'media/{video_id}/videodownload'
+    # Tạo thư mục nếu chưa tồn tại
+    if not os.path.exists(path):
+        os.makedirs(path, exist_ok=True)
     
     response = requests.get(choice, stream=True)
     if response.status_code == 200:
