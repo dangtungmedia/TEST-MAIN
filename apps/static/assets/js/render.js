@@ -389,7 +389,20 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#edit_video').css('display', 'block');
     });
 
+    // button next khi đã nhập nội dung và audio
     $('#edit_video').click(function () {
+        var file_audio = $('#inputAudio')[0].files[0];
+        var file_srt = $('#inputSrt')[0].files[0];
+
+        var url_audio = $('#url-audio').val().trim();
+        var url_srt = $('#url-srt').val().trim();
+
+        if (((file_audio && !file_srt) || (!file_audio && file_srt)) && ((!url_audio && url_srt) || (url_audio && !url_srt))) {
+            alert('Vui lòng nhập cả file audio và file srt');
+            return;
+        }
+
+
         update_text_edit();
         $("#edit_video").css('display', 'none');
         $("#input-image-and-text").css('display', 'none');
@@ -427,8 +440,64 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     $('#inputAudio').change(function () {
-        var file = $(this)[0].files[0];
+        FileUpload()
+    });
+
+
+    $('#inputSrt').change(function (event) {
+        const file = event.target.files[0];
         if (file) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const content = e.target.result;
+                const textContent = extractTextFromSrt(content);
+                $('#input-text-content').val(textContent);
+            };
+            reader.readAsText(file);
+        } else {
+            alert('Please select a valid SRT file.');
+        }
+        FileUpload();
+
+    });
+
+    // chuyển đổi file srt thành văn bản 
+    function extractTextFromSrt(content) {
+        const lines = content.split('\n');
+        const textLines = [];
+        const timePattern = /^[0-9]+$/; // Pattern to match lines with only numbers
+
+        lines.forEach(line => {
+            line = line.trim();
+            if (line && !line.match(timePattern) && !line.includes('-->')) {
+                textLines.push(line);
+            }
+        });
+
+        return textLines.join('\n\n');
+    }
+
+
+
+    // ẩn hiện input file audio và str
+    function FileUpload() {
+        var file_audio = $('#inputAudio')[0].files[0];
+        var file_srt = $('#inputSrt')[0].files[0];
+        var url_audio = $('#url-audio').val();
+        var url_srt = $('#url-srt').val();
+
+        if (file_audio || file_srt) {
+            $('#input-text-content').prop('disabled', true);
+        } else {
+            $('#input-text-content').prop('disabled', false);
+        }
+        if (url_audio || url_srt) {
+            $('#input-text-content').prop('disabled', true);
+        } else {
+            $('#input-text-content').prop('disabled', false);
+        }
+
+        if (file_audio) {
             var reader = new FileReader();
             reader.onload = function (e) {
                 $('#inputAudio').css('display', 'block');
@@ -437,21 +506,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#btnDeleteFileAudio').css('display', 'block');
                 $('#input-text-content').prop('disabled', true); // Sửa đổi chỗ này
             }
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file_audio);
         } else {
             $('#inputAudio').css('display', 'block');
-            $('#btnChangeFileAudio').css('display', 'none');
-            $('#btnDeleteFileAudio').css('display', 'none');
             $('#url-audio').css('display', 'none');
-            $('#input-text-content').prop('disabled', false);
         }
-    });
 
-
-    $('#inputSrt').change(function () {
-
-        var file = $(this)[0].files[0];
-        if (file) {
+        if (file_srt) {
             var reader = new FileReader();
             reader.onload = function (e) {
                 $('#inputSrt').css('display', 'block');
@@ -460,41 +521,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#btnDeleteFileSrt').css('display', 'block');
                 $('#input-text-content').prop('disabled', true); // Sửa đổi chỗ này
             }
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file_srt);
         } else {
             $('#inputSrt').css('display', 'block');
-            $('#btnChangeFileSrt').css('display', 'none');
-            $('#btnDeleteFileSrt').css('display', 'none');
             $('#url-srt').css('display', 'none');
-            $('#input-text-content').prop('disabled', false);
         }
-    });
-
-
-
-    function FileUpload() {
-        var file_audio = $('#inputAudio')[0].files[0];
-        var file_srt = $('#inputSrt')[0].files[0];
-        var url_audio = $('#url-audio').val();
-        var url_srt = $('#url-srt').val();
-
-
-        if (file_audio && file_srt) {
-            $('#input-text-content').prop('disabled', true);
-
-
-
-
-
-        }
-
-
     }
-
-
-
-
-
 
     //chia dòng
     $('#btn-splitText').click(function () {
@@ -605,33 +637,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#input-date-upload').val(data.date_upload);
                 $('#input-time-upload').val(data.time_upload);
                 $("#input-text-content").val(data.text_content);
+                $('#url-audio').val(data.url_audio);
+                $('#url-srt').val(data.url_srt);
 
-                if (data.url_audio) {
-                    $('#inputAudio').css('display', 'none');
-                    $('#url-audio').css('display', 'block');
-                    $('#btnChangeFileAudio').css('display', 'block');
-                    $('#btnDeleteFileAudio').css('display', 'block');
+                $('#inputAudio').val('');
+                $('#inputSrt').val('');
 
-                } else {
-                    $('#inputAudio').css('display', 'block');
-                    $('#btnChangeFileAudio').css('display', 'none');
-                    $('#btnDeleteFileAudio').css('display', 'none');
-                    $('#url-audio').css('display', 'none');
-                }
-
-                if (data.url_subtitle) {
-                    $('#inputSrt').css('display', 'none');
-                    $('#url-srt').css('display', 'block');
-                    $('#btnChangeFileSrt').css('display', 'block');
-                    $('#btnDeleteFileSrt').css('display', 'block');
-                } else {
-                    $('#inputSrt').css('display', 'block');
-                    $('#url-srt').css('display', 'none');
-                    $('#btnChangeFileSrt').css('display', 'none');
-                    $('#btnDeleteFileSrt').css('display', 'none');
-                }
-
-
+                FileUpload();
                 edit_text_video(data);
                 show_modal_image(data);
 
@@ -765,6 +777,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return fileNameWithoutParams;
         }
     }
+
 
     $('.close-modal-input-image').click(function () {
         $('#modal-overlay').css('display', 'none');
@@ -985,6 +998,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#modal-overlay').css('display', 'block');
     });
 
+
     $('#choice_image').click(function () {
         var id = $('#iteam-edit').val();
         if (id === 'none') {
@@ -1003,9 +1017,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     $(document).on('click', '#save-text-video', function () {
-
         var file = $('#input-Thumnail')[0].files[0];
         var id_video = $('#id-video-edit').val();
+
+        var file_audio = $('#inputAudio')[0].files[0];
+        var file_srt = $('#inputSrt')[0].files[0];
+        var url_audio = $('#url-audio').val().trim();
+        var url_srt = $('#url-srt').val().trim();
+
+        if (((file_audio && !file_srt) || (!file_audio && file_srt)) && ((!url_audio && url_srt) || (url_audio && !url_srt))) {
+            alert('Vui lòng nhập cả file audio và file srt');
+            return;
+        }
 
         $('.btn-close').click();
 
@@ -1040,7 +1063,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Đọc tệp hình ảnh dưới dạng URL dữ liệu
             reader.readAsDataURL(file);
         }
-
+        if (file_audio) {
+            formData.append('file-audio', file_audio);
+        }
+        if (file_srt) {
+            formData.append('file-srt', file_srt);
+        }
         console.log('Debug information');
         console.log($('#id-video-edit').val());
         $.ajax({
@@ -1075,6 +1103,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return image_content;
     }
 
+
     function get_text_json() {
         let iteam_lines = document.querySelectorAll('.iteam-text-video');
         let text_content = ''; // Sử dụng let để có thể gán lại giá trị sau này.
@@ -1094,6 +1123,9 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         return { text_content: text_content, text_content_2: text_content_2 };
     }
+
+
+
     // Xử lý sự kiện click vào nút render video
     $(document).on('click', '.btn-render', function () {
         var id = $(this).data('id');
@@ -1286,92 +1318,4 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
-    document.getElementById('addAudioButton').addEventListener('click', function () {
-        const container = document.getElementById('audioInputsContainer');
-
-        // Kiểm tra xem input audio đã tồn tại chưa
-        if (container.children.length > 0) {
-            alert('Bạn chỉ có thể thêm một file audio!');
-            return;
-        }
-
-        const row = document.createElement('div');
-        row.className = 'row mb-3';
-
-        const colAudio = document.createElement('div');
-        colAudio.className = 'custom-file col-sm-auto';
-        const inputAudio = document.createElement('input');
-        inputAudio.type = 'file';
-        inputAudio.className = 'custom-file-input';
-        inputAudio.accept = 'audio/*';
-        const labelAudio = document.createElement('label');
-        labelAudio.className = 'custom-file-label';
-        labelAudio.textContent = 'Chọn file audio';
-
-        colAudio.appendChild(inputAudio);
-        colAudio.appendChild(labelAudio);
-
-        const colRemove = document.createElement('div');
-        colRemove.className = 'col-sm-auto';
-        const removeButton = document.createElement('button');
-        removeButton.className = 'btn btn-danger';
-        removeButton.type = 'button';
-        removeButton.textContent = 'Xóa';
-
-        removeButton.addEventListener('click', function () {
-            container.removeChild(row);
-        });
-
-        colRemove.appendChild(removeButton);
-
-        row.appendChild(colAudio);
-        row.appendChild(colRemove);
-
-        container.appendChild(row);
-    });
-
-    document.getElementById('addSrtButton').addEventListener('click', function () {
-        const container = document.getElementById('srtInputsContainer');
-
-        // Kiểm tra xem input SRT đã tồn tại chưa
-        if (container.children.length > 0) {
-            alert('Bạn chỉ có thể thêm một file SRT!');
-            return;
-        }
-        const row = document.createElement('div');
-        row.className = 'row mb-3';
-
-        const colSrt = document.createElement('div');
-        colSrt.className = 'custom-file col-sm-auto';
-        const inputSrt = document.createElement('input');
-        inputSrt.type = 'file';
-        inputSrt.className = 'custom-file-input';
-        inputSrt.accept = '.srt';
-        const labelSrt = document.createElement('label');
-        labelSrt.className = 'custom-file-label';
-        labelSrt.textContent = 'Chọn file SRT';
-
-        colSrt.appendChild(inputSrt);
-        colSrt.appendChild(labelSrt);
-
-        const colRemove = document.createElement('div');
-        colRemove.className = 'col-sm-auto';
-        const removeButton = document.createElement('button');
-        removeButton.className = 'btn btn-danger';
-        removeButton.type = 'button';
-        removeButton.textContent = 'Xóa';
-
-        removeButton.addEventListener('click', function () {
-            container.removeChild(row);
-        });
-
-        colRemove.appendChild(removeButton);
-
-        row.appendChild(colSrt);
-        row.appendChild(colRemove);
-
-        container.appendChild(row);
-    });
-
 });

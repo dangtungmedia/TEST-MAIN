@@ -203,6 +203,7 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['POST'])
     def update_video(self, request, pk=None):
+
         input_data = {
             'title': request.data.get('title'),
             'description': request.data.get('description'),
@@ -212,7 +213,9 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             'content': request.data.get('text_content'),
             'content_2': request.data.get('text_content_2'),
             'video_image': request.data.get('video_image'),
-            'file-thumnail': request.data.get('file-thumnail')
+            'file-thumnail': request.data.get('file-thumnail'),
+            'file-audio': request.data.get('file-audio'),
+            'file-srt': request.data.get('file-subtitle')
         }
         date_upload = input_data['date_upload']
 
@@ -238,6 +241,26 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         file_name = default_storage.save(f"data/{video.id}/thumnail/{filename}", thumnail)
         file_url = default_storage.url(file_name)
         return file_url
+    
+    def handle_audio(self, video, audio):
+        if video.url_audio:
+            audio = video.url_audio
+            file_name = self.get_filename_from_url(audio)
+            default_storage.delete(f"data/{video.id}/audio/{file_name}")
+        filename = audio.name.strip().replace(" ", "_")
+        file_name = default_storage.save(f"data/{video.id}/audio/{filename}", audio)
+        file_url = default_storage.url(file_name)
+        return file_url
+    
+    def handle_subtitle(self, video, subtitle):
+        if video.url_subtitle:
+            subtitle = video.url_subtitle
+            file_name = self.get_filename_from_url(subtitle)
+            default_storage.delete(f"data/{video.id}/subtitle/{file_name}")
+        filename = subtitle.name.strip().replace(" ", "_")
+        file_name = default_storage.save(f"data/{video.id}/subtitle/{filename}", subtitle)
+        file_url = default_storage.url(file_name)
+        return file_url
 
     def update_video_info(self, request, video, input_data, date_formatted):
         is_edit_title = Count_Use_data.objects.filter(videoRender_id=video, creade_video=False, edit_title=True, edit_thumnail=False).first()
@@ -252,7 +275,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         if input_data.get('file-thumnail'):
             if is_edit_thumnail and (not request.user.is_superuser and is_edit_thumnail.use != request.user):
                 return JsonResponse({'success': False, 'message': f'Thumbnail đang được chỉnh sửa bởi người khác ({is_edit_thumnail.use.username})!'})
-
         # Nếu tất cả điều kiện thỏa mãn, tiến hành cập nhật và lưu
         try:
             if input_data.get('title') and input_data['title'] != video.title:
@@ -285,6 +307,14 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
                     video.url_thumbnail = self.handle_thumbnail(video, input_data['file-thumnail'])
                     Count_Use_data.objects.create(videoRender_id=video, use=request.user, edit_thumnail=True, url_thumnail=video.url_thumbnail)
 
+
+            if input_data.get('file-audio') and input_data.get('file-srt') and not video.url_audio and not video.url_subtitle:
+                return JsonResponse({'success': False, 'message': f'Vui lòng điền đầy đủ file audio và phụ đề'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if input_data.get('file-audio'):
+                video.url_audio = self.handle_audio(video, input_data['file-audio'])
+            if input_data.get('file-srt'):
+                video.url_subtitle = self.handle_subtitle(video, input_data['file-srt'])
             # Lưu tất cả các thay đổi sau khi cập nhật
             video.save()
             if is_edit_title:
@@ -327,6 +357,7 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         return JsonResponse({'success': True, 'data': data_list ,'text':text}, status=status.HTTP_200_OK)
 
 class index(LoginRequiredMixin, TemplateView):
+
     login_url = '/login/'
     template_name = 'render/index.html'
 
