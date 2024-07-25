@@ -680,50 +680,50 @@ def convert_to_seconds(time_str):
 
 
 def create_video(data, task_id, worker_id):
-    try:
-        video_id = data.get('video_id')
-        text  = data.get('text_content')
+    # try:
+    video_id = data.get('video_id')
+    text  = data.get('text_content')
 
-        create_or_reset_directory(f'media/{video_id}/video')
-        processed_entries = 0
-        total_entries = len(json.loads(text))
+    create_or_reset_directory(f'media/{video_id}/video')
+    processed_entries = 0
+    total_entries = len(json.loads(text))
 
-        print(data.get('file-srt'))
+    print(data.get('file-srt'))
+    if data.get('file-srt'):
+        data_sub = download_and_read_srt(data, video_id)
+        if len(data_sub) == 0:
+            return False
+        if len(data_sub) != total_entries:
+            return False
+        
+    for i,iteam in enumerate(json.loads(text)):
         if data.get('file-srt'):
-            data_sub = download_and_read_srt(data, video_id)
-            if len(data_sub) == 0:
-                return False
-            if len(data_sub) != total_entries:
-                return False
-            
-        for i,iteam in enumerate(json.loads(text)):
-            if data.get('file-srt'):
-                start_time, end_time = data_sub[i]
-                duration = convert_to_seconds(end_time) - convert_to_seconds(start_time)
+            start_time, end_time = data_sub[i]
+            duration = convert_to_seconds(end_time) - convert_to_seconds(start_time)
+        else:
+            duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
+
+        out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
+
+        if iteam['url_video'] == '':
+            video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
+            cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
+
+        else:
+            randoom_choice = random.choice([True, False])
+            file = get_filename_from_url(iteam['url_video'])
+            image_file = f'media/{video_id}/image/{file}'
+            if randoom_choice:
+                image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
             else:
-                duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
-
-            out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
-
-            if iteam['url_video'] == '':
-                video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
-                cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
-
-            else:
-                randoom_choice = random.choice([True, False])
-                file = get_filename_from_url(iteam['url_video'])
-                image_file = f'media/{video_id}/image/{file}'
-                if randoom_choice:
-                    image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
-                else:
-                    image_to_video_zoom_out(image_file, out_file, duration, 1920, 1080, 'video_screen')
-            processed_entries += 1
-            percent_complete = (processed_entries / total_entries) * 100
-            update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
-        return True  
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        return False
+                image_to_video_zoom_out(image_file, out_file, duration, 1920, 1080, 'video_screen')
+        processed_entries += 1
+        percent_complete = (processed_entries / total_entries) * 100
+        update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+#     return True  
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")
+    #     return False
 
 
 def get_random_video_from_directory(directory_path):
