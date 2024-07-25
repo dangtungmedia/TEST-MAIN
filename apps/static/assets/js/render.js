@@ -345,11 +345,9 @@ document.addEventListener('DOMContentLoaded', function () {
             $('#cread-status-videos').text(`Dừng lại do lỗi. Đã tạo được ${i} video.`);
         }
     });
-
     // xử lý sự kiện thêm 1 video   
 
     // Xử lý sự kiện click vào nút xem video
-
     // Xử lý sự kiện click vào nút sửa video
 
     $(document).on('click', '.btn-edit', function () {
@@ -365,8 +363,8 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#input-infor-video').css('display', 'flex');
         $('#input-image-and-text').css('display', 'none');
 
-
     });
+
 
     $("#button-back").click(function () {
         $('#input-infor-video').css('display', 'flex');
@@ -377,6 +375,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#button-back2').css('display', 'none');
         $('#edit_video').css('display', 'none');
     });
+
 
     $(document).on('click', '#next-cread-image', function () {
         $('#input-infor-video').css('display', 'none');
@@ -397,11 +396,14 @@ document.addEventListener('DOMContentLoaded', function () {
         var url_audio = $('#url-audio').val().trim();
         var url_srt = $('#url-srt').val().trim();
 
-        if (((file_audio && !file_srt) || (!file_audio && file_srt)) && ((!url_audio && url_srt) || (url_audio && !url_srt))) {
-            alert('Vui lòng nhập cả file audio và file srt');
-            return;
-        }
 
+        if ((file_audio && !file_srt) || (!file_audio && file_srt)) {
+            // Kiểm tra tiếp điều kiện của URL
+            if (!url_audio || !url_srt) {
+                alert('Vui lòng nhập File URL audio và URL srt');
+                return;
+            }
+        }
 
         update_text_edit();
         $("#edit_video").css('display', 'none');
@@ -477,8 +479,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return textLines.join('\n\n');
     }
 
-
-
     // ẩn hiện input file audio và str
     function FileUpload() {
         var file_audio = $('#inputAudio')[0].files[0];
@@ -486,47 +486,60 @@ document.addEventListener('DOMContentLoaded', function () {
         var url_audio = $('#url-audio').val();
         var url_srt = $('#url-srt').val();
 
-        if (file_audio || file_srt) {
-            $('#input-text-content').prop('disabled', true);
-        } else {
-            $('#input-text-content').prop('disabled', false);
-        }
-        if (url_audio || url_srt) {
-            $('#input-text-content').prop('disabled', true);
-        } else {
-            $('#input-text-content').prop('disabled', false);
-        }
-
         if (file_audio) {
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                $('#inputAudio').css('display', 'block');
-                $('#url-audio').css('display', 'none');
-                $('#btnChangeFileAudio').css('display', 'block');
-                $('#btnDeleteFileAudio').css('display', 'block');
-                $('#input-text-content').prop('disabled', true); // Sửa đổi chỗ này
-            }
-            reader.readAsDataURL(file_audio);
-        } else {
-            $('#inputAudio').css('display', 'block');
             $('#url-audio').css('display', 'none');
+            $('#inputAudio').css('display', 'block');
+        } else {
+            if (url_audio) {
+                $('#url-audio').css('display', 'block');
+                $('#inputAudio').css('display', 'none');
+            } else {
+                $('#url-audio').css('display', 'none');
+                $('#inputAudio').css('display', 'block');
+            }
+        }
+        if (file_srt) {
+            $('#url-srt').css('display', 'none');
+            $('#inputSrt').css('display', 'block');
+        } else {
+            if (url_srt) {
+                $('#url-srt').css('display', 'block');
+                $('#inputSrt').css('display', 'none');
+            } else {
+                $('#url-srt').css('display', 'none');
+                $('#inputSrt').css('display', 'block');
+            }
         }
 
-        if (file_srt) {
-            var reader = new FileReader();
-            reader.onload = function (e) {
-                $('#inputSrt').css('display', 'block');
-                $('#url-srt').css('display', 'none');
-                $('#btnChangeFileSrt').css('display', 'block');
-                $('#btnDeleteFileSrt').css('display', 'block');
-                $('#input-text-content').prop('disabled', true); // Sửa đổi chỗ này
-            }
-            reader.readAsDataURL(file_srt);
+        if (file_audio || file_srt || url_audio || url_srt) {
+            var textarea = $('#input-text-content');
+            textarea.attr('readonly', 'readonly');
         } else {
-            $('#inputSrt').css('display', 'block');
-            $('#url-srt').css('display', 'none');
+            var textarea = $('#input-text-content');
+            textarea.removeAttr('readonly');
         }
     }
+
+    $('#btnDeleteFileAudio').click(function () {
+        $('#inputAudio').val('');
+        $('#url-audio').val('');
+        FileUpload()
+    });
+
+    $('#btnDeleteFileSrt').click(function () {
+        $('#inputSrt').val('');
+        $('#url-srt').val('');
+        FileUpload()
+    });
+
+    $('#btnChangeFileAudio').click(function () {
+        $('#inputAudio').click();
+    });
+
+    $('#btnChangeFileSrt').click(function () {
+        $('#inputSrt').click();
+    });
+
 
     //chia dòng
     $('#btn-splitText').click(function () {
@@ -576,7 +589,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         $('#count-text-content').text('Số Ký Tự ' + count_text + ' --- Số Dòng ' + lineCount.length);
     }
-
 
     function subRegex(e, t) {
         var n = new RegExp("" + t, "m");
@@ -629,6 +641,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then(data => {
+                console.log('Data:', data);
                 $('#id-video-edit').val(data.id);
                 $('#Image-Thumnail-infor-video').attr('src', data.url_thumbnail);
                 $('#input-title').val(data.title);
@@ -638,7 +651,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#input-time-upload').val(data.time_upload);
                 $("#input-text-content").val(data.text_content);
                 $('#url-audio').val(data.url_audio);
-                $('#url-srt').val(data.url_srt);
+                $('#url-srt').val(data.url_subtitle);
 
                 $('#inputAudio').val('');
                 $('#inputSrt').val('');
@@ -717,9 +730,6 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             images = [];
         }
-
-        console.log('images:', images);
-
         // Loại bỏ các phần tử .iteam-image hiện có trước khi thêm mới
         const iteamImageDivs = document.querySelectorAll('.iteam-image');
         iteamImageDivs.forEach(div => div.remove());
@@ -1024,11 +1034,14 @@ document.addEventListener('DOMContentLoaded', function () {
         var file_srt = $('#inputSrt')[0].files[0];
         var url_audio = $('#url-audio').val().trim();
         var url_srt = $('#url-srt').val().trim();
-
-        if (((file_audio && !file_srt) || (!file_audio && file_srt)) && ((!url_audio && url_srt) || (url_audio && !url_srt))) {
-            alert('Vui lòng nhập cả file audio và file srt');
-            return;
+        if ((file_audio && !file_srt) || (!file_audio && file_srt)) {
+            // Kiểm tra tiếp điều kiện của URL
+            if (!url_audio || !url_srt) {
+                alert('Vui lòng nhập File URL audio và URL srt');
+                return;
+            }
         }
+
 
         $('.btn-close').click();
 
@@ -1092,6 +1105,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
 
     function get_image_iteam() {
         var images = document.querySelectorAll('.iteam-image');
@@ -1177,8 +1191,6 @@ document.addEventListener('DOMContentLoaded', function () {
         let iframe = document.getElementById('videoIframe');
         iframe.src = '';
     });
-
-
 
     function createWebSocket() {
         var socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');

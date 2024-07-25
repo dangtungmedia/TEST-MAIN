@@ -18,6 +18,7 @@ from pytube import YouTube
 import json ,re ,random ,string
 from datetime import datetime, timedelta
 from django.core.files.storage import default_storage
+
 from .forms import VideoForm
 from urllib.parse import urlparse, unquote
 from django.core.cache import cache
@@ -41,8 +42,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework import status
-
-from apps.render.cace_database import get_video_render_data_from_cache, update_video_render_data_from_cache, get_Data_Text_Video_data_from_cache, get_count_use_data_from_cache
 from rest_framework.parsers import MultiPartParser, FormParser
 from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
 
@@ -93,7 +92,6 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
                         url=video.url_video  # Sửa lại chỗ này để lấy giá trị đúng
                     )
                     videos = videos.exclude(id=video.id)
-                print("cache")
                 # Lưu các video đã chọn vào cache
                 cache.set(cache_key, videos, 30)
 
@@ -185,6 +183,7 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class VideoRenderViewSet(viewsets.ModelViewSet):
     queryset = VideoRender.objects.all()
     serializer_class = RenderSerializer
@@ -200,7 +199,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             return VideoRender.objects.none()
         return VideoRender.objects.all()
     
-
     @action(detail=True, methods=['POST'])
     def update_video(self, request, pk=None):
 
@@ -215,10 +213,10 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             'video_image': request.data.get('video_image'),
             'file-thumnail': request.data.get('file-thumnail'),
             'file-audio': request.data.get('file-audio'),
-            'file-srt': request.data.get('file-subtitle')
+            'file-srt': request.data.get('file-srt')
         }
         date_upload = input_data['date_upload']
-
+        print(input_data)
         try:
             video = VideoRender.objects.get(id=pk)
         except VideoRender.DoesNotExist:
@@ -237,26 +235,32 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             image = video.url_thumbnail
             file_name = self.get_filename_from_url(image)
             default_storage.delete(f"data/{video.id}/image/{file_name}")
+            print("xong thumnail")
         filename = thumnail.name.strip().replace(" ", "_")
         file_name = default_storage.save(f"data/{video.id}/thumnail/{filename}", thumnail)
         file_url = default_storage.url(file_name)
         return file_url
     
+    
     def handle_audio(self, video, audio):
         if video.url_audio:
-            audio = video.url_audio
-            file_name = self.get_filename_from_url(audio)
+            file = video.url_audio
+            file_name = self.get_filename_from_url(file)
             default_storage.delete(f"data/{video.id}/audio/{file_name}")
+            print("xong audio")
         filename = audio.name.strip().replace(" ", "_")
         file_name = default_storage.save(f"data/{video.id}/audio/{filename}", audio)
         file_url = default_storage.url(file_name)
         return file_url
     
+    
     def handle_subtitle(self, video, subtitle):
         if video.url_subtitle:
-            subtitle = video.url_subtitle
-            file_name = self.get_filename_from_url(subtitle)
+            file = video.url_subtitle
+            file_name = self.get_filename_from_url(file)
             default_storage.delete(f"data/{video.id}/subtitle/{file_name}")
+            print("xong subtitle")
+
         filename = subtitle.name.strip().replace(" ", "_")
         file_name = default_storage.save(f"data/{video.id}/subtitle/{filename}", subtitle)
         file_url = default_storage.url(file_name)
@@ -269,12 +273,13 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         # Kiểm tra điều kiện cho tiêu đề
         if input_data.get('title') and input_data['title'] != video.title:
             if is_edit_title and (not request.user.is_superuser and is_edit_title.use != request.user):
-                return JsonResponse({'success': False, 'message': f'Tiêu đề đang được chỉnh sửa bởi người khác ({is_edit_title.use.username})!'})
+                return JsonResponse({'success': False, 'message': f'Tiêu đề đang được chỉnh sửa bởi người khác ({is_edit_title.use.username})!'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Kiểm tra điều kiện cho thumbnail
         if input_data.get('file-thumnail'):
             if is_edit_thumnail and (not request.user.is_superuser and is_edit_thumnail.use != request.user):
-                return JsonResponse({'success': False, 'message': f'Thumbnail đang được chỉnh sửa bởi người khác ({is_edit_thumnail.use.username})!'})
+                return JsonResponse({'success': False, 'message': f'Thumbnail đang được chỉnh sửa bởi người khác ({is_edit_thumnail.use.username})!'}, status=status.HTTP_400_BAD_REQUEST)
+
         # Nếu tất cả điều kiện thỏa mãn, tiến hành cập nhật và lưu
         try:
             if input_data.get('title') and input_data['title'] != video.title:
@@ -296,21 +301,17 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
                 video.text_content = input_data['content']
             if input_data.get('content_2'):
                 video.text_content_2 = input_data['content_2']
-                print(input_data['content_2'])
             if input_data.get('video_image'):
                 video.video_image = input_data['video_image']
 
             if input_data.get('file-thumnail'):
-                if is_edit_thumnail:
-                    video.url_thumbnail = self.handle_thumbnail(video, input_data['file-thumnail'])
-                else:
-                    video.url_thumbnail = self.handle_thumbnail(video, input_data['file-thumnail'])
+                video.url_thumbnail = self.handle_thumbnail(video, input_data['file-thumnail'])
+                if not is_edit_thumnail:
                     Count_Use_data.objects.create(videoRender_id=video, use=request.user, edit_thumnail=True, url_thumnail=video.url_thumbnail)
 
-
-            if input_data.get('file-audio') and input_data.get('file-srt') and not video.url_audio and not video.url_subtitle:
-                return JsonResponse({'success': False, 'message': f'Vui lòng điền đầy đủ file audio và phụ đề'}, status=status.HTTP_400_BAD_REQUEST)
-            
+            if (not input_data.get('file-audio') or not input_data.get('file-srt')):
+                if not video.url_audio or not video.url_subtitle:
+                    return JsonResponse({'success': False, 'message': 'Vui lòng điền đầy đủ file audio và phụ đề'}, status=status.HTTP_400_BAD_REQUEST)
             if input_data.get('file-audio'):
                 video.url_audio = self.handle_audio(video, input_data['file-audio'])
             if input_data.get('file-srt'):
@@ -332,6 +333,8 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         path = unquote(parsed_url.path)
         filename = path.split('/')[-1]
         return filename
+    
+
     
     @action(detail=False, methods=['POST'])
     def status(self, request):
@@ -400,18 +403,7 @@ class index(LoginRequiredMixin, TemplateView):
         elif action == "render-video":
             channel_name = request.POST.get('id-video-render')
             video = VideoRender.objects.get(id=channel_name)
-            data = self.get_inforender(video.id)
-
-            #  In các tệp trong thư mục cụ thể
-            # folder_path = f"data/{video.id}"
-            # _, files = default_storage.listdir(folder_path)
-            # if files:
-            #     print(files)
-            #     for file in files:
-            #         default_storage.delete(f"{folder_path}/{file}")
-            #         print(f"Đã xóa tệp {file}")
-            # return JsonResponse({'success': True, 'message': 'Video đang được render!'})
-
+            data = self.get_infor_render(video.id)
             if "render" in video.status_video:
                 task = render_video.apply_async(args=[data])
                 video.task_id = task.id
@@ -470,7 +462,7 @@ class index(LoginRequiredMixin, TemplateView):
         video.save()
 
 
-    def get_inforender(self,id_video):
+    def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
         language = Voice_language.objects.get(id=video.voice)
         voice = syle_voice.objects.get(id=video.voice_style)
@@ -493,7 +485,7 @@ class index(LoginRequiredMixin, TemplateView):
             'style': voice.id_style,
             'name_langue': voice.name_voice,
             'url_audio': video.url_audio,
-            'url_subtitle': video.url_subtitle,
+            'file-srt': video.url_subtitle,
             }
         return data
         
@@ -632,7 +624,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
             return JsonResponse({'success': True, 'thumnail_html': thumnail, 'page_bar_html': page_obj})
         
         elif action == 'show-title':
-            print("show-title")
             id = request.POST.get('id')
             page = request.POST.get('page')
             date_upload_old = request.POST.get('current_date_old')

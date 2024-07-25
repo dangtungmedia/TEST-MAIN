@@ -40,12 +40,16 @@ from nltk.probability import FreqDist
 from pydub import AudioSegment
 from pydub.silence import detect_nonsilent
 import math
-from datetime import timedelta
+from datetime import timedelta,datetime
 from pydub import AudioSegment
 from PIL import Image, ImageDraw, ImageFont
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
+import re
+from datetime import datetime, timedelta
 
 
+SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
+SERVER='127.0.0.1:5085'
 
 
 @task_failure.connect
@@ -85,21 +89,13 @@ def render_video(self,data):
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
 
-    # Tải xuống âm thanh
-    success = download_audio(data, task_id, worker_id)
-    if not success:
-        update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
-        return
-    update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
-
-
-    # Tạo video
-    success = create_video(data, task_id, worker_id)
-    if not success:
-        update_status_video("Render Lỗi : Không thể tạo video", data['video_id'], task_id, worker_id)
-        return
-    update_status_video("Đang Render : Tạo video thành công", data['video_id'], task_id, worker_id)
-
+    if  not data.get('url_audio'):
+        # Tải xuống âm thanh
+        success = download_audio(data, task_id, worker_id)
+        if not success:
+            update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
+            return
+        update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
 
     #nối giọng đọc và chèn nhạc nền
     success = merge_audio_video(data, task_id, worker_id)
@@ -108,6 +104,14 @@ def render_video(self,data):
         update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
+
+
+    # Tạo video
+    success = create_video(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể tạo video", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Tạo video thành công", data['video_id'], task_id, worker_id)
 
 
     # Tạo phụ đề cho video
@@ -132,7 +136,6 @@ def render_video(self,data):
         return
     
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
-
 
 def upload_video(data, task_id, worker_id):
     try:
@@ -182,8 +185,6 @@ def upload_video(data, task_id, worker_id):
         
     except Exception as e:
         return False
-
-    
 
 def create_video_file(data, task_id, worker_id):
     video_id = data.get('video_id')
@@ -295,7 +296,6 @@ def format_timedelta_ass(ms):
     seconds = int(seconds)
     return "{:01}:{:02}:{:02}.{:02}".format(int(hours), int(minutes), seconds, milliseconds)
 
-
 def create_subtitles(data, task_id, worker_id):
     try:
         video_id = data.get('video_id')
@@ -328,10 +328,31 @@ def create_subtitles(data, task_id, worker_id):
             ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")
 
             start_time = timedelta(0)
-            for iteam in json.loads(text):
-                # audio = AudioSegment.from_wav(f'media/{video.id}/voice/{iteam["id"]}.wav')
+            
+            total_entries = len(json.loads(text))
+            if  data.get('file-srt'):
+                srt_path = f'media/{video_id}/cache.srt'
+                # Đọc nội dung tệp SRT
+                with open(srt_path, 'r', encoding='utf-8') as file:
+                    srt_content = file.read()
+                print("Nội dung của tệp SRT đã được tải và đọc thành công.")
+                
+                # Trích xuất thời gian các khung trong tệp SRT
+                frame_times = extract_frame_times(srt_content)
+
+                if len(frame_times) == 0:
+                    return False
+                elif len(frame_times) != total_entries:
+                    return False
+
+                elif len(frame_times) == total_entries:
+                    for i,iteam in enumerate(json.loads(text)):
+                        start_time, end_time = frame_times[i]
+                        ass_file.write(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+                    return True
+
+            for i,iteam in enumerate(json.loads(text)):
                 duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
-                print(duration)
                 duration_milliseconds = duration * 1000
                 end_time = start_time + timedelta(milliseconds=duration_milliseconds)
                 # end_time = start_time + duration
@@ -344,10 +365,37 @@ def create_subtitles(data, task_id, worker_id):
 
 def merge_audio_video(data, task_id, worker_id):
     try:
-        update_status_video("Đang Render : đang nghép giọng đọc ", data['video_id'], task_id, worker_id)
-        fade_duration=2000
+        update_status_video("Đang Render: đang ghép giọng đọc", data['video_id'], task_id, worker_id)
         video_id = data.get('video_id')
-        ffmpeg_command = [
+        fade_duration = 2000
+
+        # Tải xuống tệp âm thanh nếu có URL âm thanh
+        if data.get('url_audio'):
+            max_retries = 30
+            retries = 0
+            audio_url = data.get('url_audio')
+            while retries < max_retries:
+                try:
+                    response = requests.get(audio_url, stream=True)
+                    if response.status_code == 200:
+                        os.makedirs(f'media/{video_id}', exist_ok=True)
+                        with open(f'media/{video_id}/cache.wav', 'wb') as file:
+                            for chunk in response.iter_content(chunk_size=1024):
+                                if chunk:  # Lọc bỏ các keep-alive chunks mới
+                                    file.write(chunk)
+                        print("Tải xuống thành công.")
+                        break
+                    else:
+                        print(f"Lỗi {response.status_code}: Không thể tải xuống tệp.")
+                except requests.RequestException as e:
+                    print(f"Lỗi tải xuống: {e}")
+                retries += 1
+                time.sleep(5)
+                print(f"Thử lại {retries}/{max_retries}")
+            else:
+                return False  # Nếu không thể tải xuống tệp sau nhiều lần thử
+        else:
+            ffmpeg_command = [
                 'ffmpeg',
                 '-f', 'concat',
                 '-safe', '0',
@@ -355,11 +403,11 @@ def merge_audio_video(data, task_id, worker_id):
                 '-c', 'copy',
                 f'media/{video_id}/cache.wav'
             ]
-            # Chạy lệnh FFmpeg
-        subprocess.run(ffmpeg_command, check=True)
-        
+            subprocess.run(ffmpeg_command, check=True)
+
+        # Chọn nhạc nền ngẫu nhiên từ thư mục 'music_background'
         music_path = random.choice([f for f in os.listdir('music_background') if os.path.isfile(os.path.join('music_background', f))])
-        music_path = os.path.join('music_background',music_path)
+        music_path = os.path.join('music_background', music_path)
 
         voice = AudioSegment.from_file(f'media/{video_id}/cache.wav')
         music = AudioSegment.from_file(music_path)
@@ -367,14 +415,13 @@ def merge_audio_video(data, task_id, worker_id):
         # Lặp lại nhạc nền để đảm bảo đủ độ dài
         while len(music) < len(voice):
             music += music
-        
+
         # Chỉnh âm lượng nhạc nền
-        db_reduction_during_speech = 20 * math.log10(0.10)  # Giảm âm lượng nhạc nền xuống 6%
+        db_reduction_during_speech = 20 * math.log10(0.10)  # Giảm âm lượng nhạc nền xuống 10%
         db_reduction_without_speech = 20 * math.log10(0.14)  # Giảm âm lượng nhạc nền xuống 14%
-        
+
         # Phát hiện các đoạn không im lặng trong giọng nói
         nonsilent_ranges = detect_nonsilent(voice, min_silence_len=500, silence_thresh=voice.dBFS-16)
-
 
         # Tạo bản sao của nhạc nền để điều chỉnh
         adjusted_music = AudioSegment.silent(duration=len(voice))
@@ -385,24 +432,22 @@ def merge_audio_video(data, task_id, worker_id):
             if start > current_position:
                 segment = music[current_position:start].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2).fade_out(fade_duration // 2)
                 adjusted_music = adjusted_music.overlay(segment, position=current_position)
-            
+
             # Chèn nhạc nền trong đoạn có giọng nói
             segment = music[start:end].apply_gain(db_reduction_during_speech)
             adjusted_music = adjusted_music.overlay(segment, position=start)
-            
+
             current_position = end
-        
+
         # Chèn nhạc nền sau đoạn giọng nói cuối cùng (nếu có)
         if current_position < len(voice):
             segment = music[current_position:].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2)
             adjusted_music = adjusted_music.overlay(segment, position=current_position)
-        
+
         # Thêm giọng nói vào nhạc nền đã điều chỉnh
         combined = adjusted_music.overlay(voice, loop=False)
-        
-        
 
-        output_wav_path = f'media/{video_id}/chace1.wav'
+        output_wav_path = f'media/{video_id}/cache1.wav'
         
         # Xuất file âm thanh kết hợp
         combined.export(output_wav_path, format="wav")
@@ -419,8 +464,8 @@ def merge_audio_video(data, task_id, worker_id):
         subprocess.run(ffmpeg_encode_command, check=True)
         return True
     except Exception as e:
+        print(f"An error occurred: {e}")
         return False
-
 
 def get_video_duration(video_path):
     # Lệnh ffprobe để lấy thông tin video dưới dạng JSON
@@ -444,7 +489,6 @@ def get_video_duration(video_path):
     
     return duration
 
-
 def get_audio_duration(file_path):
     try:
         # Gọi lệnh ffprobe để lấy thông tin về file âm thanh
@@ -455,14 +499,12 @@ def get_audio_duration(file_path):
         print(f"Lỗi khi lấy thông tin từ file âm thanh: {e}")
         return None
 
-
 def format_time(seconds):
     """Chuyển đổi thời gian từ giây thành định dạng hh:mm:ss.sss"""
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     secs = seconds % 60
     return f"{hours:02}:{minutes:02}:{secs:06.3f}"
-
 
 def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video):
     video_length = get_video_duration(input_video)
@@ -514,7 +556,6 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
 
-
 def translate_text(text, src_lang='auto', dest_lang='en'):
     translator = Translator()
     translation = translator.translate(text, src=src_lang, dest=dest_lang)
@@ -548,7 +589,6 @@ def search_pixabay_videos(api_key, query, min_duration):
                         filtered_videos.append(video['url'])
     return filtered_videos
 
-
 def get_video_random(data,duration,input_text,file_name):
     translated_text = translate_text(input_text)
     # Find the main keywords in the translated sentence
@@ -579,6 +619,62 @@ def get_video_random(data,duration,input_text,file_name):
                 f.write(chunk)
 
         return video_path
+    
+# lấy thời gian của các file srt
+def extract_frame_times(srt_content):
+    # Sử dụng regex để tìm các thời gian bắt đầu và kết thúc trong tệp SRT
+    time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
+    matches = time_pattern.findall(srt_content)
+    return matches
+
+def download_and_read_srt(data, video_id):
+    if data.get('file-srt'):
+        max_retries = 30
+        retries = 0
+        srt_url = data.get('file-srt')  # URL của tệp SRT
+        
+        while retries < max_retries:
+            try:
+                response = requests.get(srt_url, stream=True)
+                if response.status_code == 200:
+                    os.makedirs(f'media/{video_id}', exist_ok=True)
+                    srt_path = f'media/{video_id}/cache.srt'
+                    with open(srt_path, 'wb') as file:
+                        for chunk in response.iter_content(chunk_size=1024):
+                            if chunk:  # Lọc bỏ các keep-alive chunks mới
+                                file.write(chunk)
+                    print("Tải xuống thành công.")
+                    
+                    # Đọc nội dung tệp SRT
+                    with open(srt_path, 'r', encoding='utf-8') as file:
+                        srt_content = file.read()
+                    print("Nội dung của tệp SRT đã được tải và đọc thành công.")
+                    
+                    # Trích xuất thời gian các khung trong tệp SRT
+                    frame_times = extract_frame_times(srt_content)
+                    print("Thời gian của các khung trong tệp SRT:")
+                    for start, end in frame_times:
+                        print(f"Bắt đầu: {start}, Kết thúc: {end}")
+                    
+                    return frame_times
+                else:
+                    print(f"Lỗi {response.status_code}: Không thể tải xuống tệp.")
+            except requests.RequestException as e:
+                print(f"Lỗi tải xuống: {e}")
+
+            retries += 1
+            print(f"Thử lại {retries}/{max_retries}")
+            time.sleep(5)  # Chờ một khoảng thời gian trước khi thử lại
+
+        print("Không thể tải xuống tệp sau nhiều lần thử.")
+        return []
+    
+
+def convert_to_seconds(time_str):
+    time_format = '%H:%M:%S,%f'
+    dt = datetime.strptime(time_str, time_format)
+    delta = timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second, microseconds=dt.microsecond)
+    return delta.total_seconds()
 
 
 def create_video(data, task_id, worker_id):
@@ -589,8 +685,22 @@ def create_video(data, task_id, worker_id):
         create_or_reset_directory(f'media/{video_id}/video')
         processed_entries = 0
         total_entries = len(json.loads(text))
-        for iteam in json.loads(text):
-            duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
+
+        print(data.get('file-srt'))
+        if data.get('file-srt'):
+            data_sub = download_and_read_srt(data, video_id)
+            if len(data_sub) == 0:
+                return False
+            if len(data_sub) != total_entries:
+                return False
+            
+        for i,iteam in enumerate(json.loads(text)):
+            if data.get('file-srt'):
+                start_time, end_time = data_sub[i]
+                duration = convert_to_seconds(end_time) - convert_to_seconds(start_time)
+            else:
+                duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
+
             out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
 
             if iteam['url_video'] == '':
@@ -611,7 +721,6 @@ def create_video(data, task_id, worker_id):
         return True  
     except Exception as e:
         return False
-
 
 
 def get_random_video_from_directory(directory_path):
@@ -712,7 +821,6 @@ def download_audio(data, task_id, worker_id):
         text_entries = json.loads(text)
         total_entries = len(text_entries)
         processed_entries = 0
-
         if language == 'Japanese-VoiceVox':
             with open(f'media/{video_id}/input_files.txt', 'w') as file:
                 for text_entry in text_entries:
@@ -861,22 +969,23 @@ def check_worker_status():
     print("Worker status checked successfully.")
 
 def update_status_video(status_video,video_id,task_id,worker_id):
-    SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-    SERVER='127.0.0.1:8000'
-    url = f'http://{SERVER}/api/{video_id}/'
-    data = {
-        'video_id': video_id,
-        'status': status_video,
-        'task_id': task_id,
-        'worker_id': worker_id,
-        'secret_key': SECRET_KEY,
-        'action': 'update_status'
-    }
+    try:
+        url = f'http://{SERVER}/api/{video_id}/'
+        data = {
+            'video_id': video_id,
+            'status': status_video,
+            'task_id': task_id,
+            'worker_id': worker_id,
+            'secret_key': SECRET_KEY,
+            'action': 'update_status'
+        }
+        response = requests.post(url, json=data)
+        # Kiểm tra phản hồi từ server
+        if response.status_code == 200:
+            print("Status updated successfully.")
+        else:
+            print(f"Failed to update status. Server responded with: {response.status_code}, {response.text}")
+    except requests.RequestException as e:
+        print(f"Error updating status: {e}")
 
-    response = requests.post(url, json=data)
 
-    # Kiểm tra phản hồi từ server
-    if response.status_code == 200:
-        print("Status updated successfully.")
-    else:
-        print(f"Failed to update status. Server responded with: {response.status_code}, {response.text}")

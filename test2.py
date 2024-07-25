@@ -1,44 +1,40 @@
-import subprocess
+import os
+import re
+from datetime import datetime, timedelta
 
-def merge_audio_video(video_path, audio_path, output_path):
-    """
-    Merges an audio file into a video file using FFmpeg.
+# Hàm để trích xuất thời gian bắt đầu và kết thúc từ nội dung tệp SRT
+def extract_frame_times(srt_content):
+    # Sử dụng regex để tìm các thời gian bắt đầu và kết thúc trong tệp SRT
+    time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
+    matches = time_pattern.findall(srt_content)
+    print(matches)
+    return matches
 
-    Parameters:
-    video_path (str): The path to the input video file.
-    audio_path (str): The path to the input audio file.
-    output_path (str): The path to the output video file.
-    """
-    ffmpeg_command = [
-        'ffmpeg',
-        '-i', video_path,
-        '-i', audio_path,
-        '-c:v', 'copy',
-        '-c:a', 'aac',
-        '-b:a', '192k',
-        '-strict', 'experimental',
-        '-shortest',
-        '-y',
-        output_path
-    ]
-    try:
-        process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+# Hàm để chuyển đổi thời gian từ chuỗi HH:MM:SS,ms sang giây
+def convert_to_seconds(time_str):
+    time_format = '%H:%M:%S,%f'
+    dt = datetime.strptime(time_str, time_format)
+    delta = timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second, microseconds=dt.microsecond)
+    return delta.total_seconds()
 
-        print("FFmpeg stdout:\n", stdout.decode())
-        print("FFmpeg stderr:\n", stderr.decode())
+# Đường dẫn tới tệp SRT
+path = 'demo_en.srt'
 
-        if process.returncode != 0:
-            raise Exception("FFmpeg command failed with return code {}".format(process.returncode))
-        else:
-            print(f"Successfully merged audio and video into {output_path}")
-    
-    except Exception as e:
-        print(f"An error occurred: {e}")
+# Đọc nội dung tệp SRT
+with open(path, 'r', encoding='utf-8') as file:
+    srt_content = file.read()
 
-# Example usage
-video_path = "media/234/PQKOBYZ98Q.mp4"
-audio_path = "media/234/audio.wav"
-output_path = "media/234/final_video.mp4"
+# Trích xuất thời gian các đoạn phụ đề
+data = extract_frame_times(srt_content)
 
-merge_audio_video(video_path, audio_path, output_path)
+# Tính toán thời lượng của các đoạn phụ đề
+durations = []
+for start, end in data:
+    duration = convert_to_seconds(end) - convert_to_seconds(start)
+    durations.append(duration)
+
+# In thời gian của đoạn đầu tiên và tất cả các đoạn khác
+if durations:
+    print(f"Thời gian của đoạn đầu tiên: {durations[0]} giây")
+    for i, duration in enumerate(durations, 1):
+        print(f"Thời gian của đoạn {i}: {duration} giây")
