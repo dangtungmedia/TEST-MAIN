@@ -49,7 +49,7 @@ from datetime import datetime, timedelta
 
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-SERVER='127.0.0.1:5085'
+SERVER='nginx'
 
 
 @task_failure.connect
@@ -970,7 +970,7 @@ def check_worker_status():
 
 def update_status_video(status_video,video_id,task_id,worker_id):
     try:
-        url = f'http://{SERVER}/api/{video_id}/'
+        url = f'{SERVER}/api/{video_id}/'
         data = {
             'video_id': video_id,
             'status': status_video,
@@ -986,6 +986,7 @@ def update_status_video(status_video,video_id,task_id,worker_id):
         else:
             print(f"Failed to update status. Server responded with: {response.status_code}, {response.text}")
     except requests.RequestException as e:
+        print("xxxxx")
         print(f"Error updating status: {e}")
 
 

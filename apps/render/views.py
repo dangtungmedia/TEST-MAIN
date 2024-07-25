@@ -401,6 +401,7 @@ class index(LoginRequiredMixin, TemplateView):
             return JsonResponse({'success': True, 'message': 'Xóa ảnh thành công!'})
 
         elif action == "render-video":
+            print("render")
             channel_name = request.POST.get('id-video-render')
             video = VideoRender.objects.get(id=channel_name)
             data = self.get_infor_render(video.id)
@@ -424,6 +425,7 @@ class index(LoginRequiredMixin, TemplateView):
                 video.task_id = ''
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
+                print("xxxxxxx")
                 return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
             
             elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
