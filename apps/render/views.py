@@ -309,9 +309,10 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
                 if not is_edit_thumnail:
                     Count_Use_data.objects.create(videoRender_id=video, use=request.user, edit_thumnail=True, url_thumnail=video.url_thumbnail)
 
-            if (not input_data.get('file-audio') or not input_data.get('file-srt')):
+            if (input_data.get('file-audio') or input_data.get('file-srt')):
                 if not video.url_audio or not video.url_subtitle:
                     return JsonResponse({'success': False, 'message': 'Vui lòng điền đầy đủ file audio và phụ đề'}, status=status.HTTP_400_BAD_REQUEST)
+            
             if input_data.get('file-audio'):
                 video.url_audio = self.handle_audio(video, input_data['file-audio'])
             if input_data.get('file-srt'):
@@ -401,43 +402,48 @@ class index(LoginRequiredMixin, TemplateView):
             return JsonResponse({'success': True, 'message': 'Xóa ảnh thành công!'})
 
         elif action == "render-video":
-            print("render")
             channel_name = request.POST.get('id-video-render')
             video = VideoRender.objects.get(id=channel_name)
             data = self.get_infor_render(video.id)
-            if "render" in video.status_video:
-                task = render_video.apply_async(args=[data])
-                video.task_id = task.id
-                video.status_video = "Đang chờ render"
-                video.save()
-                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
-            
-            elif "Render Lỗi" in video.status_video:
-                task = render_video.apply_async(args=[data])
-                video.task_id = task.id
-                video.status_video = "Đang chờ render : Render Lại"
-                video.save()
-                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
-            
-            elif "Đang Chờ Render" in video.status_video or "Đang Render" in video.status_video:
-                result = AsyncResult(video.task_id)
-                result.revoke(terminate=True)
-                video.task_id = ''
-                video.status_video = "Render Lỗi : Dừng Render"
-                video.save()
-                print("xxxxxxx")
-                return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
-            
-            elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
-                task = render_video.apply_async(args=[data])
-                video.task_id = task.id
-                video.status_video = "Đang chờ render"
-                folder_path = f"data/{video.id}"
-                file =  self.get_filename_from_url(video.url_video)
-                default_storage.delete(f"{folder_path}/{file}")
-                video.url_video =''
-                video.save()
-                return JsonResponse({'success': True, 'message': 'Video đang được render!'})
+            try:
+                if "render" in video.status_video:
+                    task = render_video.apply_async(args=[data])
+                    video.task_id = task.id
+                    video.status_video = "Đang chờ render"
+                    video.save()
+                    return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
+                
+                
+                elif "Render Lỗi" in video.status_video:
+                    task = render_video.apply_async(args=[data])
+                    video.task_id = task.id
+                    video.status_video = "Đang chờ render : Render Lại"
+                    video.save()
+                    return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
+                
+                elif "Đang Chờ Render" in video.status_video or "Đang Render" in video.status_video:
+                    result = AsyncResult(video.task_id)
+                    result.revoke(terminate=True)
+                    video.task_id = ''
+                    video.status_video = "Render Lỗi : Dừng Render"
+                    video.save()
+                    print("xxxxxxx")
+                    return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
+                
+                elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
+                    task = render_video.apply_async(args=[data])
+                    video.task_id = task.id
+                    video.status_video = "Đang chờ render"
+                    folder_path = f"data/{video.id}"
+                    file = self.get_filename_from_url(video.url_video)
+                    default_storage.delete(f"{folder_path}/{file}")
+                    video.url_video = ''
+                    video.save()
+                    return JsonResponse({'success': True, 'message': 'Video đang được render!'})
+                else:
+                    return JsonResponse({'success': False, 'message': 'Trạng thái video không hợp lệ!'})
+            except Exception as e:
+                return JsonResponse({'success': False, 'message': f'Lỗi xảy ra: {str(e)}'})
     
     def handle_thumbnail(self,video, thumnail, video_id):
         if video.url_thumbnail:

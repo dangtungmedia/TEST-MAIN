@@ -49,7 +49,8 @@ from datetime import datetime, timedelta
 
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-SERVER='nginx'
+SERVER='http://daphne:5504/'
+
 
 
 @task_failure.connect
@@ -64,7 +65,7 @@ def worker_shutdown_handler(sender, **kwargs):
     worker_id = sender.hostname
     for video in VideoRender.objects.filter(worker_id=worker_id):
         if "Đang Render" in video.status_video or "Đang Chờ Render" in video.status_video:
-            video.status_video = f'Worker bị tắt đột ngột {worker_id}'
+            video.status_video = f'Render Lỗi : Worker bị tắt đột ngột {worker_id}'
             video.save()
 
 
@@ -78,6 +79,7 @@ def render_video(self,data):
     success =  create_or_reset_directory(f'media/{video_id}')
 
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Tạo thư mục thành công", data['video_id'], task_id, worker_id)
@@ -85,6 +87,7 @@ def render_video(self,data):
     # Tải xuống hình ảnh
     success = download_image(data, task_id, worker_id)
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tải xuống hình ảnh", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
@@ -94,6 +97,7 @@ def render_video(self,data):
         success = download_audio(data, task_id, worker_id)
         if not success:
             update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
+            shutil.rmtree(f'media/{video_id}')
             return
         update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
 
@@ -101,6 +105,7 @@ def render_video(self,data):
     success = merge_audio_video(data, task_id, worker_id)
 
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
@@ -109,6 +114,7 @@ def render_video(self,data):
     # Tạo video
     success = create_video(data, task_id, worker_id)
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo video", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Tạo video thành công", data['video_id'], task_id, worker_id)
@@ -117,6 +123,7 @@ def render_video(self,data):
     # Tạo phụ đề cho video
     success = create_subtitles(data, task_id, worker_id)
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo phụ đề", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Tạo phụ đề thành công", data['video_id'], task_id, worker_id)
@@ -124,6 +131,7 @@ def render_video(self,data):
     # Tạo file
     success = create_video_file(data, task_id, worker_id)
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo file", data['video_id'], task_id, worker_id)
         return
     
@@ -139,13 +147,10 @@ def render_video(self,data):
 
 def upload_video(data, task_id, worker_id):
     try:
-    
         video_id = data.get('video_id')
         name_video = data.get('name_video')
         video_path = f'media/{video_id}/{name_video}.mp4'
-        SECRET_KEY = "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-        SERVER = '127.0.0.1:8000'
-        url = f'http://{SERVER}/api/{video_id}/'
+        url = f'{SERVER}api/{video_id}/'
         update_status_video(f"Đang Render : Đang Upload File Lên Sever", video_id, task_id, worker_id)
         
         payload = {
@@ -348,7 +353,7 @@ def create_subtitles(data, task_id, worker_id):
                 elif len(frame_times) == total_entries:
                     for i,iteam in enumerate(json.loads(text)):
                         start_time, end_time = frame_times[i]
-                        ass_file.write(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+                        ass_file.write(f"Dialogue: 0,{start_time[1:-1].replace(',', '.')},{end_time[1:-1].replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
                     return True
 
             for i,iteam in enumerate(json.loads(text)):
@@ -359,7 +364,7 @@ def create_subtitles(data, task_id, worker_id):
                 # Viết phụ đề
                 ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
                 start_time = end_time
-        return True
+            return True
     except:
         return False
 
@@ -574,7 +579,6 @@ def find_keywords(text, num_keywords=5):
     return keywords
 
 def search_pixabay_videos(api_key, query, min_duration):
-     
     filtered_videos = []
     for page in range(1,2):
         url = f"https://pixabay.com/api/videos/?key={api_key}&q={query}&per_page=200&page={page}"
@@ -617,12 +621,10 @@ def get_video_random(data,duration,input_text,file_name):
         with open(video_path, 'wb') as f:
             for chunk in response.iter_content(chunk_size=1024):
                 f.write(chunk)
-
         return video_path
-    
 # lấy thời gian của các file srt
 def extract_frame_times(srt_content):
-    # Sử dụng regex để tìm các thời gian bắt đầu và kết thúc trong tệp SRT
+
     time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
     matches = time_pattern.findall(srt_content)
     return matches
@@ -720,6 +722,7 @@ def create_video(data, task_id, worker_id):
             update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
         return True  
     except Exception as e:
+        print(f"An error occurred: {e}")
         return False
 
 
@@ -810,7 +813,6 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         subprocess.run(ffmpeg_command, check=True)
     except subprocess.CalledProcessError as e:
         print(f"lỗi chạy FFMPEG {e}")
-
 
 def download_audio(data, task_id, worker_id):
     try:
@@ -969,24 +971,19 @@ def check_worker_status():
     print("Worker status checked successfully.")
 
 def update_status_video(status_video,video_id,task_id,worker_id):
-    try:
-        url = f'{SERVER}/api/{video_id}/'
-        data = {
-            'video_id': video_id,
-            'status': status_video,
-            'task_id': task_id,
-            'worker_id': worker_id,
-            'secret_key': SECRET_KEY,
-            'action': 'update_status'
-        }
-        response = requests.post(url, json=data)
-        # Kiểm tra phản hồi từ server
-        if response.status_code == 200:
-            print("Status updated successfully.")
-        else:
-            print(f"Failed to update status. Server responded with: {response.status_code}, {response.text}")
-    except requests.RequestException as e:
-        print("xxxxx")
-        print(f"Error updating status: {e}")
-
-
+    url = f'{SERVER}api/{video_id}/'
+    print(url)
+    data = {
+        'video_id': video_id,
+        'status': status_video,
+        'task_id': task_id,
+        'worker_id': worker_id,
+        'secret_key': SECRET_KEY,
+        'action': 'update_status'
+    }
+    response = requests.post(url, json=data)
+    # Kiểm tra phản hồi từ server
+    if response.status_code == 200:
+        print("Status updated successfully.")
+    else:
+        print(f"Failed to update status. Server responded with: {response.status_code}, {response.text}")

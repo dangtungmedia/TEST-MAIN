@@ -239,6 +239,10 @@ docker
 docker stop $(docker ps -q)
 
 
+# chạy docker  với thư mục hiện tại để build
+docker buil -t dangtung .
+
+
 # Xóa Toàn Bộ docker
 docker rm $(docker ps -aq)
 

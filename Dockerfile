@@ -13,12 +13,15 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m nltk.downloader punkt
+RUN python -m nltk.downloader stopwords
 
+WORKDIR /app
 # Copy application code
-COPY . .
+# COPY 
 
 
 # Running migrations
-RUN python manage.py migrate
+# RUN python manage.py migrate
 
 CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 5504 core.asgi:application"]
