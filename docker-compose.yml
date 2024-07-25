@@ -43,6 +43,9 @@ services:
     networks:
       - web_network
       - db_network
+    depends_on:
+      - redis2
+
   voicevox_engine:
     container_name: voicevox_engine
     image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
@@ -73,6 +76,8 @@ services:
     networks:
       - web_network
       - db_network
+    depends_on:
+      - redis2
 
 volumes:
   media_volume:
