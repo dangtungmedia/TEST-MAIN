@@ -1,3 +1,4 @@
+version: '3.8'
 services:
   daphne:
     container_name: daphne
@@ -7,8 +8,8 @@ services:
       context: .
     volumes:
       - .:/app
-    depends_on:
-      - redis2
+    expose:
+      - 5504
     networks:
       - web_network
       - db_network
@@ -17,34 +18,37 @@ services:
     restart: always
     image: "nginx:latest"
     ports:
-      - "5085:5085" # Mapping port 5085 on host to port 80 in the container
+      - "5085:80"
     volumes:
       - ./nginx:/etc/nginx/conf.d
+    depends_on:
+      - daphne
+      - flower
     networks:
       - web_network
       - db_network
+
   redis2:
     container_name: redis2
     restart: always
     image: "redis:latest"
     ports:
-      - "6330:6379"
+      - "6380:6379"
     command: redis-server --appendonly yes
     networks:
       - web_network
       - db_network
+
   celery:
-    container_name: celery_worker_tung
+    container_name: celery
     build:
       context: .
     volumes:
       - .:/app
-    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=3
+    command: celery -A core.celery worker -l INFO --hostname=worker1@%h --concurrency=3
     networks:
       - web_network
       - db_network
-    depends_on:
-      - redis2
 
   voicevox_engine:
     container_name: voicevox_engine
@@ -68,16 +72,12 @@ services:
     container_name: flower
     build:
       context: .
-    volumes:
-      - .:/app
     ports:
       - "5555:5555"
-    command: celery -A core flower
+    command: celery -A core.celery flower
     networks:
       - web_network
       - db_network
-    depends_on:
-      - redis2
 
 volumes:
   media_volume:
