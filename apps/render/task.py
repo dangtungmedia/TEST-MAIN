@@ -199,6 +199,8 @@ def create_video_file(data, task_id, worker_id):
 
     # Tạo file subtitles.ass
     ass_file_path = f'media/{video_id}/subtitles.ass'
+
+
     # Tạo file input_files_video.txt
     input_files_video_path = f'media/{video_id}/input_files_video.txt'
     os.makedirs(os.path.dirname(input_files_video_path), exist_ok=True)
@@ -220,7 +222,7 @@ def create_video_file(data, task_id, worker_id):
         '-safe', '0',
         '-i', input_files_video_path,
         '-i', audio_file,
-        '-vf', f"ass={ass_file_path}:fontsdir={fonts_dir}",
+        '-vf', f"subtitles={ass_file_path}:fontsdir={fonts_dir}",
         '-c:v','libx264',
         '-map', '0:v', 
         '-map', '1:a', 
@@ -356,7 +358,7 @@ def create_subtitles(data, task_id, worker_id):
                 elif len(frame_times) == total_entries:
                     for i,iteam in enumerate(json.loads(text)):
                         start_time, end_time = frame_times[i]
-                        ass_file.write(f"Dialogue: 0,{start_time.replace(',', '.')},{end_time.replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+                        ass_file.write(f"Dialogue: 0,{start_time[:-1].replace(',', '.')},{end_time[:-1].replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
                     return True
 
             for i,iteam in enumerate(json.loads(text)):
@@ -514,50 +516,49 @@ def format_time(seconds):
     secs = seconds % 60
     return f"{hours:02}:{minutes:02}:{secs:06.3f}"
 
-def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video):
+def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video_dir):
     video_length = get_video_duration(input_video)
     start_time = random.uniform(0, video_length - duration)
-    end_time = start_time + duration
+    
     start_time_str = format_time(start_time)
-    end_time_str = format_time(end_time)
-    base_video = get_random_video_from_directory(overlay_video)
+    end_time = format_time(duration)
+    
+    base_video = get_random_video_from_directory(overlay_video_dir)
     is_overlay_video = random.choice([True, False])
     
     if is_overlay_video:
         cmd = [
             "ffmpeg",
-            "-ss", start_time_str,
-            "-to", end_time_str,
             "-i", input_video,
             "-ss", start_time_str,
-            "-to", end_time_str,
+            "-t", str(duration),
             "-i", base_video,
-            '-framerate','30',
+            "-ss", start_time_str,
+            "-t", str(duration),
             "-filter_complex", f"[0:v]scale={scale_width}:{scale_height}[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay[outv]",
             "-map", "[outv]",
-            '-r', '30',
-            '-c:v', 'libx264',
-            '-pix_fmt', 'yuv420p',
-            "-an",
-            '-y',  # Overwrite output file if exists
+            "-r", "30",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-an",  # Loại bỏ âm thanh
+            "-y",  # Ghi đè file output nếu đã tồn tại
             output_video
         ]
-
-        
     else:
         cmd = [
             "ffmpeg",
+             "-i", input_video,
             "-ss", start_time_str,
-            "-to", end_time_str,
-            "-i", input_video,
+            "-t", end_time,
             "-vf", f"scale={scale_width}:{scale_height}",
-            '-r', '30',
-            '-c:v', 'libx264',
-            '-pix_fmt', 'yuv420p',
-            "-an",
-            '-y',  # Overwrite output file if exists
+            "-r", "30",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-an",  # Loại bỏ âm thanh
+            "-y",  # Ghi đè file output nếu đã tồn tại
             output_video
         ]
+    
     try:
         # Chạy lệnh FFmpeg
         subprocess.run(cmd, check=True)
@@ -723,7 +724,7 @@ def create_video(data, task_id, worker_id):
             processed_entries += 1
             percent_complete = (processed_entries / total_entries) * 100
             update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
-            return True  
+        return True  
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
@@ -737,6 +738,7 @@ def get_random_video_from_directory(directory_path):
 def image_to_video_zoom_out(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])
     base_video = get_random_video_from_directory(overlay_video)
+    time_video = format_time(duration)
     if is_overlay_video:
         ffmpeg_command = [
             'ffmpeg',
@@ -747,7 +749,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
             '-filter_complex',
             f"[0:v]format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*60:s={scale_width}x{scale_height}:fps=60[bg];[1:v]scale={scale_width}:{scale_height}[overlay];[bg][overlay]overlay[outv]",
             '-map', '[outv]',
-            '-t', str(duration),
+            '-t', time_video,
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
             '-y',  # Overwrite output file if exists
@@ -762,7 +764,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
         '-i', input_image,
         '-vf',
         f"format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*60:s={scale_width}x{scale_height}:fps=60",
-        '-t', str(duration),
+        '-t', time_video,
         '-c:v', 'libx264',
         '-pix_fmt', 'yuv420p',
         '-y',  # Overwrite output file if exists
@@ -778,6 +780,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
 def image_to_video_zoom_in(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])
     base_video = get_random_video_from_directory(overlay_video)
+    time_video = format_time(duration)
     if is_overlay_video:
         ffmpeg_command = [
             'ffmpeg',
@@ -789,7 +792,7 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
             f"[0:v]format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*60:s={scale_width}x{scale_height}:fps=60[bg];[1:v]scale={scale_width}:{scale_height}[overlay];[bg][overlay]overlay[outv]",
             '-map', '[outv]',
             '-r', '30',
-            '-t', str(duration),
+            '-t', time_video,
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
             '-y',  # Overwrite output file if exists
@@ -804,7 +807,7 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         '-i', input_image,
         '-vf',
         f"format=yuv420p,scale=8000:-1,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*60:s={scale_width}x{scale_height}:fps=60",
-        '-t', str(duration),
+        '-t', time_video,
         '-r', '30',
         '-c:v', 'libx264',
         '-pix_fmt', 'yuv420p',
