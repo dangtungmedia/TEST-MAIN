@@ -30,7 +30,7 @@ services:
     restart: always
     image: "redis:latest"
     ports:
-      - "6379:6379"
+      - "6530:6379"
     command: redis-server --appendonly yes
     networks:
       - web_network
@@ -41,7 +41,7 @@ services:
       context: .
     volumes:
       - .:/app
-    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=3
+    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=30
     networks:
       - web_network
       - db_network

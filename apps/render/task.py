@@ -112,7 +112,7 @@ def render_video(self,data):
 
 
     # Tạo video
-    success = create_video(data, task_id, worker_id)
+    success = create_video_lines(data, task_id, worker_id)
     if not success:
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo video", data['video_id'], task_id, worker_id)
@@ -129,7 +129,7 @@ def render_video(self,data):
     update_status_video("Đang Render : Tạo phụ đề thành công", data['video_id'], task_id, worker_id)
 
     # Tạo file
-    success = create_video_file(data, task_id, worker_id)
+    success = create_video_with_retries(data, task_id, worker_id)
     if not success:
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo file", data['video_id'], task_id, worker_id)
@@ -200,7 +200,6 @@ def create_video_file(data, task_id, worker_id):
     # Tạo file subtitles.ass
     ass_file_path = f'media/{video_id}/subtitles.ass'
 
-
     # Tạo file input_files_video.txt
     input_files_video_path = f'media/{video_id}/input_files_video.txt'
     os.makedirs(os.path.dirname(input_files_video_path), exist_ok=True)
@@ -214,7 +213,7 @@ def create_video_file(data, task_id, worker_id):
     # Kiểm tra sự tồn tại của file audio
     if not os.path.exists(audio_file):
         print(f"Audio file not found: {audio_file}")
-        return
+        return False
     
     ffmpeg_command = [
         'ffmpeg',
@@ -223,9 +222,9 @@ def create_video_file(data, task_id, worker_id):
         '-i', input_files_video_path,
         '-i', audio_file,
         '-vf', f"subtitles={ass_file_path}:fontsdir={fonts_dir}",
-        '-c:v','libx264',
-        '-map', '0:v', 
-        '-map', '1:a', 
+        '-c:v', 'libx264',
+        '-map', '0:v',
+        '-map', '1:a',
         '-y',
         f"media/{video_id}/{name_video}.mp4"
     ]
@@ -233,12 +232,23 @@ def create_video_file(data, task_id, worker_id):
     try:
         result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     except subprocess.CalledProcessError as e:
-        print("xxxxxxxxxxxx")
         print(f"ffmpeg failed with error: {e.stderr}")
-        return
-
-    print("xxxxxxxxxxxx")
+        return False
     return True
+
+
+
+def create_video_with_retries(data, task_id, worker_id, max_retries=10):
+    for attempt in range(max_retries):
+        if create_video_file(data, task_id, worker_id):
+            print(f"Video creation succeeded on attempt {attempt + 1}")
+            return True
+        else:
+            print(f"Attempt {attempt + 1} failed, retrying...")
+            time.sleep(1)  # Chờ một chút trước khi thử lại
+    print("Max retries reached, video creation failed.")
+    return False
+
 
 def get_text_lines(data,text):
     current_line = ""
@@ -728,6 +738,20 @@ def create_video(data, task_id, worker_id):
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
+
+
+def create_video_lines(data, task_id, worker_id, max_retries=5):
+    for attempt in range(max_retries):
+        if create_video(data, task_id, worker_id):
+            print(f"Video creation succeeded on attempt {attempt + 1}")
+            return True
+        else:
+            print(f"Attempt {attempt + 1} failed, retrying...")
+            time.sleep(1)  # Chờ một chút trước khi thử lại
+    print("Max retries reached, video creation failed.")
+    return False
+
+
 
 
 def get_random_video_from_directory(directory_path):
