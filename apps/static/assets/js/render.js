@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', function () {
         tr.className = 'align-middle';
         tr.setAttribute('data-id', video.id);
         const thumbnailUrl = video.url_thumbnail ? video.url_thumbnail : '/static/assets/img/no-image-available.png';
-        const isDisabled = video.url_video === '' ? 'disabled' : '';
 
         function getLogoByStatus(status) {
             if (status.includes('Đang chờ render video!') || status.includes('Đang Render')) {
@@ -52,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <td class="col">
                 <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>
                 <div>
-                    <button class="btn btn-outline-primary btn-play-video" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video" ${isDisabled}>
+                    <button class="btn btn-outline-primary btn-play-video" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use>
                         </svg>
