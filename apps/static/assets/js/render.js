@@ -52,30 +52,30 @@ document.addEventListener('DOMContentLoaded', function () {
             <td class="col">
                 <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>
                 <div>
-                    <button class="btn btn-outline-primary btn-play-video" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video" ${isDisabled}>
+                    <button class="btn btn-outline-primary btn-play-video" style="background-color: #38b2ac;" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use>
                         </svg>
                     </button>
-                    <button class="btn btn-outline-primary btn-edit" type="button" data-id="${video.id}" data-coreui-toggle="modal" data-coreui-target="#modal-infor-video">
+                    <button class="btn btn-outline-primary btn-edit bg-warning" type="button" data-id="${video.id}" data-coreui-toggle="modal" data-coreui-target="#modal-infor-video">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-pencil"></use>
                         </svg>
                     </button>
-                    <button class="btn btn-outline-primary btn-render" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary btn-render  bg-success" type="button" data-id="${video.id}">
                         ${getLogoByStatus(video.status_video)}
                     </button>
-                    <button class="btn btn-outline-primary" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary bg-secondary" type="button" data-id="${video.id}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use>
                         </svg>
                     </button>
-                    <button class="btn btn-outline-primary" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary bg-info" type="button" data-id="${video.id}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-arrow-thick-from-bottom"></use>
                         </svg>
                     </button>
-                    <button class="btn btn-outline-primary btn-delete" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary btn-delete bg-danger" type="button" data-id="${video.id}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-trash"></use>
                         </svg>

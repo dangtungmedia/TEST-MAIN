@@ -12,6 +12,8 @@ services:
     networks:
       - web_network
       - db_network
+    expose:
+      - 5504
   nginx:
     container_name: newspro
     restart: always
