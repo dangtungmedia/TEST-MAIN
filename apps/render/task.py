@@ -353,7 +353,7 @@ def create_subtitles(data, task_id, worker_id):
                 elif len(frame_times) == total_entries:
                     for i,iteam in enumerate(json.loads(text)):
                         start_time, end_time = frame_times[i]
-                        ass_file.write(f"Dialogue: 0,{start_time[1:-1].replace(',', '.')},{end_time[1:-1].replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+                        ass_file.write(f"Dialogue: 0,{start_time.replace(',', '.')},{end_time.replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
                     return True
 
             for i,iteam in enumerate(json.loads(text)):
