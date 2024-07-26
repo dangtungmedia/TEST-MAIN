@@ -51,7 +51,6 @@ document.addEventListener('DOMContentLoaded', function () {
             <td class="col">
                 <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>
                 <div>
-                    <button class="btn btn-outline-primary btn-play-video" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
                     <button class="btn btn-outline-primary btn-play-video" style="background-color: #38b2ac;" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use>
