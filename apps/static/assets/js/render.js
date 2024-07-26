@@ -1222,7 +1222,6 @@ document.addEventListener('DOMContentLoaded', function () {
         socket.onclose = function () {
             console.log("WebSocket is closed now.");
         };
-
         socket.onerror = function (error) {
             console.error("WebSocket error:", error);
         };
