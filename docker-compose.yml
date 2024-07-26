@@ -12,6 +12,9 @@ services:
     networks:
       - web_network
       - db_network
+
+    expose:
+      - 5504
   nginx:
     container_name: newspro
     restart: always
@@ -33,7 +36,6 @@ services:
     networks:
       - web_network
       - db_network
-
   celery:
     container_name: celery_worker_tung
     build:
