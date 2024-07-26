@@ -1192,80 +1192,66 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function createWebSocket() {
-        var socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');
+        // Lấy giá trị roomName từ phần tử HTML có id là 'channel_name'
+        const roomName = $("#channel_name").val();  // Thay thế bằng room name thực tế của bạn
+        if (!roomName) {
+            console.error("Room name is required.");
+            return;
+        }
+        // Tạo kết nối WebSocket
+        const socket = new WebSocket(`ws://${window.location.host}/ws/update_status/${roomName}/`);
+
         socket.onopen = function () {
             console.log("WebSocket is open now.");
         };
+
         socket.onmessage = function (e) {
             console.log('Message:', e.data);
-            updateStatus();
-        }
+            const data = JSON.parse(e.data);
+            updateStatus(data);
+        };
 
+        socket.onclose = function () {
+            console.log("WebSocket is closed now.");
+        };
+
+        socket.onerror = function (error) {
+            console.error("WebSocket error:", error);
+        };
     }
+
+
     // Cập NHập Trạng Thái của Web Socket
-    function updateStatus() {
-        var ID_VIDEOS = document.querySelectorAll('.align-middle');
-        var list_video = [];
-        ID_VIDEOS.forEach(item => {
-            const url_video = item.getAttribute('data-id');
-            list_video.push(url_video);
-        });
-        const host = window.location.host;
-        const protocol = window.location.protocol;
-        const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render-video/status/`;
-        var formData = new FormData();
-        formData.append('list_video', list_video);
-        $.ajax({
-            url: fetchUrl,
-            type: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                if (response.success === true) {
-                    const data = response.data;
-                    console.log('Update status');
-                    $("#count-data").empty();
-                    $("#count-data").html(response.text);
-                    data.forEach(item => {
-                        const thumbnailUrl = item.url_thumbnail ? item.url_thumbnail : '/static/assets/img/no-image-available.png';
-                        var image = $('img.id-thumbnail-video[data-id="' + item.id + '"]');
-                        image.attr('src', thumbnailUrl);
+    function updateStatus(data) {
+        // $("#count-data").empty();
+        // $("#count-data").html(response.text);
+        data.forEach(item => {
+            const thumbnailUrl = item.url_thumbnail ? item.url_thumbnail : '/static/assets/img/no-image-available.png';
+            var image = $('img.id-thumbnail-video[data-id="' + item.id + '"]');
+            image.attr('src', thumbnailUrl);
 
-                        $('div.btn-play-video[data-id="' + item.id + '"]');
-                        $('div.btn-play-video[data-id="' + item.url_video + '"]');
+            $('div.btn-play-video[data-id="' + item.id + '"]');
+            $('div.btn-play-video[data-id="' + item.url_video + '"]');
 
-                        // Check if the item has a URL for the video
-                        if (item.url_video === '') {
-                            // Disable the button if no video URL is present
-                            $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', true);
-                        } else {
-                            // Enable the button if a video URL is present
-                            $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', false);
-                        }
-
-                        var title = $('label.id-title-video[data-id="' + item.id + '"]');
-                        title.text(item.title);
-
-                        var status = $('div.status-video[data-id="' + item.id + '"]');
-                        status.text(item.status_video);
-                        change_color_status();
-
-                        var timeUpload = $('label.time-upload-video[data-id="' + item.id + '"]');
-                        timeUpload.text('Ngày Upload ' + item.date_upload + ' Giờ Upload ' + item.time_upload);
-                    });
-
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function (error) {
-                console.log(error);
+            // Check if the item has a URL for the video
+            if (item.url_video === '') {
+                // Disable the button if no video URL is present
+                $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', true);
+            } else {
+                // Enable the button if a video URL is present
+                $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', false);
             }
-        });
 
+            var title = $('label.id-title-video[data-id="' + item.id + '"]');
+            title.text(item.title);
+
+            var status = $('div.status-video[data-id="' + item.id + '"]');
+            status.text(item.status_video);
+            change_color_status();
+
+            var timeUpload = $('label.time-upload-video[data-id="' + item.id + '"]');
+            timeUpload.text('Ngày Upload ' + item.date_upload + ' Giờ Upload ' + item.time_upload);
+        });
     }
 
     function change_color_status() {

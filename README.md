@@ -234,6 +234,49 @@ Soft UI Dashboard is a premium Bootstrap 5 Design now available for download in 
 
 
 
+
+# câu lệnh git Hub
+# Bảng các câu lệnh Git
+
+| **Mục đích**                                 | **Câu lệnh**                                   |
+|----------------------------------------------|------------------------------------------------|
+| Kiểm tra phiên bản Git                        | `git --version`                                |
+| Cấu hình tên người dùng toàn cục              | `git config --global user.name "Tên của bạn"`  |
+| Cấu hình email người dùng toàn cục            | `git config --global user.email "email@example.com"` |
+| Khởi tạo một kho lưu trữ Git mới              | `git init`                                     |
+| Sao chép một kho lưu trữ hiện có              | `git clone URL`                                |
+| Kiểm tra trạng thái kho lưu trữ               | `git status`                                   |
+| Thêm tệp vào khu vực chuẩn bị                 | `git add <tên_tệp>`                            |
+| Thêm tất cả các tệp vào khu vực chuẩn bị      | `git add .`                                    |
+| Cam kết các thay đổi                          | `git commit -m "Thông điệp cam kết"`           |
+| Đẩy thay đổi lên kho lưu trữ từ xa            | `git push origin <nhánh>`                      |
+| Kéo thay đổi từ kho lưu trữ từ xa             | `git pull`                                     |
+| Tạo một nhánh mới                             | `git branch <tên_nhánh>`                       |
+| Chuyển sang một nhánh khác                    | `git checkout <tên_nhánh>`                     |
+| Tạo và chuyển sang một nhánh mới              | `git checkout -b <tên_nhánh>`                  |
+| Xem các nhánh có sẵn                          | `git branch`                                   |
+| Hợp nhất một nhánh vào nhánh hiện tại         | `git merge <tên_nhánh>`                        |
+| Xóa một nhánh                                 | `git branch -d <tên_nhánh>`                    |
+| Hiển thị lịch sử cam kết                      | `git log`                                      |
+| Xem thay đổi giữa các cam kết                 | `git diff`                                     |
+| Xem thay đổi giữa nhánh và nhánh hiện tại     | `git diff <nhánh>`                             |
+| Xem chi tiết thay đổi của một cam kết cụ thể  | `git show <mã_cam_kết>`                        |
+| Đặt lại thay đổi trong khu vực chuẩn bị       | `git reset <tên_tệp>`                          |
+| Đặt lại cam kết cuối cùng nhưng giữ thay đổi  | `git reset --soft HEAD~1`                      |
+| Đặt lại cam kết cuối cùng và xóa thay đổi     | `git reset --hard HEAD~1`                      |
+| Xóa tệp khỏi kho lưu trữ                      | `git rm <tên_tệp>`                             |
+| Cập nhật tệp đã được theo dõi                 | `git add -u`                                   |
+| Liệt kê các tệp đã được bỏ qua                | `git ls-files --other --ignored --exclude-standard` |
+| Lưu trạng thái hiện tại của kho lưu trữ       | `git stash`                                    |
+| Áp dụng trạng thái đã lưu                     | `git stash apply`                              |
+| Xóa stash đã lưu                              | `git stash drop`                               |
+| Hiển thị danh sách stash                      | `git stash list`                               |
+| Đổi tên nhánh hiện tại                        | `git branch -m <tên_nhánh_mới>`                |
+| Đặt nhánh theo dõi nhánh từ xa                | `git branch --set-upstream-to=origin/<tên_nhánh>` |
+
+
+
+
 docker 
 # Dừng Toàn Bộ DOkcer
 docker stop $(docker ps -q)
@@ -263,3 +306,7 @@ nvidia-settings
 
 # buil chạy trên win cho nhanh 
   docker-compose -f my-compose-file.yml up --build
+
+
+
+
