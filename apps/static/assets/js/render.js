@@ -218,7 +218,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then(data => {
-
                 // Kiểm tra dữ liệu trả về
                 if (!data.results || !Array.isArray(data.results)) {
                     throw new Error('Invalid data format: results not found or not an array');
@@ -233,9 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     show_video(item, i + 1);
                 });
                 show_page_bar(page, data);
-                updateStatus();
             })
-            .catch(error => console.error('Error:', error));
     }
     // Xử lý sự kiện click vào nút xem thông tin kênh
 
@@ -1093,10 +1090,8 @@ document.addEventListener('DOMContentLoaded', function () {
             success: function (response) {
                 if (response.success === true) {
                     console.log('Cập nhật video thành công');
-                    updateStatus();
                 } else {
                     alert(response.message);
-                    updateStatus();
                 }
             },
             error: function (error) {
@@ -1160,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', function () {
             contentType: false,
             success: function (response) {
                 if (response.success === true) {
-                    updateStatus();
+                    console.log(response);
                 } else {
                     alert(response.message);
                 }
@@ -1207,8 +1202,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         socket.onmessage = function (e) {
             console.log('Message:', e.data);
-            const data = JSON.parse(e.data);
-            updateStatus(data);
+            try {
+                const data = JSON.parse(e.data);
+
+                // Kiểm tra nếu dữ liệu nhận được là một mảng
+                if (Array.isArray(data)) {
+                    console.log(data);
+                    updateStatus(data);
+                } else {
+                    console.error("Received data is not an array:", data);
+                    alert('Dữ liệu nhận được không hợp lệ');
+                }
+            } catch (error) {
+                console.error("Error parsing JSON:", error);
+                alert('Có lỗi xảy ra khi phân tích dữ liệu JSON');
+            }
         };
 
         socket.onclose = function () {
@@ -1223,35 +1231,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Cập NHập Trạng Thái của Web Socket
     function updateStatus(data) {
-        // $("#count-data").empty();
-        // $("#count-data").html(response.text);
-        data.forEach(item => {
-            const thumbnailUrl = item.url_thumbnail ? item.url_thumbnail : '/static/assets/img/no-image-available.png';
-            var image = $('img.id-thumbnail-video[data-id="' + item.id + '"]');
-            image.attr('src', thumbnailUrl);
+        var id_videos = document.querySelectorAll('.align-middle');
+        // Duyệt qua từng phần tử
+        id_videos.forEach(id => {
+            // Lấy id của video
+            var videoId = idElement.getAttribute('data-id');
+            // Tìm video trong dữ liệu
+            var videoData = data.find(video => video.id == videoId);
 
-            $('div.btn-play-video[data-id="' + item.id + '"]');
-            $('div.btn-play-video[data-id="' + item.url_video + '"]');
+            // Nếu tìm thấy video, cập nhật nội dung
+            if (videoData) {
+                const thumbnailUrl = videoData.url_thumbnail ? videoData.url_thumbnail : '/static/assets/img/no-image-available.png';
+                var image = $('img.id-thumbnail-video[data-id="' + videoData.id + '"]');
+                image.attr('src', thumbnailUrl);
 
-            // Check if the item has a URL for the video
-            if (item.url_video === '') {
-                // Disable the button if no video URL is present
-                $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', true);
-            } else {
-                // Enable the button if a video URL is present
-                $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', false);
+                $('div.btn-play-video[data-id="' + videoData.id + '"]');
+                $('div.btn-play-video[data-id="' + videoData.url_video + '"]');
+                $('div.btn-render[data-id="' + item.id + '"]')
+
+                var title = $('label.id-title-video[data-id="' + item.id + '"]');
+                title.text(item.title);
+
+                var status = $('div.status-video[data-id="' + item.id + '"]');
+                status.text(item.status_video);
+
+                var timeUpload = $('label.time-upload-video[data-id="' + item.id + '"]');
+                timeUpload.text('Ngày Upload ' + item.date_upload + ' Giờ Upload ' + item.time_upload);
             }
-
-            var title = $('label.id-title-video[data-id="' + item.id + '"]');
-            title.text(item.title);
-
-            var status = $('div.status-video[data-id="' + item.id + '"]');
-            status.text(item.status_video);
-            change_color_status();
-
-            var timeUpload = $('label.time-upload-video[data-id="' + item.id + '"]');
-            timeUpload.text('Ngày Upload ' + item.date_upload + ' Giờ Upload ' + item.time_upload);
         });
+        change_color_status();
     }
 
     function change_color_status() {
@@ -1315,4 +1323,52 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    function websocket_count_video() {
+        // Lấy phần tử có id là "user-data-id"
+        var userElement = document.getElementById("user-data-id");
+        // Lấy giá trị của thuộc tính data-user-id
+        var userId = userElement.getAttribute("data-user-id");
+
+        // Tạo kết nối WebSocket
+        const socket = new WebSocket(`ws://${window.location.host}/ws/update_count/${userId}/`);
+
+        socket.onopen = function () {
+            console.log("WebSocket is open now.");
+        };
+
+        socket.onmessage = function (e) {
+            try {
+                const data = JSON.parse(e.data);
+
+                // Kiểm tra nếu dữ liệu nhận được là một mảng
+                if (data.message) {
+                    $("#count-data").empty();
+                    $("#count-data").html(data.message);
+                } else {
+                    console.error("Received data is not valid:", data);
+                    alert('Dữ liệu nhận được không hợp lệ');
+                }
+            } catch (error) {
+                console.error("Error parsing JSON:", error);
+                alert('Có lỗi xảy ra khi phân tích dữ liệu JSON');
+            }
+        };
+
+        socket.onclose = function () {
+            console.log("WebSocket count is closed now.");
+        };
+
+        socket.onerror = function (error) {
+            console.error("WebSocket error:", error);
+        };
+    }
+
+    // Gọi hàm websocket_count_video khi tài liệu đã sẵn sàng
+    document.addEventListener("DOMContentLoaded", function () {
+        websocket_count_video();
+        // Tạo kết nối với Web Socket
+        createWebSocket();
+    });
+
 });
