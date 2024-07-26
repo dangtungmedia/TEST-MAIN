@@ -240,7 +240,7 @@ docker stop $(docker ps -q)
 
 
 # chạy docker  với thư mục hiện tại để build
-docker buil -t dangtung .
+docker build -t dangtung .
 
 
 # Xóa Toàn Bộ docker
@@ -258,3 +258,8 @@ docker-compose up -d
 sudo docker start $(sudo docker ps -a -q)
 
 nvidia-settings
+
+
+
+# buil chạy trên win cho nhanh 
+  docker-compose -f my-compose-file.yml up --build
