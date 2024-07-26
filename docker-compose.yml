@@ -33,6 +33,7 @@ services:
     networks:
       - web_network
       - db_network
+
   celery:
     container_name: celery_worker_tung
     build:
