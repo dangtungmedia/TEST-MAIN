@@ -23,6 +23,8 @@ def notify_video_change(sender, instance, **kwargs):
         }
     )
 
+    
+
 class RenderConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
@@ -52,11 +54,11 @@ class RenderConsumer(AsyncWebsocketConsumer):
     async def video_change(self, event):
         try:
             data = await self.get_video_data()
-            await self.send(text_data=json.dumps(data))
+            await self.send(data=json.dumps(data))
         except Exception as e:
-            await self.send(text_data=json.dumps({"error": "An error occurred when processing video change event!"}))
+            await self.send(data=json.dumps({"error": "An error occurred when processing video change event!"}))
 
-    async def receive(self, text_data):
+    async def receive(self, data):
         # Xử lý thông điệp nhận được từ WebSocket
         text_data_json = json.loads(text_data)
         message = text_data_json['message']
