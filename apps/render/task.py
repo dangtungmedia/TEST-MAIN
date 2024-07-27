@@ -695,9 +695,10 @@ def convert_to_seconds(time_str):
 
 def create_video(data, task_id, worker_id):
     try:
+        list_video = []
         video_id = data.get('video_id')
         text  = data.get('text_content')
-
+        list_video = []
         create_or_reset_directory(f'media/{video_id}/video')
         processed_entries = 0
         total_entries = len(json.loads(text))
@@ -719,8 +720,25 @@ def create_video(data, task_id, worker_id):
 
             out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
 
+            files = [f for f in os.listdir('video') if os.path.isfile(os.path.join('video', f))]
             if iteam['url_video'] == '':
                 video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
+                # video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
+                # cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
+                while True:
+                    try:
+                        random_file = random.choice(files)
+                        video_path = os.path.join('video', random_file)
+                        if os.path.exists(video_path):
+                            video_duration = get_video_duration(video_path)
+                            print(f"Duration: {video_duration},{duration}")
+                            if random_file not in list_video and duration < video_duration:
+                                list_video.append(random_file)
+                                break
+                        else:
+                            print(f"File not found: {video_path}")
+                    except Exception as e:
+                        print(f"Error processing file {random_file}: {e}")
                 cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
 
             else:
@@ -738,7 +756,6 @@ def create_video(data, task_id, worker_id):
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
-
 
 def create_video_lines(data, task_id, worker_id, max_retries=5):
     for attempt in range(max_retries):
