@@ -103,9 +103,9 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
 
         return JsonResponse({'success': True, 'message': 'Thêm video thành công!', 'text_video': text_video}, status=status.HTTP_201_CREATED)
 
-    def create_video_render(self, folder_id, profile, text_video, upload_time, upload_date, video_url):
+    def create_video_render(self, folder_id, profile, text_video, upload_time, upload_date):
         try:
-            video_render = VideoRender.objects.create(
+            VideoRender.objects.create(
                 folder_id=Folder.objects.get(id=folder_id),
                 profile_id=ProfileChannel.objects.get(id=profile.id),
                 name_video=''.join(random.choices(string.ascii_letters + string.digits, k=7)),

@@ -722,9 +722,6 @@ def create_video(data, task_id, worker_id):
 
             files = [f for f in os.listdir('video') if os.path.isfile(os.path.join('video', f))]
             if iteam['url_video'] == '':
-                video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
-                # video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
-                # cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
                 while True:
                     try:
                         random_file = random.choice(files)
