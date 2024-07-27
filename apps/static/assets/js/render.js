@@ -1362,7 +1362,6 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error("WebSocket error:", error);
         };
     }
-
     // Gọi hàm websocket_count_video khi tài liệu đã sẵn sàng
     document.addEventListener("DOMContentLoaded", function () {
         websocket_count_video();
