@@ -1,7 +1,7 @@
-from django.urls import path,re_path
-from .consumers import RenderConsumer
+from django.urls import path
+from .consumers import RenderConsumer, CountDataConsumer
 
 websocket_urlpatterns = [
-    # re_path(r"ws/update/", RenderConsumer.as_asgi()),
-    path("ws/update_status/", RenderConsumer.as_asgi()),
+    path('ws/update_status/<str:room_name>/', RenderConsumer.as_asgi()),
+    path('ws/update_count/<str:room_name>/', CountDataConsumer.as_asgi()),
 ]
