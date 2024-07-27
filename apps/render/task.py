@@ -695,6 +695,7 @@ def convert_to_seconds(time_str):
 
 def create_video(data, task_id, worker_id):
     try:
+        list_video = []
         video_id = data.get('video_id')
         text  = data.get('text_content')
 
@@ -722,7 +723,7 @@ def create_video(data, task_id, worker_id):
             if iteam['url_video'] == '':
                 # video_path = get_video_random(data,duration,iteam['text'],iteam['id'])
                 # cut_and_scale_video_random(video_path,out_file, duration, 1920, 1080, 'video_screen')
-                 while True:
+                while True:
                     try:
                         random_file = random.choice(files)
                         video_path = os.path.join('video', random_file)
