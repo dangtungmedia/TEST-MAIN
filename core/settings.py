@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'storages',
     'django_celery_beat',
+    'django_celery_results',
     'channels',
 ]
 

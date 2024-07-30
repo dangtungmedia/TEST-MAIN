@@ -46,18 +46,20 @@ from PIL import Image, ImageDraw, ImageFont
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 import re
 from datetime import datetime, timedelta
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from celery.result import AsyncResult
+from celery import shared_task, signals
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
 SERVER='http://daphne:5504/'
-
-
 
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
     video_id = args[0].get('video_id')
     worker_id = "None"
     update_status_video("Render Lỗi : Lỗi Render Không Xác Định", video_id, task_id, worker_id)
+
 
 
 @worker_shutdown.connect
@@ -68,12 +70,17 @@ def worker_shutdown_handler(sender, **kwargs):
             video.status_video = f'Render Lỗi : Worker bị tắt đột ngột {worker_id}'
             video.save()
 
-
 @shared_task(bind=True)
 def render_video(self,data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
+
+    print(f"Worker ID: {worker_id}")
+    print(f"Task ID: {task_id}")
+    print(f"Video ID: {video_id}")
+    print(f"Data: {data}")
+
 
     update_status_video("Đang Render : Đang load thông tin video", data['video_id'], task_id, worker_id)
     success =  create_or_reset_directory(f'media/{video_id}')
@@ -236,8 +243,6 @@ def create_video_file(data, task_id, worker_id):
         return False
     return True
 
-
-
 def create_video_with_retries(data, task_id, worker_id, max_retries=10):
     for attempt in range(max_retries):
         if create_video_file(data, task_id, worker_id):
@@ -248,7 +253,6 @@ def create_video_with_retries(data, task_id, worker_id, max_retries=10):
             time.sleep(1)  # Chờ một chút trước khi thử lại
     print("Max retries reached, video creation failed.")
     return False
-
 
 def get_text_lines(data,text):
     current_line = ""
@@ -692,7 +696,6 @@ def convert_to_seconds(time_str):
     delta = timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second, microseconds=dt.microsecond)
     return delta.total_seconds()
 
-
 def create_video(data, task_id, worker_id):
     try:
         list_video = []
@@ -765,13 +768,9 @@ def create_video_lines(data, task_id, worker_id, max_retries=5):
     print("Max retries reached, video creation failed.")
     return False
 
-
-
-
 def get_random_video_from_directory(directory_path):
     video_files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
     return os.path.join(directory_path, random.choice(video_files))
-
 
 def image_to_video_zoom_out(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])
@@ -813,7 +812,6 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
         subprocess.run(ffmpeg_command, check=True)
     except subprocess.CalledProcessError as e:
         print(f"lỗi chạy FFMPEG {e}")
-
 
 def image_to_video_zoom_in(input_image, output_video, duration, scale_width, scale_height, overlay_video):
     is_overlay_video = random.choice([True, False])
@@ -859,36 +857,37 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         print(f"lỗi chạy FFMPEG {e}")
 
 def download_audio(data, task_id, worker_id):
-    try:
-        language = data.get('language')
-        video_id = data.get('video_id')
-        text = data.get('text_content')
+    # try:
+    language = data.get('language')
+    video_id = data.get('video_id')
+    text = data.get('text_content')
 
-        text_entries = json.loads(text)
-        total_entries = len(text_entries)
-        processed_entries = 0
-        if language == 'Japanese-VoiceVox':
-            with open(f'media/{video_id}/input_files.txt', 'w') as file:
-                for text_entry in text_entries:
-                    file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
-                    get_voice_japanese(data, text_entry['text'], file_name)
-                    processed_entries += 1
-                    percent_complete = (processed_entries / total_entries) * 100
-                    update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
-                    file.write(f"file 'voice/{text_entry['id']}.wav'\n")
+    text_entries = json.loads(text)
+    total_entries = len(text_entries)
+    processed_entries = 0
+    if language == 'Japanese-VoiceVox':
+        with open(f'media/{video_id}/input_files.txt', 'w') as file:
+            for text_entry in text_entries:
+                file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
+                get_voice_japanese(data, text_entry['text'], file_name)
+                processed_entries += 1
+                percent_complete = (processed_entries / total_entries) * 100
+                update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+                file.write(f"file 'voice/{text_entry['id']}.wav'\n")
 
-        elif language == 'Korea-TTS':
-            with open(f'media/{video_id}/input_files.txt', 'w') as file:
-                for text_entry in text_entries:
-                    file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
-                    get_voice_korea(data, text_entry['text'], file_name)
-                    processed_entries += 1
-                    percent_complete = (processed_entries / total_entries) * 100
-                    update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
-                    file.write(f"file 'voice/{text_entry['id']}.wav'\n")
-        return True
-    except Exception as e:
-        return False
+    elif language == 'Korea-TTS':
+        with open(f'media/{video_id}/input_files.txt', 'w') as file:
+            for text_entry in text_entries:
+                file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
+                get_voice_korea(data, text_entry['text'], file_name)
+                processed_entries += 1
+                percent_complete = (processed_entries / total_entries) * 100
+                update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+                file.write(f"file 'voice/{text_entry['id']}.wav'\n")
+    #     return True
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")
+    #     return False
 
 async def text_to_speech(text, voice, output_file):
     communicate = edge_tts.Communicate(text=text, voice=voice)
@@ -900,7 +899,6 @@ def get_voice_korea(data, text, file_name):
     if not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True)
     asyncio.run(text_to_speech(text,name_langue, file_name))
-
 
 def get_voice_japanese(data, text, file_name):
     try:
@@ -934,13 +932,11 @@ def get_voice_japanese(data, text, file_name):
     except Exception as e:
         pass
 
-
 def get_filename_from_url(url):
     parsed_url = urllib.parse.urlparse(url)
     path = parsed_url.path
     filename = path.split('/')[-1]
     return filename
-
 
 def download_image(data, task_id, worker_id):
     video_id = data.get('video_id')
@@ -980,7 +976,6 @@ def download_image(data, task_id, worker_id):
             update_status_video(f"Đang Render : Không thể tải xuống hình ảnh", video_id, task_id, worker_id)
     return success
 
-
 def create_or_reset_directory(directory_path):
     try:
         # Kiểm tra xem thư mục có tồn tại hay không
@@ -1000,7 +995,6 @@ def create_or_reset_directory(directory_path):
     except Exception as e:
         print(f"Lỗi: {e}")
         return False
-    
 
 @shared_task(queue='check_worker_status')
 def check_worker_status():
@@ -1014,20 +1008,25 @@ def check_worker_status():
             video.save()
     print("Worker status checked successfully.")
 
+@signals.task_revoked.connect
+def task_revoked_handler(sender, request, terminated, signum, expired, **kw):
+    video_id = request.args[0].get('video_id')
+    task_id = request.id
+    worker_id = "None"
+    update_status_video("Render Lỗi : Dừng render", video_id, task_id, worker_id)
+
 def update_status_video(status_video,video_id,task_id,worker_id):
-    url = f'{SERVER}api/{video_id}/'
-    print(url)
     data = {
         'video_id': video_id,
         'status': status_video,
         'task_id': task_id,
         'worker_id': worker_id,
-        'secret_key': SECRET_KEY,
-        'action': 'update_status'
     }
-    response = requests.post(url, json=data)
-    # Kiểm tra phản hồi từ server
-    if response.status_code == 200:
-        print("Status updated successfully.")
-    else:
-        print(f"Failed to update status. Server responded with: {response.status_code}, {response.text}")
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        'public',  # Tên nhóm mà bạn muốn gửi thông điệp đến
+        {
+            'type': 'render_status',  # Loại thông điệp
+            'data': data,
+        }
+    )

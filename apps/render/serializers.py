@@ -24,19 +24,9 @@ class RenderSerializer(ModelSerializer):
     class Meta:
         model = VideoRender
         fields = '__all__'
-        
 
 
-# class VideoRenderSerializer(serializers.ModelSerializer):
-#     url_thumbnail = SerializerMethodField()
-
-#     class Meta:
-#         model = VideoRender
-#         fields = ['id', 'title', 'status_video', 'url_thumbnail', 'time_upload', 'date_upload']
-
-#     def get_url_thumbnail(self, obj):
-#         return obj.url_thumbnail if obj.url_thumbnail else "/static/assets/img/no-image-available.png"
-
+    
 
 # class RenderSerializer(ModelSerializer):
     # voice_details = SerializerMethodField()

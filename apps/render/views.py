@@ -51,7 +51,6 @@ from itertools import chain
 from django.db.models import Q
 import ast
 
-
 class ProfileChannelViewSet(viewsets.ModelViewSet):
     queryset = ProfileChannel.objects.all()
     serializer_class = ProfileChannelSerializer
@@ -97,8 +96,6 @@ class ProfileChannelViewSet(viewsets.ModelViewSet):
             print("xxxxx")
             count += 1
             video_url.append(video)
-
-        print(text_video)
         self.create_video_render(folder_id, profile, text_video, upload_time, upload_date, video_url)
 
         return JsonResponse({'success': True, 'message': 'Thêm video thành công!', 'text_video': text_video}, status=status.HTTP_201_CREATED)
@@ -167,23 +164,21 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         return VideoRender.objects.all()
     
     @action(detail=True, methods=['POST'])
-    def update_video(self, request, pk=None):
-
+    def update_video_render(self, request, pk=None):
         input_data = {
-            'title': request.data.get('title'),
-            'description': request.data.get('description'),
-            'keywords': request.data.get('keywords'),
-            'date_upload': request.data.get('date_upload'),
-            'time_upload': request.data.get('time_upload'),
-            'content': request.data.get('text_content'),
-            'content_2': request.data.get('text_content_2'),
-            'video_image': request.data.get('video_image'),
-            'file-thumnail': request.data.get('file-thumnail'),
-            'file-audio': request.data.get('file-audio'),
-            'file-srt': request.data.get('file-srt')
+            'title': request.data.get('title',''),
+            'description': request.data.get('description',''),
+            'keywords': request.data.get('keywords',''),
+            'date_upload': request.data.get('date_upload',''),
+            'time_upload': request.data.get('time_upload',''),
+            'content': request.data.get('text_content',''),
+            'content_2': request.data.get('text_content_2',''),
+            'video_image': request.data.get('video_image',''),
+            'file-thumnail': request.data.get('file-thumnail',None),
+            'file-audio': request.data.get('file-audio',None),
+            'file-srt': request.data.get('file-srt',None)
         }
         date_upload = input_data['date_upload']
-        print(input_data)
         try:
             video = VideoRender.objects.get(id=pk)
         except VideoRender.DoesNotExist:
@@ -208,7 +203,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         file_url = default_storage.url(file_name)
         return file_url
     
-    
     def handle_audio(self, video, audio):
         if video.url_audio:
             file = video.url_audio
@@ -219,7 +213,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         file_name = default_storage.save(f"data/{video.id}/audio/{filename}", audio)
         file_url = default_storage.url(file_name)
         return file_url
-    
     
     def handle_subtitle(self, video, subtitle):
         if video.url_subtitle:
@@ -301,7 +294,7 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
         path = unquote(parsed_url.path)
         filename = path.split('/')[-1]
         return filename
-        
+    
     @action(detail=False, methods=['POST'])
     def status(self, request):
         list_video = request.data.get('list_video')
@@ -380,7 +373,6 @@ class index(LoginRequiredMixin, TemplateView):
                     video.save()
                     return JsonResponse({'success': True, 'message': 'Video đang chờ render!'})
                 
-                
                 elif "Render Lỗi" in video.status_video:
                     task = render_video.apply_async(args=[data])
                     video.task_id = task.id
@@ -436,7 +428,6 @@ class index(LoginRequiredMixin, TemplateView):
             video.url_thumbnail = self.handle_thumbnail(video, thumnail, video_id)
         video.save()
 
-
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
         language = Voice_language.objects.get(id=video.voice)
@@ -477,6 +468,7 @@ class index(LoginRequiredMixin, TemplateView):
         ass_color = f"&H{alpha:02X}{b:02X}{g:02X}{r:02X}&"
         
         return ass_color
+
 class VideoRenderList(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'render/count_data_use.html'
@@ -598,6 +590,7 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
             page_obj = render_to_string('render/thumnail_page_bar_template.html', {'page_obj': page_obj}, request)
             return JsonResponse({'success': True, 'thumnail_html': thumnail, 'page_bar_html': page_obj})
         
+
         elif action == 'show-title':
             id = request.POST.get('id')
             page = request.POST.get('page')

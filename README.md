@@ -305,7 +305,7 @@ nvidia-settings
 
 
 # buil chạy trên win cho nhanh 
-  docker-compose -f my-compose-file.yml up --build
+docker-compose -f docker-upload-pc.yml up --build
 
 
 
@@ -317,4 +317,6 @@ Compare Changes (So sánh thay đổi): So sánh các phần thay đổi.
 
 hợp nhất code  
 
-git cherry-pick {name}
+  git checkout main
+  git merge b097e17  # hoặc git cherry-pick b097e17
+  git push origin main

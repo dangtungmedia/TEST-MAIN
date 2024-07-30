@@ -9,8 +9,7 @@
     </svg>
   </div>
   <ul class="sidebar-nav" data-coreui="navigation" data-simplebar="">
-    
-    <li class="nav-title">Tài Khoản : {{request.user.username}}</li>
+    <li class="nav-title" id="user-id" data-id="{{request.user.id}}">Tài Khoản : {{request.user.username}}</li>
     {% if request.user.is_superuser %}
       <li class="nav-group" aria-expanded="false"><a class="nav-link nav-group-toggle" href="#">
         <svg class="nav-icon">
