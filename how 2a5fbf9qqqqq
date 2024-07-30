@@ -1,0 +1,206 @@
+[33maa1e9b3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: checkout: moving from 2a5fbf9868b459d32b801f8f76469b38cc5b693e to main
+[33m2a5fbf9[m HEAD@{1}: commit: update hơi mất việc tí
+[33mb097e17[m HEAD@{2}: checkout: moving from main to b097e175818f58ab3f6f8d3135f0846a72062b22
+[33maa1e9b3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{3}: checkout: moving from 381c6956396376b03f9d55f75b9b51c58ea17bb3 to main
+[33m381c695[m HEAD@{4}: commit: update code 30/7
+[33mb097e17[m HEAD@{5}: checkout: moving from main to b097e17
+[33maa1e9b3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{6}: commit (merge): update tạm thời lằng nhằng
+[33m738d6f5[m HEAD@{7}: commit: update thử
+[33m90a5fa0[m HEAD@{8}: merge b097e17: updating HEAD
+[33m90a5fa0[m HEAD@{9}: checkout: moving from main to main
+[33m90a5fa0[m HEAD@{10}: checkout: moving from b097e175818f58ab3f6f8d3135f0846a72062b22 to main
+[33mb097e17[m HEAD@{11}: commit: update admin có quyền xóa
+[33m8dc608b[m[33m ([m[1;32mtemp-update-websocket[m[33m, [m[1;32mtemp-branch-from-8dc608b[m[33m)[m HEAD@{12}: checkout: moving from temp-update-websocket to 8dc608b
+[33m8dc608b[m[33m ([m[1;32mtemp-update-websocket[m[33m, [m[1;32mtemp-branch-from-8dc608b[m[33m)[m HEAD@{13}: checkout: moving from main to temp-update-websocket
+[33m90a5fa0[m HEAD@{14}: checkout: moving from temp-branch-from-8dc608b to main
+[33m8dc608b[m[33m ([m[1;32mtemp-update-websocket[m[33m, [m[1;32mtemp-branch-from-8dc608b[m[33m)[m HEAD@{15}: checkout: moving from 8dc608b993ee6a8af12c04ca914d73f1fc1b5be6 to temp-branch-from-8dc608b
+[33m8dc608b[m[33m ([m[1;32mtemp-update-websocket[m[33m, [m[1;32mtemp-branch-from-8dc608b[m[33m)[m HEAD@{16}: checkout: moving from main to 8dc608b
+[33m90a5fa0[m HEAD@{17}: checkout: moving from temp-update-websocket to main
+[33m8dc608b[m[33m ([m[1;32mtemp-update-websocket[m[33m, [m[1;32mtemp-branch-from-8dc608b[m[33m)[m HEAD@{18}: checkout: moving from 8dc608b993ee6a8af12c04ca914d73f1fc1b5be6 to temp-update-websocket
+[33m8dc608b[m[33m ([m[1;32mtemp-update-websocket[m[33m, [m[1;32mtemp-branch-from-8dc608b[m[33m)[m HEAD@{19}: checkout: moving from main to 8dc608b
+[33m90a5fa0[m HEAD@{20}: commit: Lưu các thay đổi tạm thời
+[33m7696f7f[m HEAD@{21}: checkout: moving from main to main
+[33m7696f7f[m HEAD@{22}: checkout: moving from main to main
+[33m7696f7f[m HEAD@{23}: checkout: moving from main to main
+[33m7696f7f[m HEAD@{24}: checkout: moving from 8dc608b993ee6a8af12c04ca914d73f1fc1b5be6 to main
+[33m8dc608b[m[33m ([m[1;32mtemp-update-websocket[m[33m, [m[1;32mtemp-branch-from-8dc608b[m[33m)[m HEAD@{25}: commit: update tool chạy mượt hơn
+[33m229f505[m HEAD@{26}: merge 229f505: Fast-forward
+[33mcd1af0b[m[33m ([m[1;32mtemp-branch[m[33m)[m HEAD@{27}: checkout: moving from main to cd1af0b
+[33m7696f7f[m HEAD@{28}: checkout: moving from 229f505da1158a9613bad456cffb67f10e845477 to main
+[33m229f505[m HEAD@{29}: commit: update code chạy bằng websocket chưa có Upload
+[33m5ac942b[m HEAD@{30}: commit: update code chạy web load nhanh mượt hơn cập nhập chính xác thời gian thực
+[33mcd1af0b[m[33m ([m[1;32mtemp-branch[m[33m)[m HEAD@{31}: checkout: moving from main to cd1af0b9185c6bb01cf6fb1a2161b6608f06c850
+[33m7696f7f[m HEAD@{32}: checkout: moving from temp-branch to main
+[33mcd1af0b[m[33m ([m[1;32mtemp-branch[m[33m)[m HEAD@{33}: checkout: moving from main to temp-branch
+[33m7696f7f[m HEAD@{34}: reset: moving to 7696f7f3d5b23c41c82242168dc99e644073a47b
+[33m7696f7f[m HEAD@{35}: checkout: moving from main to main
+[33m7696f7f[m HEAD@{36}: commit: WIP: Save local changes before cherry-pick
+[33mb4c5d48[m HEAD@{37}: checkout: moving from main to main
+[33mb4c5d48[m HEAD@{38}: checkout: moving from main to main
+[33mb4c5d48[m HEAD@{39}: checkout: moving from cd1af0b9185c6bb01cf6fb1a2161b6608f06c850 to main
+[33mcd1af0b[m[33m ([m[1;32mtemp-branch[m[33m)[m HEAD@{40}: checkout: moving from main to cd1af0b9185c6bb01cf6fb1a2161b6608f06c850
+[33mb4c5d48[m HEAD@{41}: commit (merge): update code render ngon lành
+[33m90248f8[m[33m ([m[1;32mbackup-branch[m[33m)[m HEAD@{42}: checkout: moving from temp-branch to main
+[33mcd1af0b[m[33m ([m[1;32mtemp-branch[m[33m)[m HEAD@{43}: checkout: moving from cd1af0b9185c6bb01cf6fb1a2161b6608f06c850 to temp-branch
+[33mcd1af0b[m[33m ([m[1;32mtemp-branch[m[33m)[m HEAD@{44}: commit: update chuẩn mà toàn bị xóa
+[33mfa2dc9d[m HEAD@{45}: checkout: moving from main to fa2dc9dc89a24a776e157d039a733b19df26cbe3
+[33m90248f8[m[33m ([m[1;32mbackup-branch[m[33m)[m HEAD@{46}: checkout: moving from 63f08138967a933ca72e9aafff716df5728b89ba to main
+[33m63f0813[m HEAD@{47}: commit: update code chuẩn render
+[33mfa2dc9d[m HEAD@{48}: checkout: moving from main to fa2dc9dc89a24a776e157d039a733b19df26cbe3
+[33m90248f8[m[33m ([m[1;32mbackup-branch[m[33m)[m HEAD@{49}: merge backup-branch: Fast-forward
+[33m174aa59[m HEAD@{50}: pull origin main: Fast-forward
+[33m4d772b3[m HEAD@{51}: checkout: moving from backup-branch to main
+[33m90248f8[m[33m ([m[1;32mbackup-branch[m[33m)[m HEAD@{52}: checkout: moving from 90248f82e29db836bbcbaf8fba74dd8af2f2aafa to backup-branch
+[33m90248f8[m[33m ([m[1;32mbackup-branch[m[33m)[m HEAD@{53}: commit (merge): update bản chạy mượt mà có hiển thị số lượng
+[33mfa2dc9d[m HEAD@{54}: commit: updatea bản chuẩn render theo thư mục có sẵn chạy 10 luồng
+[33mc954210[m HEAD@{55}: commit: update chuẩn bản đã sửa render theo thư mục có sẵn
+[33meb4c28d[m HEAD@{56}: checkout: moving from 02080d02910dfec47fbf8e7804d922d88a6f5c97 to eb4c28d80e1c9906408a576163fc64ee173e3c48
+[33m02080d0[m HEAD@{57}: commit: update
+[33m41c167f[m HEAD@{58}: commit: update chiều 27/7
+[33m4d772b3[m HEAD@{59}: checkout: moving from main to 4d772b329a1fec0bc260bc348b8d579c7fee20f6
+[33m4d772b3[m HEAD@{60}: checkout: moving from 0acf5509918550f693306b0d72d9c0696167db23 to main
+[33m0acf550[m HEAD@{61}: commit: xxxx
+[33m58c014b[m HEAD@{62}: checkout: moving from main to 58c014bbb8f0efe9dc6bd9dc8fffd37575f36774
+[33m4d772b3[m HEAD@{63}: checkout: moving from e32acc9090affc46ff8eaad118bde35dd0aaa769 to main
+[33me32acc9[m HEAD@{64}: checkout: moving from main to e32acc9090affc46ff8eaad118bde35dd0aaa769
+[33m4d772b3[m HEAD@{65}: pull origin main: Fast-forward
+[33me32acc9[m HEAD@{66}: commit: update chạy docker nhanh như bàn thờ
+[33meb4c28d[m HEAD@{67}: commit: update code render lại nhiều lần nếu lỗi
+[33mb36ce8e[m HEAD@{68}: commit: update code render main
+[33m064cead[m HEAD@{69}: checkout: moving from main to main
+[33m064cead[m HEAD@{70}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33me17ce56[m HEAD@{71}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m064cead[m HEAD@{72}: checkout: moving from main to main
+[33m064cead[m HEAD@{73}: commit: aa
+[33md585c36[m HEAD@{74}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33me17ce56[m HEAD@{75}: checkout: moving from e17ce56703de2cbf1b2e2b2ad3a4ce9802827bcc to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33me17ce56[m HEAD@{76}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33me17ce56[m HEAD@{77}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33md585c36[m HEAD@{78}: commit: aa
+[33m2089f22[m HEAD@{79}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33me17ce56[m HEAD@{80}: commit: tesst
+[33mcb50545[m HEAD@{81}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33mcb50545[m HEAD@{82}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33mcb50545[m HEAD@{83}: commit: update
+[33m2089f22[m HEAD@{84}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m2089f22[m HEAD@{85}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m2089f22[m HEAD@{86}: checkout: moving from main to main
+[33m2089f22[m HEAD@{87}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33m2089f22[m HEAD@{88}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m2089f22[m HEAD@{89}: reset: moving to origin/main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{90}: Branch: renamed refs/heads/temp-branch2 to refs/heads/main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{92}: checkout: moving from main to temp-branch2
+[33m2089f22[m HEAD@{93}: checkout: moving from temp-branch2 to main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{94}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to temp-branch2
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{95}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m2089f22[m HEAD@{96}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{97}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m2089f22[m HEAD@{98}: commit: update code
+[33mf7ec8e4[m HEAD@{99}: checkout: moving from 2110c31a23894965fb664eba16b253c20aac24a9 to main
+[33m2110c31[m HEAD@{100}: commit: aa
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{101}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33mf7ec8e4[m HEAD@{102}: checkout: moving from main to main
+[33mf7ec8e4[m HEAD@{103}: checkout: moving from main to main
+[33mf7ec8e4[m HEAD@{104}: checkout: moving from main to main
+[33mf7ec8e4[m HEAD@{105}: checkout: moving from main to main
+[33mf7ec8e4[m HEAD@{106}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{107}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33mf7ec8e4[m HEAD@{108}: checkout: moving from 4e94362c110e78727b477e5c8a89aed28b29c6ce to main
+[33m4e94362[m HEAD@{109}: commit: Save local changes before switching branches
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{110}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33mf7ec8e4[m HEAD@{111}: commit (cherry-pick): update web màu sắc nút ấn
+[33mdaa1da7[m HEAD@{112}: checkout: moving from main to main
+[33mdaa1da7[m HEAD@{113}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{114}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33mdaa1da7[m HEAD@{115}: commit: test
+[33m635e642[m HEAD@{116}: commit (merge): Giải quyết xung đột merge
+[33m6cf1d9e[m HEAD@{117}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{118}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m6cf1d9e[m HEAD@{119}: checkout: moving from main to main
+[33m6cf1d9e[m HEAD@{120}: checkout: moving from main to main
+[33m6cf1d9e[m HEAD@{121}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{122}: checkout: moving from e5d4b361995fdea2fd3e5b7c5c5ecf1e42a2854a to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33me5d4b36[m HEAD@{123}: commit: Save local changes in docker-compose.yml
+[33m3d465be[m HEAD@{124}: commit: update code web về nhánh chính main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{125}: checkout: moving from main to 8cfc83d183afb382dda83ecdcee37b3fab3f6068
+[33m6cf1d9e[m HEAD@{126}: checkout: moving from 8cfc83d183afb382dda83ecdcee37b3fab3f6068 to main
+[33m8cfc83d[m[33m ([m[1;31morigin/temp-branch2[m[33m)[m HEAD@{127}: commit: update web màu sắc nút ấn
+[33md7792d0[m HEAD@{128}: checkout: moving from main to d7792d0d8e479c572e2abea24390ac726483dd8f
+[33m6cf1d9e[m HEAD@{129}: commit: update
+[33ma66f065[m HEAD@{130}: commit (merge): update code
+[33mb6d60b8[m[33m ([m[1;31morigin/old-version[m[33m)[m HEAD@{131}: Branch: renamed refs/heads/old-version to refs/heads/main
+[33mb6d60b8[m[33m ([m[1;31morigin/old-version[m[33m)[m HEAD@{133}: checkout: moving from b4c89f784a9f856668d656a7ffa0b51ec7843f1f to old-version
+[33mb4c89f7[m HEAD@{134}: commit: update lại sửa nút xem video
+[33md7792d0[m HEAD@{135}: checkout: moving from old-version to d7792d0d8e479c572e2abea24390ac726483dd8f
+[33mb6d60b8[m[33m ([m[1;31morigin/old-version[m[33m)[m HEAD@{136}: commit: lấy lại bản cũ
+[33mb2d6b8c[m HEAD@{137}: commit: update code lần 2
+[33m00a2c30[m HEAD@{138}: commit: update code
+[33md7792d0[m HEAD@{139}: commit: update redis cổng 6330
+[33maf4196e[m HEAD@{140}: commit: update chuẩn code render
+[33mea49e76[m HEAD@{141}: commit: update lên web cả redis
+[33m0f8867e[m HEAD@{142}: checkout: moving from old-version to old-version
+[33m0f8867e[m HEAD@{143}: commit: update redis
+[33m0ebc9ea[m HEAD@{144}: commit: update celery 6530
+[33m542ec02[m HEAD@{145}: commit: update linh tinh 25/7
+[33m05f15c5[m HEAD@{146}: pull: Fast-forward
+[33m2a63b1b[m HEAD@{147}: commit: update code render và show video lên web đổi màu chữ
+[33m80e0c00[m HEAD@{148}: commit: update render thành công lỗi uploda lên sever
+[33ma582934[m HEAD@{149}: commit: update code render task
+[33mda6ddc9[m HEAD@{150}: commit: update cập nhập render video bằng pixpapay
+[33m3820308[m HEAD@{151}: commit: update code render
+[33m2f2773e[m HEAD@{152}: pull origin old-version: Fast-forward
+[33m002aa16[m HEAD@{153}: pull origin old-version: Fast-forward
+[33m2c2bd28[m HEAD@{154}: checkout: moving from b6182433eb898551411fc1223f52530b4f016136 to old-version
+[33mb618243[m HEAD@{155}: reset: moving to HEAD~
+[33m002aa16[m HEAD@{156}: pull origin old-version --rebase (start): checkout 002aa16527b9901afffe9d47c88738161125909c
+[33mcfa1d23[m HEAD@{157}: commit (merge): Resolved merge conflicts
+[33mbe2dae5[m HEAD@{158}: commit: update code
+[33me82a131[m HEAD@{159}: commit: update get video auto
+[33m910b2c9[m HEAD@{160}: checkout: moving from old-version to 910b2c93e7d7f2a4dacf696357eabd56bfaaba75
+[33m2c2bd28[m HEAD@{161}: pull origin old-version: Fast-forward
+[33m910b2c9[m HEAD@{162}: commit: update đặt lịch
+[33m898ea16[m HEAD@{163}: commit: update count data chuẩn lần 1
+[33me23ef39[m HEAD@{164}: commit: update count data chuẩn
+[33m684024b[m HEAD@{165}: commit: update url count data lần 2
+[33m709def6[m HEAD@{166}: commit: update url count data
+[33m8a7a9f6[m HEAD@{167}: commit: update count data redis
+[33m0bb4e09[m HEAD@{168}: commit: update count data
+[33m046c8c7[m HEAD@{169}: checkout: moving from d53ef0594c0889889db8efab81549f695e86e383 to old-version
+[33md53ef05[m HEAD@{170}: commit: update count data
+[33mc9d761b[m HEAD@{171}: commit (merge): update voice
+[33m046c8c7[m HEAD@{172}: checkout: moving from 299373cc7ec317c1b194c12826a20917af47a087 to 046c8c7d647e3a53c19828f0457044468a9647b0
+[33m299373c[m HEAD@{173}: commit: update loi
+[33m046c8c7[m HEAD@{174}: checkout: moving from old-version to 046c8c7d647e3a53c19828f0457044468a9647b0
+[33m046c8c7[m HEAD@{175}: pull origin old-version: Fast-forward
+[33ma3b416f[m HEAD@{176}: commit: update voice computer
+[33m79d01d4[m HEAD@{177}: commit: update celery
+[33m3111fbd[m HEAD@{178}: commit: update save json text
+[33m027c1c9[m HEAD@{179}: pull origin old-version: Fast-forward
+[33m0ba9c28[m HEAD@{180}: checkout: moving from old-version to old-version
+[33m0ba9c28[m HEAD@{181}: checkout: moving from 0ba9c287c468a31cf0d81e8ff39ed3b1ac0b0726 to old-version
+[33m0ba9c28[m HEAD@{182}: checkout: moving from old-version to origin/old-version
+[33m0ba9c28[m HEAD@{183}: checkout: moving from old-version to old-version
+[33m0ba9c28[m HEAD@{184}: checkout: moving from old-version to old-version
+[33m0ba9c28[m HEAD@{185}: commit: update thumnail upload cập nhập lại khi use khác upload không đúng
+[33m83f554d[m HEAD@{186}: commit: update thumnail upload
+[33m590c173[m HEAD@{187}: commit: udpate json text
+[33m1940a11[m HEAD@{188}: commit: update lưu text sửa redis
+[33m4d42797[m HEAD@{189}: commit: update lưu text
+[33macea404[m HEAD@{190}: commit: update cổng redis
+[33mef6ba1e[m HEAD@{191}: commit: update ip cho sever
+[33m8d99662[m HEAD@{192}: commit: update celery lần 1
+[33m54adead[m HEAD@{193}: commit: xóa appseed cho docker lần 3
+[33m2ed3c43[m HEAD@{194}: commit: update code xóa appspeed lần 2
+[33m1d89e3d[m HEAD@{195}: commit: xóa appseed cho docker
+[33m272e2bd[m HEAD@{196}: commit: code chạy oki
+[33mccd19b0[m HEAD@{197}: reset: moving to ccd19b0a5d07216f77434c9d31333da366558cd4
+[33m24d57a3[m HEAD@{198}: reset: moving to 24d57a3dd00bd31bd12dafcbe171d30eceeba32b
+[33m311d260[m HEAD@{199}: reset: moving to 311d260b8684a35c32d6667012cac7c9266da405
+[33m33f5be2[m HEAD@{200}: reset: moving to 33f5be2d5ffbdcbd124a229a5a5cb1b87fa512c2
+[33m33f5be2[m HEAD@{201}: reset: moving to 33f5be2d5ffbdcbd124a229a5a5cb1b87fa512c2
+[33m790c8ca[m HEAD@{202}: reset: moving to 790c8caa791c2f5ce6e8b146ffc825c3d39572fe
+[33mccd19b0[m HEAD@{203}: reset: moving to ccd19b0a5d07216f77434c9d31333da366558cd4
+[33mfa54b08[m HEAD@{204}: reset: moving to fa54b0807b131416419aabcc580bc8a3af6d2d57
+[33m24d57a3[m HEAD@{205}: checkout: moving from 24d57a3dd00bd31bd12dafcbe171d30eceeba32b to old-version
+[33m24d57a3[m HEAD@{206}: checkout: moving from main to 24d57a3dd00bd31bd12dafcbe171d30eceeba32b
+[33mf3b8a02[m HEAD@{207}: clone: from github.com:dangtungmedia/NewPro.git
