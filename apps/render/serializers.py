@@ -24,8 +24,9 @@ class RenderSerializer(ModelSerializer):
     class Meta:
         model = VideoRender
         fields = '__all__'
-        
 
+
+    
 
 # class RenderSerializer(ModelSerializer):
     # voice_details = SerializerMethodField()

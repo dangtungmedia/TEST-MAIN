@@ -12,10 +12,23 @@
         <h5 class="nav-link text-success" id='count-data'>
         </h5>
         <ul class="header-nav ms-auto">
-            <li class="nav-item"><a class="nav-link" href="{% url 'home:home' %}">Users</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'home:setting' %}">Settings</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'video_render:render' %}">Render</a></li>
+            <div class="dropdown dropstart">
+                <button class="btn" id="dropdownMenuButton" type="button" data-coreui-toggle="dropdown" aria-expanded="false">
+                    <svg class="icon icon-lg">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-bell"></use>
+                    </svg></a></li>
+                </button>
+            </div>
+            <li class="nav-item"><a class="nav-link" href="#">
+                <svg class="icon icon-lg">
+                  <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-list-rich"></use>
+                </svg></a></li>
+            <li class="nav-item"><a class="nav-link" href="#">
+                <svg class="icon icon-lg">
+                  <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-envelope-open"></use>
+                </svg></a></li>
         </ul>
+       
         <ul class="header-nav">
             <li class="nav-item dropdown"><a class="nav-link py-0" data-coreui-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
                 <div class="avatar avatar-md"><img class="avatar-img" src="/static/assets/img/avatars/8.jpg" alt="user@email.com"></div>

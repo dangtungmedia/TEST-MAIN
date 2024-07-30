@@ -1,10 +1,112 @@
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded with JavaScript');
     get_video_render(1);
-    createWebSocket()
     $('#channel_name').change(function () {
         get_video_render(1);
     });
+
+    let socket;
+    let reconnectInterval = 5000; // Thời gian chờ trước khi thử kết nối lại (ms)
+    let lastMessage = null; // Biến để lưu trữ tin nhắn cuối cùng
+
+    function initializeWebSocket() {
+        socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');
+
+        socket.onopen = function () {
+            console.log('WebSocket connection opened.');
+            // Gửi lại tin nhắn cuối cùng nếu có
+            if (lastMessage) {
+                socket.send(lastMessage);
+                lastMessage = null; // Xóa tin nhắn sau khi gửi lại
+            }
+
+            // Lấy danh sách video và thông tin người dùng
+            var list_video = [];
+            var ID_VIDEOS = document.querySelectorAll('.video');
+            ID_VIDEOS.forEach(item => {
+                const url_video = item.getAttribute('data-id');
+                list_video.push(url_video);
+            });
+
+            var userElement = document.getElementById('user-id');
+            var userId = userElement.getAttribute('data-id');
+
+            const identifyMessage = JSON.stringify({
+                type: 'identify',
+                user_id: userId
+            });
+            socket.send(identifyMessage);
+        };
+
+        socket.onmessage = function (event) {
+            let data;
+            try {
+                data = JSON.parse(event.data);
+                console.log('Received:', data);
+
+                if (!data.message) {
+                    console.error('Received message without type:', data);
+                    return;
+                }
+                // Xử lý các loại thông điệp khác nhau
+                if (data.message === 'update_status') {
+                    updateVideoRender(data.data);
+                } else if (data.message === 'update_count') {
+                    $('#count-data').html(data.count_data);
+                } else if (data.message === 'btn-edit') {
+                    show_infor_video(data.data);
+                } else if (data.message === 'add-one-video') {
+                    add_one_video_web(data.data);
+                    show_infor_video(data.data);
+                    $('#next-cread-image').click();
+                } else if (data.message === 'add-text-folder') {
+                    if (data.success === true) {
+                        alert(data.message);
+                        $('#input-url-channel-folder').val('');
+                        $('#exampleFormControlTextarea1').val('');
+                    } else {
+                        alert(data.message);
+                    }
+                } else if (data.message === 'btn-delete') {
+                    if (data.data.success === true) {
+                        var id = data.data.id_video;
+                        $('tr.align-middle[data-id="' + id + '"]').remove();
+                    } else {
+                        alert(data.data.id_video.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Error parsing JSON:', error);
+                console.error('Received data:', event.data);
+            }
+        };
+
+        socket.onclose = function (event) {
+            console.log('WebSocket is closed now. Attempting to reconnect...');
+            setTimeout(initializeWebSocket, reconnectInterval); // Tự động kết nối lại sau 5 giây
+        };
+
+        socket.onerror = function (error) {
+            console.error('WebSocket error:', error);
+        };
+    }
+
+    // Khởi tạo kết nối WebSocket khi trang được tải
+    window.onload = function () {
+        initializeWebSocket();
+    };
+
+    function sendMessage(message) {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(message);
+        } else {
+            console.error('WebSocket is not open. Ready state:', socket.readyState);
+            lastMessage = message; // Lưu trữ tin nhắn cuối cùng
+            initializeWebSocket(); // Kết nối lại
+        }
+    }
+
+
 
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -233,13 +335,108 @@ document.addEventListener('DOMContentLoaded', function () {
                     show_video(item, i + 1);
                 });
                 show_page_bar(page, data);
-                updateStatus();
             })
             .catch(error => console.error('Error:', error));
+
     }
     // Xử lý sự kiện click vào nút xem thông tin kênh
 
     // xử lý sự kiện thêm nhiều video cùng lúc
+
+
+    function add_one_video_web(video, count) {
+        const tr = document.createElement('tr');
+        tr.className = 'align-middle';
+        tr.setAttribute('data-id', video.id);
+        const thumbnailUrl = video.url_thumbnail ? video.url_thumbnail : '/static/assets/img/no-image-available.png';
+
+        function getLogoByStatus(status) {
+            if (status.includes('Đang chờ render video!') || status.includes('Đang Render')) {
+                return `
+                    <svg class="icon bg-warring">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-pause"></use>
+                    </svg>
+                `;
+            } else if (status.includes('Render') || status.includes('Render Thành Công') ||
+                status.includes('Đang Upload Lên VPS') || status.includes('Upload VPS Thành Công') ||
+                status.includes('Upload Lỗi')) {
+                return `
+                    <svg class="icon bg-green">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-play"></use>
+                    </svg>
+                `;
+            } else {
+                return `
+                    <svg class="icon bg-default">
+                        <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-media-play"></use>
+                    </svg>
+                `;
+            }
+        }
+
+        tr.innerHTML = `
+            <td class="col-auto gap-0" style="width:40px; padding-left:1rem;">
+                <label class="col-form-label">${video.id}</label>
+            </td>
+            <th class="col-auto">
+                <img class="id-thumbnail-video" data-id="${video.id}" src="${thumbnailUrl}" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);" onerror="this.onerror=null; this.src='/static/assets/img/no-image-available.png';">
+            </th>
+            <td class="col">
+                <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>
+                <div>
+                    <button class="btn btn-outline-primary btn-play-video" style="background-color: #38b2ac;" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
+                        <svg class="icon">
+                            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use>
+                        </svg>
+                    </button>
+                    <button class="btn btn-outline-primary btn-edit bg-warning" type="button" data-id="${video.id}" data-coreui-toggle="modal" data-coreui-target="#modal-infor-video">
+                        <svg class="icon">
+                            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-pencil"></use>
+                        </svg>
+                    </button>
+                    <button class="btn btn-outline-primary btn-render  bg-success" type="button" data-id="${video.id}">
+                        ${getLogoByStatus(video.status_video)}
+                    </button>
+                    <button class="btn btn-outline-primary bg-secondary" type="button" data-id="${video.id}">
+                        <svg class="icon">
+                            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use>
+                        </svg>
+                    </button>
+                    <button class="btn btn-outline-primary bg-info" type="button" data-id="${video.id}">
+                        <svg class="icon">
+                            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-arrow-thick-from-bottom"></use>
+                        </svg>
+                    </button>
+                    <button class="btn btn-outline-primary btn-delete bg-danger" type="button" data-id="${video.id}">
+                        <svg class="icon">
+                            <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-trash"></use>
+                        </svg>
+                    </button>
+                    <label class="col-form-label time-upload-video" data-id="${video.id}">Ngày Upload ${video.date_upload} Giờ Upload ${video.time_upload}</label>
+                </div>
+            </td>
+            <td class="col text-center">
+                <div class="col-form-label status-video" style="width:300px;" data-id="${video.id}">
+                    ${video.status_video}
+                </div>
+            </td>
+            <td class="col text-center">
+                <div class="col-form-label">${video.name_video}</div>
+            </td>
+            <td class="col text-center">
+                <label class="col-form-label">${video.timenow}</label>
+            </td>
+        `;
+
+        const myTbody = document.getElementById("myTbody");
+        if (myTbody.firstChild) {
+            myTbody.insertBefore(tr, myTbody.firstChild);
+        } else {
+            myTbody.appendChild(tr);
+        }
+
+        change_color_status();
+    }
 
     $('#add-videos').click(function () {
         console.log('Add videos');
@@ -346,24 +543,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     // xử lý sự kiện thêm 1 video   
 
-    // Xử lý sự kiện click vào nút xem video
     // Xử lý sự kiện click vào nút sửa video
-
-    $(document).on('click', '.btn-edit', function () {
-        var id = $(this).data('id');
-        show_infor_video(id);
-        $("#input-Thumnail").val('');
-        $("#save-text-video").css('display', 'none');
-        $('#button-back').css('display', 'none');
-        $('#next-cread-image').css('display', 'block');
-        $('#button-back-2').css('display', 'none');
-        $('#edit_video').css('display', 'none');
-        $('#edit_text_video').css('display', 'none');
-        $('#input-infor-video').css('display', 'flex');
-        $('#input-image-and-text').css('display', 'none');
-
-    });
-
 
     $("#button-back").click(function () {
         $('#input-infor-video').css('display', 'flex');
@@ -377,15 +557,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     $(document).on('click', '#next-cread-image', function () {
-        $('#input-infor-video').css('display', 'none');
-        $('#input-image-and-text').css('display', 'block');
-        $('#save-text-video').css('display', 'block');
-        $('#next-cread-image').css('display', 'none');
-        $('#button-back').css('display', 'block');
-        $('#button-back-2').css('display', 'none');
-        $('#save-text-video').css('display', 'none');
-        $('#edit_video').css('display', 'block');
+        if ($('#id-video-edit').val() === '') {
+            cread_one_video()
+            $("#input-Thumnail").val('');
+        } else {
+            $('#input-infor-video').css('display', 'none');
+            $('#input-image-and-text').css('display', 'block');
+            $('#save-text-video').css('display', 'block');
+            $('#next-cread-image').css('display', 'none');
+            $('#button-back').css('display', 'block');
+            $('#button-back-2').css('display', 'none');
+            $('#save-text-video').css('display', 'none');
+            $('#edit_video').css('display', 'block');
+        }
     });
+
 
     // button next khi đã nhập nội dung và audio
     $('#edit_video').click(function () {
@@ -435,7 +621,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         // Đọc tệp hình ảnh dưới dạng URL dữ liệu
         reader.readAsDataURL(file);
-
     });
 
 
@@ -461,6 +646,7 @@ document.addEventListener('DOMContentLoaded', function () {
         FileUpload();
 
     });
+
 
     // chuyển đổi file srt thành văn bản 
     function extractTextFromSrt(content) {
@@ -547,7 +733,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var result = subRegex(text_content, regexPattern);
         $('#input-text-content').val(result);
         show_count_text();
-
     });
 
     //chia thao ký tự
@@ -619,49 +804,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function show_infor_video(id) {
-        const host = window.location.host;
-        const protocol = window.location.protocol;
-        const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render-video/${id}/`;
-
-        fetch(fetchUrl, {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Data:', data);
-                $('#id-video-edit').val(data.id);
-                $('#Image-Thumnail-infor-video').attr('src', data.url_thumbnail);
-                $('#input-title').val(data.title);
-                $('#input-description').val(data.description);
-                $('#input-keyword').val(data.keywords);
-                $('#input-date-upload').val(data.date_upload);
-                $('#input-time-upload').val(data.time_upload);
-                $("#input-text-content").val(data.text_content);
-                $('#url-audio').val(data.url_audio);
-                $('#url-srt').val(data.url_subtitle);
-
-                $('#inputAudio').val('');
-                $('#inputSrt').val('');
-
-                FileUpload();
-                edit_text_video(data);
-                show_modal_image(data);
-
-            })
-            .catch(error => console.error('Error:', error));
+    function show_infor_video(data) {
+        console.log('Data:', data);
+        $('#id-video-edit').val(data.id);
+        $('#Image-Thumnail-infor-video').attr('src', data.url_thumbnail ? data.url_thumbnail : '/static/assets/img/no-image-available.png');
+        $('#input-title').val(data.title);
+        $('#input-description').val(data.description);
+        $('#input-keyword').val(data.keywords);
+        $('#input-date-upload').val(data.date_upload);
+        $('#input-time-upload').val(data.time_upload);
+        $("#input-text-content").val(data.text_content);
+        $('#url-audio').val(data.url_audio);
+        $('#url-srt').val(data.url_subtitle);
+        FileUpload();
+        edit_text_video(data);
+        show_modal_image(data);
     }
+
 
     function update_text_edit() {
         const text_content = $('#input-text-content').val();
@@ -715,13 +874,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function show_modal_image(data) {
         let images;
 
-        // Kiểm tra nếu data.video_image là chuỗi và có thể phân tích cú pháp JSON
-        if (typeof data.video_image === 'string') {
+        // Kiểm tra nếu data.video_image là null hoặc undefined
+        if (data.video_image === null || data.video_image === undefined) {
+            images = [];
+        } else if (typeof data.video_image === 'string') {
+            // Kiểm tra nếu data.video_image là chuỗi và có thể phân tích cú pháp JSON
             try {
                 images = JSON.parse(data.video_image);
-                console.log('Parsed JSON data.video_image:', images);
             } catch (e) {
-                console.error('Error parsing JSON:', e);
                 images = [];
             }
         } else if (Array.isArray(data.video_image)) {
@@ -1025,7 +1185,112 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
+
+
+
+    function get_image_iteam() {
+        var images = document.querySelectorAll('.iteam-image');
+        const image_content = [];
+        images.forEach(iteam => {
+            const url_video = iteam.querySelector('.file-image-url').src;
+            image_content.push(url_video);
+        });
+        return image_content;
+    }
+
+
+    function get_text_json() {
+        let iteam_lines = document.querySelectorAll('.iteam-text-video');
+        let text_content = ''; // Sử dụng let để có thể gán lại giá trị sau này.
+        let text_content_2 = [];
+
+        iteam_lines.forEach(iteam => {
+            let id = iteam.querySelector('.iteam-id').textContent;
+            let text = iteam.querySelector('.iteam-text').textContent;
+            let url_video = iteam.querySelector('.iteam-video-content').src;
+            let host = window.location.host;
+            let protocol = window.location.protocol;
+            let noImageUrl = `${protocol}//${host}/static/assets/img/no-image-available.png`;
+
+            url_video = (url_video === noImageUrl) ? "" : url_video;
+            text_content_2.push({ id: id, text: text, url_video: url_video });
+            text_content += text + '\n\n';
+        });
+        return { text_content: text_content, text_content_2: text_content_2 };
+    }
+
+
+
+    // Xử lý sự kiện click vào nút render video
+
+
+    // Xử lý sự kiện click vào nút upload lại
+
+    // Xử lý sự kiện click vào nút xóa video
+
+    // Web Socket
+    // Tạo kết nối với Web Socket
+
+    $(document).on('click', '.btn-play-video', function () {
+        let iframe = document.getElementById('videoIframe');
+        const videoUrl = this.getAttribute('data-url');
+        iframe.src = videoUrl;
+    });
+
+
+    // dừng play video xem thử
+    $(document).on('click', '.btn-close-play-video', function () {
+        let iframe = document.getElementById('videoIframe');
+        iframe.src = '';
+    });
+
+
+    $(document).on('click', '.btn-render', function () {
+        var id = $(this).data('id');
+        const renderMessage = JSON.stringify({
+            type: 'btn-render',
+            id_video: id,
+        });
+        sendMessage(renderMessage);
+    });
+
+    $(document).on('click', '.btn-edit', function () {
+        var id = $(this).data('id');
+        $('#id-video-edit').val(id);
+        show_button_model_infor_video();
+        const editMessage = JSON.stringify({
+            type: 'edit-video',
+            id_video: id,
+        });
+        sendMessage(editMessage);
+    });
+
+    $(document).on('click', '#add-one-video', function () {
+        $('#id-video-edit').val('');
+        show_button_model_infor_video();
+    });
+
+    $(document).on('click', '#save-text-video-conent', function () {
+
+        folder = $('#add-video-text-content').val()
+        url = $('#input-url-channel-folder').val()
+        text = $('#exampleFormControlTextarea1').val()
+        if (folder === '' || url === '') {
+            alert('Vui lòng nhập đầy đủ thông tin');
+            return;
+        }
+        const add_text_folder = JSON.stringify({
+            type: 'add-text-folder',
+            folder: folder,
+            url: url,
+            text: text,
+        });
+        sendMessage(add_text_folder);
+
+    });
+
     $(document).on('click', '#save-text-video', function () {
+
         var file = $('#input-Thumnail')[0].files[0];
         var id_video = $('#id-video-edit').val();
 
@@ -1041,13 +1306,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-
         $('.btn-close').click();
 
         const host = window.location.host;
         const protocol = window.location.protocol;
         const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render-video/${id_video}/update_video/`;
+        const fetchUrl = `${protocol}//${host}/render-video/${id_video}/update_video_render/`;
         const { text_content, text_content_2 } = get_text_json();
         images = get_image_iteam();
         console.log('Debug information');
@@ -1093,10 +1357,8 @@ document.addEventListener('DOMContentLoaded', function () {
             success: function (response) {
                 if (response.success === true) {
                     console.log('Cập nhật video thành công');
-                    updateStatus();
                 } else {
                     alert(response.message);
-                    updateStatus();
                 }
             },
             error: function (error) {
@@ -1106,166 +1368,103 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
-    function get_image_iteam() {
-        var images = document.querySelectorAll('.iteam-image');
-        const image_content = [];
-        images.forEach(iteam => {
-            const url_video = iteam.querySelector('.file-image-url').src;
-            image_content.push(url_video);
-        });
-        return image_content;
-    }
-
-
-    function get_text_json() {
-        let iteam_lines = document.querySelectorAll('.iteam-text-video');
-        let text_content = ''; // Sử dụng let để có thể gán lại giá trị sau này.
-        let text_content_2 = [];
-
-        iteam_lines.forEach(iteam => {
-            let id = iteam.querySelector('.iteam-id').textContent;
-            let text = iteam.querySelector('.iteam-text').textContent;
-            let url_video = iteam.querySelector('.iteam-video-content').src;
-            let host = window.location.host;
-            let protocol = window.location.protocol;
-            let noImageUrl = `${protocol}//${host}/static/assets/img/no-image-available.png`;
-
-            url_video = (url_video === noImageUrl) ? "" : url_video;
-            text_content_2.push({ id: id, text: text, url_video: url_video });
-            text_content += text + '\n\n';
-        });
-        return { text_content: text_content, text_content_2: text_content_2 };
-    }
-
-
-
-    // Xử lý sự kiện click vào nút render video
-    $(document).on('click', '.btn-render', function () {
+    $(document).on('click', '.btn-delete', function () {
         var id = $(this).data('id');
-        const host = window.location.host;
-        const protocol = window.location.protocol;
-        const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render/`;
-
-        var formData = new FormData();
-        formData.append('id-video-render', id);
-        formData.append('action', 'render-video');
-
-        $.ajax({
-            url: fetchUrl,
-            type: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                if (response.success === true) {
-                    updateStatus();
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function (error) {
-                console.log(error);
-            }
+        var userElement = document.getElementById('user-id');
+        var userId = userElement.getAttribute('data-id');
+        const deleteMessage = JSON.stringify({
+            type: 'btn-delete',
+            userId: userId,
+            id_video: id,
         });
+        sendMessage(deleteMessage);
     });
 
-    // Xử lý sự kiện click vào nút upload lại
-
-    // Xử lý sự kiện click vào nút xóa video
-
-    // Web Socket
-    // Tạo kết nối với Web Socket
-
-    $(document).on('click', '.btn-play-video', function () {
-        let iframe = document.getElementById('videoIframe');
-        const videoUrl = this.getAttribute('data-url');
-        iframe.src = videoUrl;
-    });
-
-
-    // dừng play video xem thử
-    $(document).on('click', '.btn-close-play-video', function () {
-        let iframe = document.getElementById('videoIframe');
-        iframe.src = '';
-    });
-
-    function createWebSocket() {
-        var socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');
-        socket.onopen = function () {
-            console.log("WebSocket is open now.");
-        };
-        socket.onmessage = function (e) {
-            console.log('Message:', e.data);
-            updateStatus();
-        }
-
+    function show_button_model_infor_video() {
+        $('#input-title').val('');
+        $('#input-description').val('');
+        $('#input-keyword').val('');
+        $("#input-Thumnail").val('');
+        $('#Image-Thumnail-infor-video').attr('src', '/static/assets/img/no-image-available.png');
+        $("#save-text-video").css('display', 'none');
+        $('#button-back').css('display', 'none');
+        $('#next-cread-image').css('display', 'block');
+        $('#button-back-2').css('display', 'none');
+        $('#edit_video').css('display', 'none');
+        $('#edit_text_video').css('display', 'none');
+        $('#input-infor-video').css('display', 'flex');
+        $('#input-image-and-text').css('display', 'none');
+        $('#inputAudio').val('');
+        $('#inputSrt').val('');
     }
-    // Cập NHập Trạng Thái của Web Socket
-    function updateStatus() {
-        var ID_VIDEOS = document.querySelectorAll('.align-middle');
-        var list_video = [];
-        ID_VIDEOS.forEach(item => {
-            const url_video = item.getAttribute('data-id');
-            list_video.push(url_video);
-        });
-        const host = window.location.host;
-        const protocol = window.location.protocol;
-        const csrfToken = getCSRFToken();
-        const fetchUrl = `${protocol}//${host}/render-video/status/`;
-        var formData = new FormData();
-        formData.append('list_video', list_video);
-        $.ajax({
-            url: fetchUrl,
-            type: 'POST',
-            headers: { 'X-CSRFToken': csrfToken },
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function (response) {
-                if (response.success === true) {
-                    const data = response.data;
-                    console.log('Update status');
-                    $("#count-data").empty();
-                    $("#count-data").html(response.text);
-                    data.forEach(item => {
-                        const thumbnailUrl = item.url_thumbnail ? item.url_thumbnail : '/static/assets/img/no-image-available.png';
-                        var image = $('img.id-thumbnail-video[data-id="' + item.id + '"]');
-                        image.attr('src', thumbnailUrl);
 
-                        $('div.btn-play-video[data-id="' + item.id + '"]');
-                        $('div.btn-play-video[data-id="' + item.url_video + '"]');
+    function get_file_image() {
+        return new Promise((resolve, reject) => {
+            const fileInput = document.getElementById('input-Thumnail');
+            const file = fileInput.files[0];
 
-                        // Check if the item has a URL for the video
-                        if (item.url_video === '') {
-                            // Disable the button if no video URL is present
-                            $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', true);
-                        } else {
-                            // Enable the button if a video URL is present
-                            $('div.btn-render[data-id="' + item.id + '"]').attr('disabled', false);
-                        }
-
-                        var title = $('label.id-title-video[data-id="' + item.id + '"]');
-                        title.text(item.title);
-
-                        var status = $('div.status-video[data-id="' + item.id + '"]');
-                        status.text(item.status_video);
-                        change_color_status();
-
-                        var timeUpload = $('label.time-upload-video[data-id="' + item.id + '"]');
-                        timeUpload.text('Ngày Upload ' + item.date_upload + ' Giờ Upload ' + item.time_upload);
-                    });
-
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function (error) {
-                console.log(error);
+            if (file) {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function () {
+                    const base64Image = reader.result.replace(/^data:image\/(png|jpg|jpeg);base64,/, '');
+                    resolve(base64Image);
+                };
+                reader.onerror = function (error) {
+                    console.log('Error: ', error);
+                    reject(error);
+                };
+            } else {
+                resolve(null);
             }
         });
+    }
 
+    async function cread_one_video() {
+        try {
+            var userElement = document.getElementById('user-id');
+            var userId = userElement.getAttribute('data-id');
+            var base64Image = await get_file_image();
+            const addOneVideoMessage = JSON.stringify({
+                type: 'add-one-video',
+                userId: userId,
+                profile_id: $('#channel_name').val(),
+                title: $('#input-title').val(),
+                description: $('#input-description').val(),
+                keywords: $('#input-keyword').val(),
+                date_upload: $('#input-date-upload').val(),
+                time_upload: $('#input-time-upload').val(),
+                thumbnail: base64Image // Thêm file ảnh đã mã hóa vào thông điệp JSON
+            });
+            socket.send(addOneVideoMessage);
+        } catch (error) {
+            console.log('Error sending WebSocket message: ', error);
+        }
+    }
+
+
+    function updateVideoRender(data) {
+        var ID_VIDEOS = document.querySelectorAll('.align-middle');
+        ID_VIDEOS.forEach(item => {
+            if (item.getAttribute('data-id') == data.id) {
+                const thumbnailUrl = data.url_thumbnail ? data.url_thumbnail : '/static/assets/img/no-image-available.png';
+                var image = $('img.id-thumbnail-video[data-id="' + data.id + '"]');
+                image.attr('src', thumbnailUrl);
+
+                $('div.btn-play-video[data-id="' + data.id + '"]');
+                $('div.btn-play-video[data-id="' + data.url_video + '"]');
+
+                var title = $('label.id-title-video[data-id="' + data.id + '"]');
+                title.text(data.title);
+
+                var status = $('div.status-video[data-id="' + data.id + '"]');
+                status.text(data.status_video);
+                change_color_status();
+
+                var timeUpload = $('label.time-upload-video[data-id="' + data.id + '"]');
+                timeUpload.text('Ngày Upload ' + data.date_upload + ' Giờ Upload ' + data.time_upload);
+            }
+        });
     }
 
     function change_color_status() {
@@ -1288,7 +1487,6 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 frontPart = status;
             }
-
             // Tạo phần tử span cho phần đầu và phần còn lại
             const frontSpan = document.createElement('span');
             const backSpan = document.createElement('span');
@@ -1329,4 +1527,5 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
 });
