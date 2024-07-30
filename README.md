@@ -320,3 +320,7 @@ chuyển về nhánh  main
 git checkout main
 
 
+
+# hơi mất việc tí
+git checkout main  # Đảm bảo bạn đang ở nhánh main
+git merge b097e17  # Hoặc git merge <branch-name>
