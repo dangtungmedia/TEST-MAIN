@@ -49,7 +49,6 @@ from apps.home.serializers import ProfileChannelSerializer
 
 from itertools import chain
 from django.db.models import Q
-import ast
 
 class ProfileChannelViewSet(viewsets.ModelViewSet):
     queryset = ProfileChannel.objects.all()

@@ -28,6 +28,24 @@ from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
 
 
 
+from apps.render.task import render_video
+from celery.result import AsyncResult
+from urllib.parse import urlparse, unquote
+from asgiref.sync import async_to_sync
+from django.core.files.base import ContentFile
+import base64,re
+from random import randint
+import random
+import string
+import logging
+from pytube import YouTube
+
+
+from apps.home.models import Voice_language, syle_voice
+from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
+
+
+
 # Đổi tên hàm notify_video_change để tránh xung đột
 @receiver(post_save, sender=VideoRender)
 def notify_video_change(sender, instance, **kwargs):
@@ -307,7 +325,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
     def delete_video(self, data):
         try:
             user = CustomUser.objects.get(id=data['userId'])
-            if user.is_deleted:
+            if user.is_deleted or user.is_staff:
                 video = VideoRender.objects.get(id=data['id_video'])
                 video.delete()
                 return {'success': True,"id_video": data['id_video'], "message": "Xóa Video Thành Công"}
