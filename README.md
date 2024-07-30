@@ -314,3 +314,7 @@ Accept Current Change (Chấp nhận thay đổi hiện tại): Giữ lại ph�
 Accept Incoming Change (Chấp nhận thay đổi đến): Giữ lại phần từ commit 86f7ee3.
 Accept Both Changes (Chấp nhận cả hai thay đổi): Giữ lại cả hai phần thay đổi.
 Compare Changes (So sánh thay đổi): So sánh các phần thay đổi.
+
+hợp nhất code  
+
+git cherry-pick {name}
