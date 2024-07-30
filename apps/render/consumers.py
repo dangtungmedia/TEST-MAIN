@@ -46,13 +46,20 @@ def notify_count_video(sender, instance, **kwargs):
     user = instance.use
     current_date = timezone.now().date()
     channel_layer = get_channel_layer()
+    
+    # Kiểm tra quyền của người dùng và lấy dữ liệu tương ứng
     if user.is_staff:
+        group = "User-admin"
         data = get_admin_count_data(current_date)
     else:
+        group = str(user.id)
         data = get_user_count_data(user, current_date)
-    
+
+
+    print(f"Sending data: {data}")
+    # Gửi thông báo qua kênh WebSocket
     async_to_sync(channel_layer.group_send)(
-        'update_count',
+        group,
         {
             'type': 'chat_message',
             'message': 'update_count',
@@ -116,7 +123,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
                 await self.send(text_data=json.dumps({'message': 'User is not an admin.'}))
                 await self.channel_layer.group_add(str(self.user_id), self.channel_name)
                 count_data = await sync_to_async(get_user_count_data)(self.user_id, current_date)
-            await self.send(text_data=json.dumps({'message': 'update_count', 'count_data': count_data}))
+            await self.send(text_data=json.dumps({'message': 'update_count', 'data': count_data}))
 
         elif message_type == 'btn-render':
             self.id_video = data['id_video']
@@ -138,6 +145,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
         elif message_type == 'btn-delete':
             data =  await self.delete_video(data)
             await self.send(text_data=json.dumps({'message': 'btn-delete', 'data': data}))
+
 
     async def chat_message(self, event):
         message = event['message']
@@ -298,12 +306,12 @@ class RenderConsumer(AsyncWebsocketConsumer):
     def delete_video(self, data):
         try:
             user = CustomUser.objects.get(id=data['userId'])
-            if user.is_editor:
+            if user.is_deleted:
                 video = VideoRender.objects.get(id=data['id_video'])
                 video.delete()
                 return {'success': True,"id_video": data['id_video'], "message": "Xóa Video Thành Công"}
             else:
-                return {'success': True,"id_video": data['id_video'], "message": "Bạn Không Có Quyền Xóa Liên Hệ Admin"}
+                return {'success': False,"id_video": data['id_video'], "message": "Bạn Không Có Quyền Xóa Liên Hệ Admin"}
         except VideoRender.DoesNotExist:
             return {'success': False,"id_video":None,"message": "Video không tồn tại"}
 

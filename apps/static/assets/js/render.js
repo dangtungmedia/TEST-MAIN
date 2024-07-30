@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#channel_name').change(function () {
         get_video_render(1);
     });
-
     let socket;
     let reconnectInterval = 5000; // Thời gian chờ trước khi thử kết nối lại (ms)
     let lastMessage = null; // Biến để lưu trữ tin nhắn cuối cùng
@@ -52,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.message === 'update_status') {
                     updateVideoRender(data.data);
                 } else if (data.message === 'update_count') {
-                    $('#count-data').html(data.count_data);
+                    $('#count-data').html(data.data);
                 } else if (data.message === 'btn-edit') {
                     show_infor_video(data.data);
                 } else if (data.message === 'add-one-video') {
@@ -72,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         var id = data.data.id_video;
                         $('tr.align-middle[data-id="' + id + '"]').remove();
                     } else {
-                        alert(data.data.id_video.message);
+                        alert(data.data.message);
                     }
                 }
             } catch (error) {
@@ -90,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('WebSocket error:', error);
         };
     }
-
     // Khởi tạo kết nối WebSocket khi trang được tải
     window.onload = function () {
         initializeWebSocket();
@@ -105,8 +103,6 @@ document.addEventListener('DOMContentLoaded', function () {
             initializeWebSocket(); // Kết nối lại
         }
     }
-
-
 
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
@@ -343,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // xử lý sự kiện thêm nhiều video cùng lúc
 
-
     function add_one_video_web(video, count) {
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
@@ -542,7 +537,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
     // xử lý sự kiện thêm 1 video   
-
     // Xử lý sự kiện click vào nút sửa video
 
     $("#button-back").click(function () {
@@ -623,12 +617,9 @@ document.addEventListener('DOMContentLoaded', function () {
         reader.readAsDataURL(file);
     });
 
-
-
     $('#inputAudio').change(function () {
         FileUpload()
     });
-
 
     $('#inputSrt').change(function (event) {
         const file = event.target.files[0];
@@ -646,8 +637,6 @@ document.addEventListener('DOMContentLoaded', function () {
         FileUpload();
 
     });
-
-
     // chuyển đổi file srt thành văn bản 
     function extractTextFromSrt(content) {
         const lines = content.split('\n');
@@ -663,7 +652,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return textLines.join('\n\n');
     }
-
     // ẩn hiện input file audio và str
     function FileUpload() {
         var file_audio = $('#inputAudio')[0].files[0];
@@ -724,8 +712,6 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#btnChangeFileSrt').click(function () {
         $('#inputSrt').click();
     });
-
-
     //chia dòng
     $('#btn-splitText').click(function () {
         var text_content = $('#input-text-content').val();
@@ -946,7 +932,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return fileNameWithoutParams;
         }
     }
-
 
     $('.close-modal-input-image').click(function () {
         $('#modal-overlay').css('display', 'none');
@@ -1452,7 +1437,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 image.attr('src', thumbnailUrl);
 
                 $('div.btn-play-video[data-id="' + data.id + '"]');
-                $('div.btn-play-video[data-id="' + data.url_video + '"]');
+                $('div.btn-play-video[data-url="' + data.url_video + '"]');
+
+
 
                 var title = $('label.id-title-video[data-id="' + data.id + '"]');
                 title.text(data.title);

@@ -72,7 +72,6 @@ def worker_shutdown_handler(sender, **kwargs):
 
 @shared_task(bind=True)
 def render_video(self,data):
-
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')

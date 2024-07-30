@@ -330,6 +330,10 @@ class index(LoginRequiredMixin, TemplateView):
             'profiles': profiles,
             'current_time': current_time
         }
+        VideoRender.objects.filter(status_video='Đang Chờ Cập Nhập Tiêu Đề & Thumnail').update(status_video='render')
+
+
+
         return render(request, self.template_name, form)
     
     def get_filename_from_url(self,url):
