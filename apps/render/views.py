@@ -330,9 +330,6 @@ class index(LoginRequiredMixin, TemplateView):
             'profiles': profiles,
             'current_time': current_time
         }
-
-
-
         return render(request, self.template_name, form)
     
     def get_filename_from_url(self,url):
@@ -468,6 +465,7 @@ class index(LoginRequiredMixin, TemplateView):
         
         return ass_color
 
+
 class VideoRenderList(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'render/count_data_use.html'
@@ -589,7 +587,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
             page_obj = render_to_string('render/thumnail_page_bar_template.html', {'page_obj': page_obj}, request)
             return JsonResponse({'success': True, 'thumnail_html': thumnail, 'page_bar_html': page_obj})
         
-
         elif action == 'show-title':
             id = request.POST.get('id')
             page = request.POST.get('page')

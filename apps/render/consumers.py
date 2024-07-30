@@ -306,7 +306,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
     def delete_video(self, data):
         try:
             user = CustomUser.objects.get(id=data['userId'])
-            if user.is_deleted:
+            if user.is_deleted or user.is_staff:
                 video = VideoRender.objects.get(id=data['id_video'])
                 video.delete()
                 return {'success': True,"id_video": data['id_video'], "message": "Xóa Video Thành Công"}
