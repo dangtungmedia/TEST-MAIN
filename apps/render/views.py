@@ -330,7 +330,6 @@ class index(LoginRequiredMixin, TemplateView):
             'profiles': profiles,
             'current_time': current_time
         }
-        VideoRender.objects.filter(status_video='Đang Chờ Cập Nhập Tiêu Đề & Thumnail').update(status_video='render')
 
 
 
