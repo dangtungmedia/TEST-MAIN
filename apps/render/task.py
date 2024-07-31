@@ -857,37 +857,37 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         print(f"lỗi chạy FFMPEG {e}")
 
 def download_audio(data, task_id, worker_id):
-    # try:
-    language = data.get('language')
-    video_id = data.get('video_id')
-    text = data.get('text_content')
+    try:
+        language = data.get('language')
+        video_id = data.get('video_id')
+        text = data.get('text_content')
 
-    text_entries = json.loads(text)
-    total_entries = len(text_entries)
-    processed_entries = 0
-    if language == 'Japanese-VoiceVox':
-        with open(f'media/{video_id}/input_files.txt', 'w') as file:
-            for text_entry in text_entries:
-                file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
-                get_voice_japanese(data, text_entry['text'], file_name)
-                processed_entries += 1
-                percent_complete = (processed_entries / total_entries) * 100
-                update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
-                file.write(f"file 'voice/{text_entry['id']}.wav'\n")
+        text_entries = json.loads(text)
+        total_entries = len(text_entries)
+        processed_entries = 0
+        if language == 'Japanese-VoiceVox':
+            with open(f'media/{video_id}/input_files.txt', 'w') as file:
+                for text_entry in text_entries:
+                    file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
+                    get_voice_japanese(data, text_entry['text'], file_name)
+                    processed_entries += 1
+                    percent_complete = (processed_entries / total_entries) * 100
+                    update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+                    file.write(f"file 'voice/{text_entry['id']}.wav'\n")
 
-    elif language == 'Korea-TTS':
-        with open(f'media/{video_id}/input_files.txt', 'w') as file:
-            for text_entry in text_entries:
-                file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
-                get_voice_korea(data, text_entry['text'], file_name)
-                processed_entries += 1
-                percent_complete = (processed_entries / total_entries) * 100
-                update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
-                file.write(f"file 'voice/{text_entry['id']}.wav'\n")
-    #     return True
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
-    #     return False
+        elif language == 'Korea-TTS':
+            with open(f'media/{video_id}/input_files.txt', 'w') as file:
+                for text_entry in text_entries:
+                    file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
+                    get_voice_korea(data, text_entry['text'], file_name)
+                    processed_entries += 1
+                    percent_complete = (processed_entries / total_entries) * 100
+                    update_status_video(f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+                    file.write(f"file 'voice/{text_entry['id']}.wav'\n")
+        return True
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
 
 async def text_to_speech(text, voice, output_file):
     communicate = edge_tts.Communicate(text=text, voice=voice)
