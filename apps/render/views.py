@@ -473,7 +473,6 @@ class index(LoginRequiredMixin, TemplateView):
         return ass_color
 
 class VideoRenderList(LoginRequiredMixin, TemplateView):
-
     login_url = '/login/'
     template_name = 'render/count_data_use.html'
     def get(self, request):
