@@ -20,10 +20,9 @@ video_screen/*
 AppUpload/build
 AppUpload/env
 AppUpload/Video_Upload/*
-AppUpload.rar
 # other
 .DS_Store
-
+AppUpload.rar
 # javascript
 package-lock.json
 
