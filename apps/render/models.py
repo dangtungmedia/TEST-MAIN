@@ -3,27 +3,11 @@ from apps.home.models import Folder, Font_Text, syle_voice, Voice_language, Prof
 from apps.login.models import CustomUser
 # Create your models here.
 
-
-class DataTextVideo(models.Model):
-    folder_id = models.ForeignKey(Folder, on_delete=models.CASCADE, null=True)
-    url_video = models.URLField(max_length=100)
-    count_text = models.IntegerField()
-    id_channel = models.URLField(max_length=100)
-    title = models.CharField(max_length=200)
-    text_video = models.TextField()
-    timenow = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True) 
-    def __str__(self):
-        return self.url_video
-
 class VideoRender(models.Model):
     folder_id = models.ForeignKey(Folder, on_delete=models.CASCADE)
     profile_id = models.ForeignKey(ProfileChannel, on_delete=models.CASCADE)
     name_video = models.TextField(max_length=100, blank=True)
     url_video_youtube = models.TextField(max_length=100, blank=True)
-    
-    url_text_video = models.ManyToManyField(DataTextVideo, related_name='VideoRender')
-
     text_content = models.TextField(default="",blank=True)
     text_content_2 = models.TextField(default="",blank=True)
     task_id = models.CharField(max_length=255, blank=True, null=True)
@@ -84,6 +68,18 @@ class VideoRender(models.Model):
     
     def __str__(self):
         return self.name_video
+    
+class DataTextVideo(models.Model):
+    folder_id = models.ForeignKey(Folder, on_delete=models.CASCADE, null=True)
+    url_video = models.URLField(max_length=100)
+    count_text = models.IntegerField()
+    id_channel = models.URLField(max_length=100)
+    title = models.CharField(max_length=200)
+    text_video = models.TextField()
+    timenow = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True) 
+    def __str__(self):
+        return self.url_video
     
 class video_url(models.Model):
     folder_id  =  models.ForeignKey(Folder, on_delete=models.CASCADE, null=True)

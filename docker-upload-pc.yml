@@ -1,0 +1,69 @@
+version: '3.8'
+services:
+  nginx:
+    container_name: newspro
+    restart: always
+    image: "nginx:latest"
+    ports:
+      - "5085:5085" # Mapping port 5085 on host to port 80 in the container
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+
+  redis2:
+    container_name: redis2
+    restart: always
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+
+  celery:
+    container_name: celery_worker_tung
+    image: dangtung
+    restart: always
+    volumes:
+      - .:/app
+    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=1
+    depends_on:
+      - redis2
+
+  daphne:
+    container_name: daphne
+    restart: always
+    env_file: .env
+    image: dangtung
+    volumes:
+      - .:/app
+    depends_on:
+      - redis2
+    expose:
+      - 5504
+
+  voicevox_engine:
+    container_name: voicevox_engine
+    image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
+    restart: always
+    ports:
+      - '50021:50021'
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+  flower:
+    container_name: flower
+    image: dangtung
+    volumes:
+      - .:/app
+    restart: always
+    ports:
+      - "5555:5555"
+    command: celery -A core flower
+
+volumes:
+  media_volume:
+    driver: local

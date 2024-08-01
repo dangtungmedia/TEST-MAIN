@@ -1,5 +1,5 @@
-import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+import json
 from asgiref.sync import sync_to_async, async_to_sync
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -28,25 +28,6 @@ from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
 
 
 
-from apps.render.task import render_video
-from celery.result import AsyncResult
-from urllib.parse import urlparse, unquote
-from asgiref.sync import async_to_sync
-from django.core.files.base import ContentFile
-import base64,re
-from random import randint
-import random
-import string
-import logging
-from pytube import YouTube
-
-
-from apps.home.models import Voice_language, syle_voice
-from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
-
-
-
-# Đổi tên hàm notify_video_change để tránh xung đột
 @receiver(post_save, sender=VideoRender)
 def notify_video_change(sender, instance, **kwargs):
     channel_layer = get_channel_layer()
