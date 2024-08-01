@@ -23,6 +23,7 @@ AppUpload/Video_Upload/*
 # other
 .DS_Store
 AppUpload.rar
+AppUpload.rar
 # javascript
 package-lock.json
 
@@ -34,4 +35,10 @@ apps/static/assets/node_modules
 apps/static/assets/yarn.lock
 apps/static/assets/.temp
 
+"AppUpload.rar" 
+"AppUpload.rar" 
+"AppUpload.rar" 
+"AppUpload.rar" 
+"AppUpload.rar" 
+"AppUpload.rar" 
 "AppUpload.rar" 
