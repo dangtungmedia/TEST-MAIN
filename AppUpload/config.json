@@ -1,0 +1,13 @@
+{
+    "url-sever": "http://127.0.0.1:5085/",
+    "timeupload": 0,
+    "profiles": [
+        {
+            "name": "k1",
+            "path_profile": "C:\\Users\\dangt\\AppData\\Local\\Mozilla\\Firefox\\Profiles\\3kk6zjzg.default-release",
+            "uploadsToday": 5,
+            "lastUploadTime": "2024-08-01 10:14:03",
+            "uploadLimitPerDay": 6
+        }
+    ]
+}

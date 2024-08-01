@@ -6,10 +6,20 @@ from django.core.files.storage import default_storage
 from apps.render.models import VideoRender
 from apps.home.models import ProfileChannel
 from django.http import JsonResponse
+import os, shutil,urllib
+
 
 class ApiApp(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, JSONParser]
+
+
+    def get_filename_from_url(self,url):
+        parsed_url = urllib.parse.urlparse(url)
+        path = parsed_url.path
+        filename = path.split('/')[-1]
+        return filename
+    
 
     def post(self, request, id=None):
         secret_key = request.data.get('secret_key')
@@ -21,15 +31,15 @@ class ApiApp(APIView):
         if action == "update_status":
             video_id = request.data.get('video_id')
             status = request.data.get('status')
-            task_id = request.data.get('task_id')
-            worker_id = request.data.get('worker_id')
-
             try:
                 video = VideoRender.objects.get(id=video_id)
                 video.status_video = status
-                video.task_id = task_id
-                video.worker_id = worker_id
                 video.save()
+
+                if status == "Upload VPS Thành Công":
+                    file_name = self.get_filename_from_url(video.url_video)
+                    url = "data/" + str(video.id) + "/" + file_name
+                    default_storage.delete(url)
                 return Response({"message": "Status updated successfully"})
             except VideoRender.DoesNotExist:
                 return Response({"error": "Video not found"}, status=404)
@@ -59,13 +69,14 @@ class ApiApp(APIView):
         elif action == "upload-video-to-vps":
             ip_vps = request.data.get('ip_vps')
             channel_name = request.data.get('channel_name')
+            
             try:
                 # Tìm profile với ip_vps và channel_name
                 profile = ProfileChannel.objects.get(channel_vps_upload=ip_vps, channel_name=channel_name)
-
+                
                 # Kiểm tra xem chuỗi "Render Thành Công" có nằm trong status_video của bất kỳ video nào
                 video_exists = VideoRender.objects.filter(profile_id=profile.id, status_video__icontains="Render Thành Công").exists()
-
+                
                 if video_exists:
                     video = VideoRender.objects.filter(profile_id=profile.id, status_video__icontains="Render Thành Công").first()
                     data = {
@@ -80,12 +91,13 @@ class ApiApp(APIView):
                     }
                     return Response(data)
                 else:
-                    # Xử lý trường hợp không tìm thấy video
-                    return Response({"error": "No video found with status containing 'Render Thành Công'"}, status=404)
+                    return Response({"message": "Không tìm thấy video  Render Thành Công ..."}, status=404)
 
             except ProfileChannel.DoesNotExist:
-                return Response({"error": "Profile not found"}, status=404)
+                return Response({"message": f"Không tìm thấy Profile {channel_name} có IP {ip_vps}! Vui Lòng Kiểm Tra Lại IP Hoặc Tên Profile cho Chính Xác"}, status=404)
+            
             except Exception as e:
-                return Response({"error": str(e)}, status=500)
+                return Response({"message": str(e)}, status=500)
+        
+        return Response({"message": "Invalid action"}, status=400)
 
-        return Response({"error": "Invalid action"}, status=400)

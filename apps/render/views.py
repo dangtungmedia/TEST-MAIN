@@ -27,6 +27,8 @@ from io import BytesIO
 from apps.login.models import CustomUser
 import calendar
 import os
+from django.http import FileResponse
+from django.conf import settings
 
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
 from azure.cognitiveservices.vision.computervision.models import OperationStatusCodes
@@ -471,6 +473,7 @@ class index(LoginRequiredMixin, TemplateView):
         return ass_color
 
 class VideoRenderList(LoginRequiredMixin, TemplateView):
+
     login_url = '/login/'
     template_name = 'render/count_data_use.html'
     def get(self, request):
@@ -612,3 +615,11 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
             page_bar_html = render_to_string('render/title_page_bar_template.html', {'page_obj': page_obj}, request)
 
             return JsonResponse({'success': True, 'title_html': title_html, 'page_bar_html': page_bar_html})
+        
+
+
+def download_file(request):
+    file_path = os.path.join(settings.BASE_DIR, 'AppUpload.rar')
+    # Sử dụng with để đảm bảo file được đóng đúng cách
+    response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename='AppUpload.rar')
+    return response

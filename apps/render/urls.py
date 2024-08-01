@@ -5,7 +5,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.render import views
 from .views import index,VideoRenderViewSet,ProfileChannelViewSet,VideoRenderList
-
+from .views import download_file
 
 
 
@@ -18,4 +18,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('render/', index.as_view(), name='render'),
     path('count-data/', VideoRenderList.as_view(), name='count-data'),
+    path('download/', download_file, name='download_file'),
 ]
