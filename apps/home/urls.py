@@ -4,19 +4,23 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 from django.urls import path,re_path
-from apps.home import views
-from django.conf import settings
+from django.urls import path, include
 from django.conf.urls.static import static
-from .views import setting,Index
-
+from .views import SettingView,IndexView
+from rest_framework.routers import DefaultRouter
+from .views import FolderViewSet,ProfileViewSet,StyleVoiceViewSet
 
 
 app_name = 'home'
 
+router = DefaultRouter()
+router.register(r'folders', FolderViewSet, basename='folders')
+router.register(r'profiles', ProfileViewSet, basename='profiles')
+router.register(r'styler-voice', StyleVoiceViewSet, basename='styler-voice')
+
+
 urlpatterns = [
-    path('', Index.as_view(), name='home'),
-    path('setting/', setting.as_view(), name='setting'),
-    path('load-channel/', views.load_channel, name='load-channel'),
-    path('load-channel-setting/', views.load_channel_setting, name='load-channel-setting'),
-    path('load-style-voice/', views.load_styler_voice, name='load-style-voice')
+    path('', IndexView.as_view(), name='home'),
+    path('setting/', SettingView.as_view(), name='setting'),
+    path('home/', include(router.urls)),  # Bao gồm router URLs dưới đường dẫn /api/
 ]

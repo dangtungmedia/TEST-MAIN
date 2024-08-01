@@ -17,13 +17,20 @@ class Folder(models.Model):
     
 class Font_Text(models.Model):
     font_name = models.CharField(max_length=100, blank=True)
+    font_language = models.CharField(max_length=100, blank=True)
     def __str__(self):  
-        return self.font_name
+        return self.font_language  + " - " + self.font_name
     
 class syle_voice(models.Model):
     id_style = models.IntegerField(default=0,blank=True)
     name_voice = models.CharField(max_length=100, blank=True)
     style_name = models.CharField(max_length=100, blank=True)
+
+    channel_voice_style = models.IntegerField(default=0,blank=True)
+    channel_voice_speed = models.IntegerField(default=50,blank=True)
+    channel_voice_pitch = models.IntegerField(default=50,blank=True)
+    channel_voice_volume = models.IntegerField(default=50,blank=True)
+
     voice_language = models.ForeignKey('Voice_language', on_delete=models.CASCADE, blank=True, null=True)
     def __str__(self):  
         return self.style_name
@@ -46,13 +53,14 @@ class ProfileChannel(models.Model):
     channel_logo_position = models.TextField(max_length=100, blank=True,default='left')
 
     channel_font_text = models.ForeignKey(Font_Text, on_delete=models.CASCADE, blank=True, null=True)
+    
     channel_font_size = models.IntegerField(default=30,blank=True)
     channel_font_bold = models.BooleanField(default=False,blank=True)
     channel_font_italic = models.BooleanField(default=False,blank=True)
     channel_font_underline = models.BooleanField(default=False,blank=True)
     channel_font_strikeout = models.BooleanField(default=False,blank=True)
 
-    channel_font_color = models.TextField(max_length=100, blank=True,default='#000000')
+    channel_font_color = models.TextField(max_length=100, blank=True,default='##FFFFFF')
     channel_font_color_opacity = models.IntegerField(default=100,blank=True)
 
     channel_font_color_troke = models.TextField(max_length=100, blank=True,default='#000000')
@@ -65,11 +73,10 @@ class ProfileChannel(models.Model):
 
     channel_font_subtitle = models.TextField(default="Đây là phần subtittel của kênh")
 
-    channel_voice = models.IntegerField(default=1, blank=True)
-    channel_voice_style = models.IntegerField(default=0,blank=True)
-    channel_voice_speed = models.IntegerField(default=50,blank=True)
-    channel_voice_pitch = models.IntegerField(default=50,blank=True)
-    channel_voice_volume = models.IntegerField(default=50,blank=True)
+    channel_voice = models.ForeignKey(Voice_language, on_delete=models.CASCADE, blank=True, null=True)
+    channel_voice_style  = models.ForeignKey(syle_voice, on_delete=models.CASCADE, blank=True, null=True)
+
+
     channel_text_voice = models.TextField(default="",blank=True)
 
     channel_title = models.TextField(default="",blank=True)
@@ -86,4 +93,3 @@ class ProfileChannel(models.Model):
     
     def __str__(self):  
         return self.channel_name
-   

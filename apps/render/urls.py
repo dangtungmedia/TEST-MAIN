@@ -6,6 +6,9 @@ from rest_framework.routers import DefaultRouter
 from apps.render import views
 from .views import index,VideoRenderViewSet,ProfileChannelViewSet,VideoRenderList
 
+
+
+
 router = DefaultRouter()
 router.register('profiles',ProfileChannelViewSet,basename='profiles')
 router.register('render-video', VideoRenderViewSet, basename='render-video')  

@@ -45,14 +45,14 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
 
-from apps.home.serializers import ProfileChannelSerializer
+from apps.home.serializers import ProfileSerializer
 
 from itertools import chain
 from django.db.models import Q
 
 class ProfileChannelViewSet(viewsets.ModelViewSet):
     queryset = ProfileChannel.objects.all()
-    serializer_class = ProfileChannelSerializer
+    serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
     @action(detail=True, methods=['POST'])

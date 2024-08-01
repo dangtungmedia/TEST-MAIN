@@ -4,19 +4,21 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#channel_name').change(function () {
         get_video_render(1);
     });
+
     let socket;
     let reconnectInterval = 5000; // Thời gian chờ trước khi thử kết nối lại (ms)
-    let lastMessage = null; // Biến để lưu trữ tin nhắn cuối cùng
+    let messageQueue = []; // Hàng đợi để lưu trữ tất cả các tin nhắn
 
     function initializeWebSocket() {
         socket = new WebSocket('ws://' + window.location.host + '/ws/update_status/');
 
         socket.onopen = function () {
             console.log('WebSocket connection opened.');
-            // Gửi lại tin nhắn cuối cùng nếu có
-            if (lastMessage) {
-                socket.send(lastMessage);
-                lastMessage = null; // Xóa tin nhắn sau khi gửi lại
+
+            // Gửi lại tất cả các tin nhắn trong hàng đợi nếu có
+            while (messageQueue.length > 0) {
+                const message = messageQueue.shift();
+                socket.send(message);
             }
 
             // Lấy danh sách video và thông tin người dùng
@@ -89,21 +91,20 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('WebSocket error:', error);
         };
     }
+
+    // Hàm để gửi tin nhắn và lưu vào hàng đợi nếu cần thiết
+    function sendMessage(message) {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(message);
+        } else {
+            messageQueue.push(message);
+        }
+    }
+
     // Khởi tạo kết nối WebSocket khi trang được tải
     window.onload = function () {
         initializeWebSocket();
     };
-
-    function sendMessage(message) {
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(message);
-        } else {
-            console.error('WebSocket is not open. Ready state:', socket.readyState);
-            lastMessage = message; // Lưu trữ tin nhắn cuối cùng
-            initializeWebSocket(); // Kết nối lại
-        }
-    }
-
     function getCSRFToken() {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
     }
@@ -1168,10 +1169,6 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#modal-overlay').css('display', 'none');
     });
 
-
-
-
-
     function get_image_iteam() {
         var images = document.querySelectorAll('.iteam-image');
         const image_content = [];
@@ -1203,24 +1200,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return { text_content: text_content, text_content_2: text_content_2 };
     }
 
-
-
-    // Xử lý sự kiện click vào nút render video
-
-
-    // Xử lý sự kiện click vào nút upload lại
-
-    // Xử lý sự kiện click vào nút xóa video
-
-    // Web Socket
-    // Tạo kết nối với Web Socket
-
     $(document).on('click', '.btn-play-video', function () {
         let iframe = document.getElementById('videoIframe');
         const videoUrl = this.getAttribute('data-url');
         iframe.src = videoUrl;
     });
-
 
     // dừng play video xem thử
     $(document).on('click', '.btn-close-play-video', function () {
@@ -1513,5 +1497,4 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
 });

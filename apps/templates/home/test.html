@@ -8,13 +8,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Noto+Sans+JP:wght@100..900&display=swap" rel="stylesheet">
-
+<script src="https://unpkg.com/htmx.org@1.9.2"></script>
 {% endblock stylesheets %}
 
 {% block content %}
 <div class="card">
-    <form method="POST" enctype="multipart/form-data">
+    <form method="POST" enctype="multipart/form-data" id="myForm">
         <div class="card-body">
+            {% if success == True %}
+                <div class="alert alert-success" role="alert" id="success-alert" style="display: none;">
+                    {{ msg }}
+                </div>
+            {% elif success == False %}
+                <div class="alert alert-danger" role="alert" id="danger-alert" style="display: none;">
+                    {{ msg }}
+                </div>
+            {% endif %}
+
             <div class="row">
                 <div class="col">
                     <div class="mb-3">
@@ -38,7 +48,7 @@
                                             <div class="row">
                                                 <div class="col">
                                                     <label class="form-label" for="formFile">Folder</label>
-                                                    {{ form.channel_forder_setting}}
+                                                    {{ form.forder_setting}}
                                                     <label class="form-label" for="formFile">Văn Bản</label>
                                                     {{ form.input_folder_name}}
                                                 </div>
@@ -142,19 +152,14 @@
                                 </div>
                                 <div class="modal-body row">
                                     <div class="col-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" id="flexRadioDefault1" type="radio" name="flexRadioDefault" value="left">
-                                            <label class="form-check-label" for="flexRadioDefault1">
-                                                Bên Trái
-                                            </label>
-                                        </div>
-                                        
-                                        <div class="form-check">
-                                            <input class="form-check-input" id="flexRadioDefault2" type="radio" name="flexRadioDefault" value="right">
-                                            <label class="form-check-label" for="flexRadioDefault2">
-                                                Bên Phải
-                                            </label>
-                                        </div>
+                                        {% for radio in form.channel_logo_position %}
+                                            <div class="form-check">
+                                                {{ radio.tag }}
+                                                <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                                    {{ radio.choice_label }}
+                                                </label>
+                                            </div>
+                                        {% endfor %}
                                     </div>
 
                                     <div class="col-9">
@@ -176,7 +181,12 @@
                     <div class="mb-3">
                         <label class="form-label" for="formFile">Font Chữ</label>
                         <div class="input-group mb-3">
-                            {{ form.channel_font_text }}
+                            <select name="channel_font_text" id="channel_font_text" class="form-select">
+                                {% for font in fonts%}
+                                    <option value="{{ font.urlfont}}">{{ font.name}}</option>
+                                {% endfor %}
+                              
+                              </select>
                             <button class="btn btn-primary" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalXlFontText">Cài Đặt</button>
                         </div>
 
@@ -201,14 +211,18 @@
                                             <div class="col-9">
                                                 <div class="input-group mb-3">
                                                     <label class="input-group-text" for="inputGroupSelect01">Font Chữ</label>
-                                                    {{ form.channel_font_text_setting }}
+                                                    <select name="channel_font_text" id="channel_font_text_setting" class="form-select">
+                                                        {% for font in fonts%}
+                                                            <option value="{{ font.urlfont}}">{{ font.name}}</option>
+                                                        {% endfor %}
+                                                      
+                                                      </select>
                                                 </div>
                                             </div>
                                             <div class="col-3">
                                                 <div class="input-group mb-3">
                                                     {{ form.channel_font_size }}
                                                     <label class="input-group-text" for="inputGroupSelect01">Size Chữ</label>
-
                                                 </div>
                                             </div>
                                         </div>
@@ -300,11 +314,16 @@
                             </div>
                         </div>
                     </div>
+
                     <!-- Giọng Đọc -->
                     <div class="mb-3">
                         <label class="form-label" for="formFile">Giọng Đọc</label>
                         <div class="input-group mb-3">
-                            {{ form.channel_voice }}
+                            <select name="channel_voice" id="channel_voice" class="form-control">
+                                {% for voice in voices %}
+                                    <option value="{{ voice.id }}">{{ voice.name }}</option>
+                                {% endfor %}
+                              </select>
                             <button class="btn btn-primary" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalXlVoiceProfile">Cài Đặt</button>
                         </div>
                     </div>
@@ -360,112 +379,6 @@
             </div>
         </div>
         
-        <div class="modal fade" id="exampleModalXlFontText" tabindex="-1" aria-labelledby="exampleModalXlLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                    <h5 class="modal-title h4" id="exampleModalXlLabel">CÀI ĐẶT Subtitle</h5>
-                    <button class="btn-close" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="col-12 mb-3">
-                            <div style="position: relative; border: 1px solid red; height: 200px; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;">                            
-                                <div style="width: 100%; height: 100%;  text-align: center;">
-                                    <div  id="Subtitle" style="">
-                                        <span id="text-Subtitle"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3 row">
-                            <div class="col-9">
-                                <div class="input-group mb-3">
-                                    <label class="input-group-text" for="inputGroupSelect01">Font Chữ</label>
-                                </div>
-                            </div>
-                            <div class="col-3">
-                                <div class="input-group mb-3">
-                                    <label class="input-group-text" for="inputGroupSelect01">Size Chữ</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3 row">
-                            <div class="col">
-                                <div class="form-check form-check-inline">
-                                    <label class="form-check-label" for="inlineCheckbox1">Bold</label>
-                                </div>
-                            </div>
-                            <div class="col">
-                                <div class="form-check form-check-inline ">
-                                    <label class="form-check-label" for="inlineCheckbox1">Italic</label>
-                                </div>
-                            </div>
-                            <div class="col">
-                                <div class="form-check form-check-inline ">
-                                    <label class="form-check-label" for="inlineCheckbox1">Underline</label>
-                                </div>
-                            </div>
-                            <div class="col ">
-                                <div class="form-check form-check-inline">
-                                    <label class="form-check-label" for="inlineCheckbox1">Strikeout</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3 row">
-                            <div class="col">
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">Màu Chữ</span>
-                
-                                </div>
-                            </div>
-                            <div class="col">
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">Viền Chữ</span>
-                                </div>
-                            </div>
-                            <div class="col">
-                                <div class="input-group mb-3">
-                                    <span class="input-group-text">Nền Chữ</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3 row">
-                            <div class="mb-3 row">
-                                <div class="col">
-                                    <div class="input-group mb-3">
-                                        <span class="input-group-text">VIỀN CHỮ</span>
-                                        
-                                    </div>  
-                                </div>
-                                <div class="col">
-                                    <div class="input-group mb-3">
-                                        <span class="input-group-text">Bóng Đổ</span>
-                                        <input type="number" id="inputGroupSelect02" class="form-control" value="100" min="1" max="100" step="0.1">
-                                    </div>
-                                </div>
-                                <div class="col">
-                                    <div class="input-group mb-3">
-                                        <span class="input-group-text">Giãn Từ</span>
-                                        <input type="number" id="inputGroupSelect03" class="form-control" value="100" min="0" max="100" step="0.1">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="channel_font_subtitle">Văn Bản</label>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
-                        <button class="btn btn-primary" type="button">Save changes</button>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-
         <div class="modal fade" id="exampleModalXlVoiceProfile" tabindex="-1" aria-labelledby="exampleModalXlLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -502,17 +415,36 @@
                     <div class="modal-footer">
                         <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
                         <button class="btn btn-primary"  type="button">NGHE THỬ</button>
-                        <button class="btn btn-primary"  type="button">Save changes</button>
+                        <button class="btn btn-primary" type="submit" name="action" value="save-voice">Save changes</button>
                     </div>
                 </div>
             </div>
         </div>
         <button class="btn btn-primary col form-control" style="display:none" type="submit">Lưu Cấu Hình</button>
-        
     </form>
 </div>
 {% endblock %}
 {% block javascripts %}
+
+<script>
+    // Hiển thị thông báo thành công trong 5 giây sau khi trang được tải
+    window.onload = function() {
+        setTimeout(function() {
+            document.getElementById('success-alert').style.display = 'block';
+            setTimeout(function() {
+                document.getElementById('success-alert').style.display = 'none';
+            }, 10000);
+        }, 0);
+
+        // Hiển thị thông báo nguy hiểm trong 5 giây sau khi trang được tải
+        setTimeout(function() {
+            document.getElementById('danger-alert').style.display = 'block';
+            setTimeout(function() {
+                document.getElementById('danger-alert').style.display = 'none';
+            }, 10000);
+        }, 0);
+    };
+</script>
 <script>
     $(document).ready(function(){
         $('#folder_name').change(function(){
@@ -525,7 +457,6 @@
                 },
                 success: function(data){
                     $('#channel_name').html(data.profile_html);
-                    showChannelName(data.data);
                 }
             });
         });
@@ -544,6 +475,32 @@
         });
 
     });
+
+    $('#channel_voice').change(function(){
+        var voice = $(this).val();
+        $('#channel_voice_setting').val(voice);
+        get_style_voice();
+    });
+
+    $('#channel_voice_setting').change(function(){
+        var voice = $(this).val();
+        $('#channel_voice').val(voice);
+        get_style_voice();
+    });
+
+    function get_style_voice(){
+        channel_voice =  $('#channel_voice').val();
+        $.ajax({
+            url: "{% url 'home:load-style-voice' %}",
+            type: "GET",
+            data: {
+                channel_voice: channel_voice
+            },
+            success: function(data){
+                $('#channel_voice_style').html(data.voice_styler);
+            }
+        });
+    }
 
 
     $('input[type="radio"]').change(function () {
@@ -642,8 +599,19 @@
 
 
     $('#channel_name').change(function(){
-        show_infor_channel();
+        //show_infor_channel();
+        alert('ok');
     });
+
+    function show_infor_channel(){
+        var form = document.getElementById('myForm');
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'action';
+        input.value = 'get-infor-setting';
+        form.appendChild(input);
+        form.submit();
+    }
 
     function generateTimeSlots() {
         var timeSlots = [];
@@ -674,59 +642,6 @@
         var list_time_string = list_time.join(",");
     
         return list_time_string;
-    }
-
-    function show_infor_channel(){
-        var channel_id = $("#channel_name").val();
-        $.ajax({
-            url: "{% url 'home:load-channel-infor' %}",
-            type: "GET",
-            data: {
-                channel_id: channel_id
-            },
-            success: function(data){
-                $('#channel_intro_active').prop('checked', data.channel_intro_active|| false);
-                $('#channel_intro_url').val(data.channel_intro_url||'');
-                $('#channel_outro_active').prop('checked',data.channel_outro_active||false);
-                $('#channel_outro_url').val(data.channel_outro_url||'');
-                $('#channel_logo_active').prop('checked',data.channel_logo_active||false);
-                $('#channel_logo_url').val(data.channel_logo_url||'');
-                $('#channel_font_text').val(data.channel_font_text||'');
-                $('#channel_voice').val(data.channel_voice||'');
-                $('#channel_title').val(data.channel_title||'');
-                $('#channel_description').val(data.channel_description||'');
-                $('#channel_keywords').val(data.channel_keywords||'');
-                $('#channel_time_upload').val(data.channel_time_upload||'');
-                $('#channel_url').val(data.channel_url||'');
-                $('#channel_email_login').val(data.channel_email_login||'');
-                $('#channel_vps_upload').val(data.channel_vps_upload||'');
-                $('#channel_font_text_setting').val(data.channel_font_text_setting||'');
-                $('#channel_font_size').val(data.channel_font_size||40);
-                $('#channel_font_bold').prop('checked', data.channel_font_bold||false);
-                $('#channel_font_italic').prop('checked', data.channel_font_italic||false);
-                $('#channel_font_underline').prop('checked', data.channel_font_underline||false);
-                $('#channel_font_strikeout').prop('checked', data.channel_font_strikeout||false);
-                $('#channel_font_color').val(data.channel_font_color||'#FFFFFF');
-                $('#channel_font_color_opacity').val(data.channel_font_color_opacity||100);
-                $('#channel_font_color_troke').val(data.channel_font_color_troke||' #000000');
-                $('#channel_font_color_troke_opacity').val(data.channel_font_color_troke_opacity||100);
-                $('#channel_font_background').val(data.channel_font_background||'#000000');
-                $('#channel_font_background_opacity').val(data.channel_font_background_opacity||0);
-                $('#channel_stroke_text').val(data.channel_stroke_text||1);
-                $('text-Subtitle').text(data.channel_subtitle_text||'Đây là phụ đề của video');
-                $('#channel_subtitle_text').val(data.channel_subtitle_text||'Đây là phụ đề của video');
-
-                if(data.channel_logo_position == 'left'){
-                    $('#flexRadioDefault1').prop('checked', true);
-                    $('#flexRadioDefault1').click();
-                } else {
-                    $('#flexRadioDefault2').prop('checked', true);
-                    $('#flexRadioDefault2').click();
-                }
-                show_intro_video();
-                show_Subtitle();
-            }
-        });
     }
 
     function handleInputChange(inputId, buttonId, urlId) {
@@ -814,6 +729,3 @@
     }   
 </script>
 {% endblock javascripts %}
-
-
-
