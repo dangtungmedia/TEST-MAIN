@@ -19,7 +19,7 @@ video/*
 video_screen/*
 AppUpload/build
 AppUpload/env
-AppUpload/Video_Upload
+AppUpload/Video_Upload/*
 AppUpload.rar
 # other
 .DS_Store
