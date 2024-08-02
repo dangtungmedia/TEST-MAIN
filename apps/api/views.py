@@ -35,7 +35,6 @@ class ApiApp(APIView):
                 video = VideoRender.objects.get(id=video_id)
                 video.status_video = status
                 video.save()
-
                 if status == "Upload VPS Thành Công":
                     file_name = self.get_filename_from_url(video.url_video)
                     url = "data/" + str(video.id) + "/" + file_name

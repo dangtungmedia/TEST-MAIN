@@ -429,7 +429,7 @@ class Myapp:
         data = {
                 "ip_vps": self.ip_address,
                 "action": "upload-video-to-vps",
-                "channel_name": 'k1',
+                "channel_name": profile['name'],
                 "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
                 }
 
@@ -440,7 +440,6 @@ class Myapp:
             if 'message' in infor_video:
                 self.update_status_app(f"profile {profile['name']}: {infor_video['message']}")
                 return None
-            
         except:
             self.update_status_app(f"lỗi kết nối đến server")
             return None

@@ -14,7 +14,7 @@ executables = [Executable(
 
 # Thư viện cần thiết
 build_exe_options = {
-    "packages": ["os", "selenium", "requests", "tkinter", "pytz", "moviepy"], # Thêm các gói cần thiết ở đây
+    "packages": ["os", "selenium", "requests", "tkinter", "pytz", "moviepy",'shutil',], # Thêm các gói cần thiết ở đây
     "include_files": ['VC_redist.x64.exe','logo.ico'] # Các file bổ sung cần thiết cho ứng dụng của bạn
 }
 
