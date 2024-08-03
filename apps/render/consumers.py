@@ -179,7 +179,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
     def render_video(self, id_video):
         video = VideoRender.objects.get(pk=id_video)
         data = self.get_data_video(video.id)
-
         if video.status_video == "render":
             task = render_video.apply_async(args=[data])
             video.task_id = task.id
