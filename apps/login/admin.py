@@ -20,14 +20,14 @@ class CustomUserAdmin(UserAdmin):
 
     fieldsets = (
         (None, {'fields': ('username', 'password', 'email', 'note_password','full_name','bank_number','phone_number')}),  # Add 'email' and 'image_path'
-        ('Permissions', {'fields': ('is_staff', 'is_active', 'is_editor','user_permissions')}),
+        ('Permissions', {'fields': ('is_staff', 'is_active', 'is_editor','is_deleted','user_permissions')}),
         ('Groups', {'fields': ('groups',)}),
         # Add any other fieldsets you want here
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username', 'email', 'password1', 'password2', 'note_password','is_staff', 'is_active','is_editor')}  # Add 'email'
+            'fields': ('username', 'email', 'password1', 'password2', 'note_password','is_staff', 'is_active','is_editor','is_deleted')}  # Add 'email'
          ),
     )
     search_fields = ('username',)

@@ -141,7 +141,7 @@ class AddProfileDialog(tk.Toplevel):
         # Text widget để hiển thị hướng dẫn
         self.text_editor = tk.Text(main_frame, height=3, font=("Arial", 15), state='normal')
         self.text_editor.pack(pady=(10,0), fill=tk.BOTH, expand=True)
-        self.text_editor.insert(tk.END, "Trong trình duyện \"Firefox \" nhập \"about:profiles\" \n vào thanh địa chỉ để lấy path profile \"Local Directory\" \n ")
+        self.text_editor.insert(tk.END, "Trong trình duyện \"Firefox \" nhập \"about:profiles\" \n vào thanh địa chỉ để lấy path profile \"Root Directory\" \n ")
         self.text_editor.config(state='disabled')  # Đặt trạng thái chỉ đọc sau khi thêm văn bản
 
         # Nút lưu
@@ -398,7 +398,9 @@ class Myapp:
             self.update_status_app("Stopped, waiting to start...\n")
             self.url_entry.config(state='normal')  # Enable the URL entry
             if self.id is not None:
-                self.update_status_video("Lỗi Upload: dừng sever")
+                self.update_status_video("Upload VPS Thất Bại : dừng sever")
+            self.stop_event.set()
+            self.thread.join()
             
     def run_server(self):
         while self.is_start:
@@ -426,12 +428,15 @@ class Myapp:
                 time.sleep(self.config_data['timeupload'])
 
     def get_infor_video(self, profile):
+        if not self.is_start:
+            return
+
         data = {
-                "ip_vps": self.ip_address,
-                "action": "upload-video-to-vps",
-                "channel_name": profile['name'],
-                "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-                }
+            "ip_vps": self.ip_address,
+            "action": "upload-video-to-vps",
+            "channel_name": profile['name'],
+            "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
+        }
 
         url = f'{self.url}api/'
         try:
@@ -441,29 +446,38 @@ class Myapp:
                 self.update_status_app(f"profile {profile['name']}: {infor_video['message']}")
                 return None
         except:
-            self.update_status_app(f"lỗi kết nối đến server")
+            self.update_status_app(f"Lỗi kết nối đến server")
             return None
-        self.handle_video_info(infor_video, profile)
-        self.update_status_app(f"Đã lấy được thông tin chuẩn bị upload ...\n")
-        self.update_status_video(f"Đang Upload Lên VPS : Đang Lấy Thông Tin Upload\n")
+
+        if not self.is_start:
+            return
+
+        if self.is_start:
+            self.handle_video_info(infor_video, profile)
+
+            self.update_status_app(f"Đã lấy được thông tin video {self.id}\n")
+            self.update_status_video(f"Đang Upload Lên VPS : Đang Lấy Thông Tin Upload\n")
+
+        if not self.is_start:
+            return
+
         if os.path.exists("Video_Upload"):
             shutil.rmtree("Video_Upload")
         os.makedirs("Video_Upload")
 
-
-
         self.create_or_reset_directory("Video_Upload")
-
-
-        
-
         self.update_status_app(f"profile {profile['name']} đang tải video và thumnail \n")
         self.update_status_video(f"Đang Upload Lên VPS : Đang Tải Thumnail \n")
 
-        url_thumnail  = infor_video["url_thumbnail"]
+        if not self.is_start:
+            return
+
+        url_thumnail = infor_video["url_thumbnail"]
         file_thumnail = self.get_filename_from_url(url_thumnail)
-        thumbnail_success = self.download_file(url_thumnail, "Video_Upload",
-                                                file_thumnail)
+        thumbnail_success = self.download_file(url_thumnail, "Video_Upload", file_thumnail)
+
+        if not self.is_start:
+            return
 
         if thumbnail_success:
             self.update_status_video("Đang Upload Lên VPS : đã tải xong thumbnail")
@@ -472,56 +486,62 @@ class Myapp:
             self.update_status_video("Upload VPS Thất Bại : Lỗi tải thumbnail")
             self.update_status_app(f"profile {profile['name']} không tải được thumbnail \n")
             return
-        
+
+        if not self.is_start:
+            return
+
         url_video = infor_video["video_url"]
         file_video = self.get_filename_from_url(url_video)
+        self.update_status_app(f"profile {profile['name']} đang tải video  \n")
         self.update_status_video("Đang Upload Lên VPS : Đang Tải Video")
-        video_success = self.download_file(url_video, "Video_Upload",
-                                            file_video)
-        if video_success:
-            self.update_status_video("Đang Upload Lên VPS : đã tải xong thumbnail")
-            self.update_status_app(f"profile {profile['name']} đã tải xong video \n")
-            self.upload_video_vps(profile)
+        video_success = self.download_file(url_video, "Video_Upload", file_video)
 
+        if not self.is_start:
+            return
+
+        if video_success:
+            self.update_status_video("Đang Upload Lên VPS : đã tải xong video")
+            self.update_status_app(f"profile {profile['name']} đã tải xong video \n")
         else:
             self.update_status_app(f"profile {profile['name']} không tải được video \n")
             self.update_status_video("Upload VPS Thất Bại : Không Tải Được Video")
             return
-        
+
+        if not self.is_start:
+            return
         self.upload_video_vps(profile)
     
     def handle_video_info(self, infor_video, profile):
-
-        self.update_status_video("Đang Upload : lấy thông tin upload thành công")
-        self.update_status_app(f"profile {profile['name']} Lấy thông tin thành công \n")
-        self.id = infor_video["video_id"]
-        self.title = infor_video["title"]
-        self.description = infor_video["description"]
-        self.keywords = infor_video["keywords"]
-
-
-        self.date_uppic = infor_video["date_upload"]
-
-        self.time_uppic = infor_video["time_upload"]
-        self.thumbnail = self.get_filename_from_url(infor_video["url_thumbnail"])
-        self.video_file =  self.get_filename_from_url(infor_video["video_url"])
+        if self.is_start:
+            self.update_status_video("Đang Upload : lấy thông tin upload thành công")
+            self.update_status_app(f"profile {profile['name']} Lấy thông tin thành công \n")
+            self.id = infor_video["video_id"]
+            self.title = infor_video["title"]
+            self.description = infor_video["description"]
+            self.keywords = infor_video["keywords"]
+            self.date_uppic = infor_video["date_upload"]
+            self.time_uppic = infor_video["time_upload"]
+            self.thumbnail = self.get_filename_from_url(infor_video["url_thumbnail"])
+            self.video_file =  self.get_filename_from_url(infor_video["video_url"])
+        else:
+            return
 
     def upload_video_vps(self, profile):
+        if self.is_start:
+            profile_path = rf"{profile['path_profile']}"
+            options = Options()
+            options.profile = webdriver.FirefoxProfile(profile_path)
+
         
-        profile_path = profile['path_profile']
-        options = Options()
-        options.profile = webdriver.FirefoxProfile(profile_path)
-
-      
-        service = Service()  # Thay thế bằng đường dẫn tới geckodriver của bạn
-        driver = webdriver.Firefox(service=service, options=options)
+            service = Service()  # Thay thế bằng đường dẫn tới geckodriver của bạn
+            driver = webdriver.Firefox(service=service, options=options)
 
 
-        driver.get('https://studio.youtube.com/')
+            driver.get('https://studio.youtube.com/')
 
-        wait = WebDriverWait(driver, 10)
-        self.update_status_video("Đang Upload Lên VPS : bắt đầu upload")
-        self.update_status_app(f"profile {profile['name']} bắt đầu upload \n")
+            wait = WebDriverWait(driver, 10)
+            self.update_status_video("Đang Upload Lên VPS : bắt đầu upload")
+            self.update_status_app(f"profile {profile['name']} bắt đầu upload \n")
 
         try:
             if self.is_start:
@@ -536,7 +556,6 @@ class Myapp:
             return
         
         if self.is_start:
-
             try:
                 time.sleep(3)
                 file_input = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="content"]/input')))
@@ -1083,7 +1102,8 @@ class Myapp:
                     return False
             except (RequestException, ProtocolError) as e:
                 attempt += 1
-                print(f"Attempt {attempt} failed: {e}")
+                print(f"Error while downloading file: {e}")
+                self.update_status_app(f"Lỗi tải file: {e}")
                 if attempt < retries:
                     print("Retrying...")
         print("Failed to download the file after multiple attempts")
@@ -1125,6 +1145,7 @@ class Myapp:
     def copy_ip(self):
         self.root.clipboard_clear()
         self.root.clipboard_append(self.label_3.cget("text"))
+
 
 if __name__ == "__main__":
     root = tk.Tk()

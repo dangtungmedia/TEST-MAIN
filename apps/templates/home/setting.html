@@ -17,6 +17,13 @@
         <div class="row">
             <div class="col">
                 <div class="mb-3">
+                    <input class="btn-check col" id="success-outlined" type="radio" name="options-outlined" autocomplete="off" {% if content %}checked{% endif %}>
+                    <label class="btn btn-outline-success col" for="success-outlined">Content</label>
+                    
+                    <input class="btn-check col" id="danger-outlined" type="radio" name="options-outlined" autocomplete="off" {% if not content %}checked{% endif %}>
+                    <label class="btn btn-outline-danger col" for="danger-outlined">Reup-Video</label>
+                </div>
+                <div class="mb-3">
                     <label class="form-label" for="formFile">Forder</label>
                     <div class="input-group">
                         <select name="folder_name" id="folder_name" class="form-select">
@@ -335,7 +342,7 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
-                                    <button class="btn btn-primary" type="submit" name="action" value="save-fontext">Save changes</button>
+                                    <button class="btn btn-primary" id="save-fontext">Save changes</button>
                                 </div>
                             </div>
                             
@@ -449,7 +456,7 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
                     <button class="btn btn-primary"  type="button">NGHE THỬ</button>
-                    <button class="btn btn-primary" type="submit" name="action" value="save-voice">Save changes</button>
+                    <button class="btn btn-primary" id="save-voice">Save changes</button>
                 </div>
             </div>
         </div>

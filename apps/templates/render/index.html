@@ -12,14 +12,21 @@
     <header class="header">
         <div class="container-fluid ">
             <div class="d-none d-md-flex  gap-3">
-                <div class="col-4">
+                <div class="col-auto">
+                    <input class="btn-check col" id="success-outlined" type="radio" name="options-outlined" autocomplete="off" checked>
+                    <label class="btn btn-outline-success col" for="success-outlined">Content</label>
+                    
+                    <input class="btn-check col" id="danger-outlined" type="radio" name="options-outlined" autocomplete="off">
+                    <label class="btn btn-outline-danger col" for="danger-outlined">Reup-Video</label>
+                </div>
+                <div class="col-auto">
                     <select class="form-select" id="folder_name">
                         {% for item in folder %}
                             <option value="{{ item.id}}">{{ item.folder_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-4">
+                <div class="col-2">
                     <select class="form-select" id='channel_name'>
                         {% for iteam in profiles %}
                             <option value="{{iteam.id}}">{{ iteam.channel_name}}</option>

@@ -310,4 +310,6 @@ docker-compose -f docker-upload-pc.yml up --build
 
 
 
+git reflog
+
 

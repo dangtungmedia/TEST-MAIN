@@ -334,9 +334,6 @@ class index(LoginRequiredMixin, TemplateView):
             'profiles': profiles,
             'current_time': current_time
         }
-
-
-
         return render(request, self.template_name, form)
     
     def get_filename_from_url(self,url):
@@ -490,6 +487,7 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_title': edit_title,
                 'edit_thumnail': edit_thumnail
             })
+
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
     def post(self, request):

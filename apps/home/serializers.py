@@ -20,8 +20,6 @@ class FontTextSerializer(serializers.ModelSerializer):
         model = Font_Text
         fields =  '__all__'
 
-
-        
 class FolderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Folder

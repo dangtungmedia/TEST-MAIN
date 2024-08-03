@@ -12,6 +12,7 @@ from apps.login.models import CustomUser
 class Folder(models.Model):
     use = models.ForeignKey(CustomUser, on_delete=models.CASCADE, blank=True, null=True)
     folder_name = models.CharField(max_length=100,blank=True,unique=True)
+    is_content = models.BooleanField(default=True)
     def __str__(self):  
         return self.folder_name
     
@@ -73,9 +74,7 @@ class ProfileChannel(models.Model):
 
     channel_font_subtitle = models.TextField(default="Đây là phần subtittel của kênh")
 
-    channel_voice = models.ForeignKey(Voice_language, on_delete=models.CASCADE, blank=True, null=True)
     channel_voice_style  = models.ForeignKey(syle_voice, on_delete=models.CASCADE, blank=True, null=True)
-
 
     channel_text_voice = models.TextField(default="",blank=True)
 

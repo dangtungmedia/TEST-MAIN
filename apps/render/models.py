@@ -47,25 +47,18 @@ class VideoRender(models.Model):
     stroke_text = models.DecimalField(max_digits=10, decimal_places=2,default=1,blank=True)
     font_background = models.TextField(max_length=100, blank=True,default='#ffffff')
     channel_font_background_opacity = models.IntegerField(default=0,blank=True)
-
-    voice = models.IntegerField(default=1, blank=True)
-    voice_style = models.IntegerField(default=1,blank=True)
-    voice_speed = models.IntegerField(default=50,blank=True)
-    voice_pitch = models.IntegerField(default=50,blank=True)
-    voice_volume = models.IntegerField(default=50,blank=True)
-    text_voice = models.TextField(default="",blank=True)
-
+    channel_voice_style  = models.ForeignKey(syle_voice, on_delete=models.CASCADE, blank=True, null=True)
 
     title = models.TextField(default="",blank=True)
     description = models.TextField(default="",blank=True)
     keywords = models.TextField(default="",blank=True)
     time_upload = models.TextField(default="",blank=True)
     date_upload = models.TextField(default="",blank=True)
-
-
+    
     timenow = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+
     def __str__(self):
         return self.name_video
     

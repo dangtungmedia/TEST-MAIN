@@ -40,6 +40,35 @@ class FolderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = None 
 
+
+    @action(detail=False, methods=['post'], url_path='get-folders')
+    def get_folders_by_user(self, request):
+        is_content = request.data.get('is_content', None)
+        user_id = request.data.get('userId', None)
+        print(is_content)
+        print(user_id)
+
+        queryset = Folder.objects.all()
+        for folder in queryset:
+            print(folder.is_content)
+
+
+        if is_content is None or user_id is None:
+            return Response({"status": "error", "message": "Invalid parameters"}, status=400)
+
+        if request.user.is_superuser:
+            channels = self.queryset.filter(is_content=is_content)
+            print(channels)
+        else:
+            channels = self.queryset.filter(user_id=user_id, is_content=is_content)
+
+        serializer = self.get_serializer(channels, many=True)
+        print(serializer.data)
+        return Response({"status": "success", "folders": serializer.data})
+    
+
+
+
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = ProfileChannel.objects.all()
     serializer_class = ProfileSerializer
@@ -121,27 +150,29 @@ class SettingView(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'home/setting.html'
     def get(self, request):
-        # Lấy tất cả các thư mục
-        folders = Folder.objects.all()
+       # Lấy tất cả các thư mục có is_content=True
+        content = True
+        folders = Folder.objects.filter(is_content=content)
         
         # Lấy thư mục đầu tiên nếu có tồn tại
-        foldersFirst = folders.first() if folders.exists() else None
-        
+        folders_first = folders.first() if folders.exists() else None
+
         # Lấy tất cả profile liên quan đến thư mục đầu tiên
-        profiles = ProfileChannel.objects.filter(folder_name_id=foldersFirst.id) if foldersFirst else []
-        profilesFirst = profiles.first() if profiles.exists() else None
+        profiles = ProfileChannel.objects.filter(folder_name_id=folders_first.id) if folders_first else []
+        profiles_first = profiles.first() if profiles else None
 
         # Lấy tất cả các font, sắp xếp theo ngôn ngữ
         fonts = Font_Text.objects.all().order_by('font_language')
-        
+
         # Lấy tất cả ngôn ngữ giọng nói
         folder_voice = Voice_language.objects.all()
 
         # Render trang với context đã chuẩn bị
         return render(request, self.template_name, {
+            'content': content,
             "folders": folders,
             "profiles": profiles,
             "fonts": fonts,
             "folder_voice": folder_voice,
-            "profilesFirst": profilesFirst,
+            "profilesFirst": profiles_first,
         })

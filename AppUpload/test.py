@@ -30,9 +30,9 @@ class FileDownloader:
         return False
 
 # Sử dụng hàm download_file
-url_video = "https://s3-hcm5-r1.longvan.net/19425936-media/data/234/thumnail/OIP.jpg?AWSAccessKeyId=AUQESQVFF01YMVGUPVF9&Signature=9cWEBoVNZD3%2BGDMTasvUVEN8EqU%3D&Expires=4400273089"
+url_video = "https://s3-hcm5-r1.longvan.net/19425936-media/data/245/V6IZZD00Z6.mp4?AWSAccessKeyId=AUQESQVFF01YMVGUPVF9&Signature=t5hBbVAYZUhJDnLedC%2BDNINNADY%3D&Expires=4400811917"
 directory = "Video_Upload"
-filename = "video.png"
+filename = "video.mp4"
 
 downloader = FileDownloader()
 success = downloader.download_file(url_video, directory, filename)
