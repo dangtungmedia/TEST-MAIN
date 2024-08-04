@@ -895,7 +895,7 @@ async def text_to_speech(text, voice, output_file):
 
 def get_voice_korea(data, text, file_name):
     directory = os.path.dirname(file_name)
-    name_langue = data.get('name_langue')
+    name_langue = data.get('style')
     if not os.path.exists(directory):
         os.makedirs(directory, exist_ok=True)
     asyncio.run(text_to_speech(text,name_langue, file_name))

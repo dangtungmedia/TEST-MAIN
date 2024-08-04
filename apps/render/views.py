@@ -350,6 +350,12 @@ class index(LoginRequiredMixin, TemplateView):
             'current_time': current_time,
             'content': content
         }
+
+
+        voice = syle_voice.objects.get(style_name='ko-KR-HyunsuNeural')
+
+        VideoRender.objects.all().update(channel_voice_style=voice)
+
         return render(request, self.template_name,form)
     
 

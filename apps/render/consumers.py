@@ -348,8 +348,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
     
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
-        language = Voice_language.objects.get(id=video.voice)
-        voice = syle_voice.objects.get(id=video.voice_style)
         data  = {
             'video_id': video.id,
             'name_video': video.name_video,
@@ -365,9 +363,9 @@ class RenderConsumer(AsyncWebsocketConsumer):
             'color_backrought': self.convert_color_to_ass(video.font_background,video.channel_font_background_opacity),
             'stroke': self.convert_color_to_ass(video.font_color_troke,video.font_color_troke_opacity),
             'stroke_size': video.stroke_text,
-            'language': language.name,
-            'style': voice.id_style,
-            'name_langue': voice.name_voice,
+            'language': video.channel_voice_style.voice_language.name,
+            'style': video.channel_voice_style.style_name,
+            'name_langue': video.channel_voice_style.name_voice,
             'url_audio': video.url_audio,
             'file-srt': video.url_subtitle,
             }
