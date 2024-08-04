@@ -72,7 +72,7 @@ class ProfileChannel(models.Model):
     channel_font_background = models.TextField(max_length=100, blank=True,default='#ffffff')
     channel_font_background_opacity = models.IntegerField(default=0,blank=True)
 
-    channel_font_subtitle = models.TextField(default="Đây là phần subtittel của kênh")
+    channel_font_subtitle = models.TextField(default="Đây là phần subtittel của kênh",blank=True)
 
     channel_voice_style  = models.ForeignKey(syle_voice, on_delete=models.CASCADE, blank=True, null=True)
 

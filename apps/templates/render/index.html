@@ -13,13 +13,13 @@
         <div class="container-fluid ">
             <div class="d-none d-md-flex  gap-3">
                 <div class="col-auto">
-                    <input class="btn-check col" id="success-outlined" type="radio" name="options-outlined" autocomplete="off" checked>
+                    <input class="btn-check col" id="success-outlined" type="radio" name="options-outlined" autocomplete="off" {% if content %}checked{% endif %}>
                     <label class="btn btn-outline-success col" for="success-outlined">Content</label>
                     
-                    <input class="btn-check col" id="danger-outlined" type="radio" name="options-outlined" autocomplete="off">
+                    <input class="btn-check col" id="danger-outlined" type="radio" name="options-outlined" autocomplete="off" {% if not content %}checked{% endif %}>
                     <label class="btn btn-outline-danger col" for="danger-outlined">Reup-Video</label>
                 </div>
-                <div class="col-auto">
+                <div class="col-3">
                     <select class="form-select" id="folder_name">
                         {% for item in folder %}
                             <option value="{{ item.id}}">{{ item.folder_name }}</option>

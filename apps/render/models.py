@@ -18,7 +18,6 @@ class VideoRender(models.Model):
     url_audio = models.TextField(default="",blank=True)
     url_subtitle = models.TextField(default="",blank=True)
 
-
     video_image = models.TextField(default="",blank=True)
     url_thumbnail = models.TextField(blank=True)
     url_video = models.TextField(blank=True)

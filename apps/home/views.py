@@ -45,22 +45,19 @@ class FolderViewSet(viewsets.ModelViewSet):
     def get_folders_by_user(self, request):
         is_content = request.data.get('is_content', None)
         user_id = request.data.get('userId', None)
+        print(type(is_content))
         print(is_content)
         print(user_id)
-
-        queryset = Folder.objects.all()
-        for folder in queryset:
-            print(folder.is_content)
-
+        is_content = is_content.lower() == 'true' if isinstance(is_content, str) else bool(is_content)
 
         if is_content is None or user_id is None:
             return Response({"status": "error", "message": "Invalid parameters"}, status=400)
 
-        if request.user.is_superuser:
+        if request.user.is_superuser or not is_content:
             channels = self.queryset.filter(is_content=is_content)
             print(channels)
         else:
-            channels = self.queryset.filter(user_id=user_id, is_content=is_content)
+            channels = self.queryset.filter(use=user_id, is_content=is_content)
 
         serializer = self.get_serializer(channels, many=True)
         print(serializer.data)
@@ -146,13 +143,18 @@ class IndexView(LoginRequiredMixin, TemplateView):
                 success = False
         return render(request, self.template_name,{"form": form ,"form_2": form_2,"msg": msg, "success": success})
 
+
 class SettingView(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'home/setting.html'
     def get(self, request):
        # Lấy tất cả các thư mục có is_content=True
         content = True
-        folders = Folder.objects.filter(is_content=content)
+        if request.user.is_superuser:
+            folders = Folder.objects.filter(is_content=content)
+        else:
+            folders = Folder.objects.filter(use=request.user.id, is_content=content)
+
         
         # Lấy thư mục đầu tiên nếu có tồn tại
         folders_first = folders.first() if folders.exists() else None

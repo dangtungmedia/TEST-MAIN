@@ -326,21 +326,44 @@ class index(LoginRequiredMixin, TemplateView):
     template_name = 'render/index.html'
 
     def get(self, request):
-        folder = Folder.objects.first()
-        profiles = ProfileChannel.objects.filter(folder_name=folder)
+        # folder = Folder.objects.first()
+        # profiles = ProfileChannel.objects.filter(folder_name=folder)
+        # current_time = timezone.now().strftime('%Y-%m-%d')
+        # form = {
+        #     'folder': Folder.objects.all(),
+        #     'profiles': profiles,
+        #     'current_time': current_time
+        # }
+
+        content = True
+        if request.user.is_superuser:
+            folders = Folder.objects.filter(is_content=content)
+        else:
+            folders = Folder.objects.filter(use=request.user.id, is_content=content)
+
+        folders_first = folders.first() if folders.exists() else None
+        profiles = ProfileChannel.objects.filter(folder_name_id=folders_first.id) if folders_first else []
         current_time = timezone.now().strftime('%Y-%m-%d')
         form = {
-            'folder': Folder.objects.all(),
+            'folder': folders,
             'profiles': profiles,
-            'current_time': current_time
+            'current_time': current_time,
+            'content': content
         }
-        return render(request, self.template_name, form)
+        return render(request, self.template_name,form)
+    
+
+
     
     def get_filename_from_url(self,url):
         parsed_url = urlparse(url)
         path = unquote(parsed_url.path)
         filename = path.split('/')[-1]
         return filename
+    
+
+
+
     
     def post(self, request):
         action = request.POST.get('action')
@@ -487,9 +510,11 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_title': edit_title,
                 'edit_thumnail': edit_thumnail
             })
-
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
+
+    
+
     def post(self, request):
         action = request.POST.get('action')
         if action == 'Seach':
@@ -613,7 +638,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
 
             return JsonResponse({'success': True, 'title_html': title_html, 'page_bar_html': page_bar_html})
         
-
 
 def download_file(request):
     file_path = os.path.join(settings.BASE_DIR, 'AppUpload.rar')

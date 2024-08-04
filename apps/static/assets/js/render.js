@@ -1,6 +1,31 @@
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded with JavaScript');
+
+    const successOutlined = document.getElementById('success-outlined');
+    const dangerOutlined = document.getElementById('danger-outlined');
+
+    if (successOutlined) {
+        successOutlined.addEventListener('change', function () {
+            if (this.checked) {
+                GetFolderSelected(true);
+            }
+        });
+    }
+
+    if (dangerOutlined) {
+        dangerOutlined.addEventListener('change', function () {
+            if (this.checked) {
+                GetFolderSelected(false);
+            }
+        });
+    }
+
     get_video_render(1);
+
+    $('#folder_name').change(function () {
+        GetProfileSelected();
+    });
+
     $('#channel_name').change(function () {
         get_video_render(1);
     });
@@ -216,7 +241,6 @@ document.addEventListener('DOMContentLoaded', function () {
             pageBar.appendChild(previousLi);
         }
 
-
         // Tạo liên kết số trang
         if (totalPages <= maxPagesToShow + 2) {
             // Hiển thị tất cả các trang nếu tổng số trang nhỏ hơn hoặc bằng maxPagesToShow + 2 (2 cho trang đầu và cuối)
@@ -288,6 +312,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+
     function get_video_render(page) {
         const host = window.location.host;
         const protocol = window.location.protocol;
@@ -333,11 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 show_page_bar(page, data);
             })
             .catch(error => console.error('Error:', error));
-
     }
-    // Xử lý sự kiện click vào nút xem thông tin kênh
-
-    // xử lý sự kiện thêm nhiều video cùng lúc
 
     function add_one_video_web(video, count) {
         const tr = document.createElement('tr');
@@ -1437,6 +1458,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+
+
     function change_color_status() {
         // Lấy tất cả các phần tử có class "status-video"
         const textstatuss = document.querySelectorAll('.status-video');
@@ -1496,5 +1519,114 @@ document.addEventListener('DOMContentLoaded', function () {
                 textstatus.appendChild(backSpan);
             }
         });
+    }
+    // Lấy Thông Tin Folder Được Chọn
+
+
+    function GetFolderSelected(is_content) {
+        const userElement = document.getElementById('user-id');
+        const userId = userElement.getAttribute('data-id');
+
+
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+
+        if (!userElement) {
+            console.error('User element not found');
+            return;
+        }
+
+        const url = `${protocol}//${host}/home/folders/get-folders/`;
+
+        const dataToSend = {
+            is_content: is_content,
+            userId: userId,
+        };
+        const folderElement = document.getElementById('folder_name');
+        if (!folderElement) {
+            console.error('Folder name element not found');
+            return;
+        }
+
+        folderElement.innerHTML = '';
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify(dataToSend)
+        })
+            .then(response => response.json())
+            .then(data => {
+                data.folders.forEach(folder => {
+                    console.log(folder);
+                    let option = document.createElement('option');
+                    option.value = folder.id;
+                    option.text = folder.folder_name; // Assuming 'folder_name' is the field name
+                    folderElement.appendChild(option);
+                });
+                GetProfileSelected();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
+    // get_video_render(1);
+    function GetProfileSelected() {
+        const folderElement = document.getElementById('folder_name');
+        const channelElement = document.getElementById('channel_name');
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+
+        channelElement.innerHTML = '';
+        document.getElementById("myTbody").innerHTML = "";
+        document.getElementById("page_bar").innerHTML = "";
+        if (!folderElement) {
+            return;
+        }
+
+        if (folderElement.value === '') {
+            return;
+        }
+        console.log('Folder selected:', folderElement.value);
+
+        const folderId = folderElement.value;
+        const url = `${protocol}//${host}/home/profiles/by-folder/${folderId}/`;
+        console.log(`Fetching data from: ${url}`);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log(data);
+                if (!channelElement) {
+                    console.error('Channel name element not found');
+                    return;
+                }
+                data.forEach(profile => {
+                    console.log(profile);
+                    // Tạo tùy chọn cho channelElement
+                    let option = document.createElement('option');
+                    option.value = profile.id;
+                    option.text = profile.channel_name; // Assuming 'channel_name' is the field name
+                    channelElement.appendChild(option);
+                });
+                get_video_render(1);
+            })
+            .catch(error => {
+                console.error('There was a problem with the fetch operation:', error);
+            });
     }
 });

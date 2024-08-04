@@ -399,11 +399,9 @@ function fetchProfileChannels(folderId) {
             .then(data => {
                 console.log('Success:', Array.isArray(data));
                 console.log('Success:', Array.isArray(data));
-
-
+                
                 add_slect_option('folder_name', data, data.folder_name)
                 add_slect_option('forder_setting', data, data.folder_name)
-
 
                 // Tạo phần tử thông báo thành công
                 const successAlert = document.createElement('div');
@@ -424,6 +422,7 @@ function fetchProfileChannels(folderId) {
                 }
 
             })
+
             .catch(error => {
                 console.error('There was a problem with the fetch operation:', error);
                 const dangerAlert = document.createElement('div');
@@ -1042,7 +1041,7 @@ function fetchProfileChannels(folderId) {
     var initialText = $('#folder_name option:selected').text();
     $('#input_folder_name').val(initialText);
 
-    $('#folder_name, #forder_setting').change(function () {
+    $('#folder_name, #folder_setting').change(function () {
         var selectedText = $(this).find('option:selected').text();
         $('#folder_name, #forder_setting').val($(this).val());
         $('#input_folder_name').val(selectedText);

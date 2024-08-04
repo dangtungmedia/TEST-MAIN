@@ -50,7 +50,7 @@
                                         <div class="row">
                                             <div class="col">
                                                 <label class="form-label" for="formFile">Folder</label>
-                                                <select id="forder_setting" class="form-select" required>
+                                                <select id="folder_setting" class="form-select">
                                                     {% if folders %}
                                                         {% for folder in folders %}
                                                             <option value="{{ folder.id }}">{{ folder.folder_name }}</option>
@@ -61,7 +61,7 @@
                                                 </select>
                                                 
                                                 <label class="form-label" for="formFile">Văn Bản</label>
-                                                <input id="input_folder_name" class="form-control" type="text" placeholder="Nhập tên folder" required>
+                                                <input id="input_folder_name" class="form-control" type="text" placeholder="Nhập tên folder">
                                             </div>
                                         </div>
                                     </div>
@@ -104,7 +104,7 @@
                                         <div class="row">
                                             <div class="col">
                                                 <label class="form-label" for="formFile">Folder</label>
-                                                <select name="channel_forder_name_setting" id="channel_forder_name_setting" class="form-select">
+                                                <select name="channel_folder_name_setting" id="channel_folder_name_setting" class="form-select">
                                                     {% if profiles %}
                                                         {% for profile in profiles %}
                                                             <option value="{{ profile.id }}">{{ profile.channel_name }}</option>
@@ -114,15 +114,15 @@
                                                     {% endif %}
                                                 </select>
                                                 <label class="form-label" for="formFile">Văn Bản</label>
-                                                <input id="input_profile_name" class="form-control" type="text" placeholder="Nhập tên folder" required>
+                                                <input id="input_profile_name" class="form-control" type="text" placeholder="Nhập tên folder">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button class="btn btn-primary col" id="delete-channel">Channel Delete</button>
-                                    <button class="btn btn-primary col" id="update-channel">Channel Update</button>
-                                    <button class="btn btn-primary col" id="add-channel">Channel Add</button>
+                                    <button class="btn btn-primary col" id="profile-delete">Channel Delete</button>
+                                    <button class="btn btn-primary col" id="profile-update">Channel Update</button>
+                                    <button class="btn btn-primary col" id="profile-add">Channel Add</button>
                                 </div>
                             </div>
                         </div>
@@ -179,14 +179,14 @@
                                 <div class="col-3">
                                     
                                         <div class="form-check">
-                                            <input type="radio" name="channel_logo_position" value="left" class="form-check-input" id="id_channel_logo_position_0" required="" checked="">
+                                            <input type="radio" name="channel_logo_position" value="left" class="form-check-input" id="id_channel_logo_position_0" checked="">
                                             <label class="form-check-label" for="id_channel_logo_position_0">
                                                 Bên Trái
                                             </label>
                                         </div>
                                     
                                         <div class="form-check">
-                                            <input type="radio" name="channel_logo_position" value="right" class="form-check-input" id="id_channel_logo_position_1" required="">
+                                            <input type="radio" name="channel_logo_position" value="right" class="form-check-input" id="id_channel_logo_position_1" >
                                             <label class="form-check-label" for="id_channel_logo_position_1">
                                                 Bên Phải
                                             </label>
@@ -243,7 +243,7 @@
                                         <div class="col-9">
                                             <div class="input-group mb-3">
                                                 <label class="input-group-text" for="inputGroupSelect01">Font Chữ</label>
-                                                <select name="channel_font_text" id="channel_font_text_setting" class="form-select">
+                                                <select name="channel_font_text_2" id="channel_font_text_setting_2" class="form-select">
                                                     {% for font in fonts%}
                                                         <option value="{{ font.id}}">{{ font.font_language }} ---- {{ font.font_name }}</option>
                                                     {% endfor %}
@@ -436,7 +436,7 @@
                         <div class="col">
                             <div class="input-group mb-3">
                                 <label class="input-group-text" for="inputGroupSelect01">styles giọng đọc</label>
-                                <select id="channel_voice_style" class="form-control" required>
+                                <select id="channel_voice_style" class="form-control" >
                                     pass
                                 </select>
                             </div>
@@ -447,10 +447,10 @@
                     <label class="form-label" for="customRange1">PITCH</label>
                     <input id="channel_voice_pitch" class="form-range" type="range" min="0" max="100" value="50" >
                     <label class="form-label" for="customRange1">VALUE</label>
-                    <input id="channel_voice_volume" class="form-range" type="range" min="0" max="100" value="50" required>
+                    <input id="channel_voice_volume" class="form-range" type="range" min="0" max="100" value="50" >
                     <div class="mb-3">
                         <label class="form-label" for="channel_text_voice">Văn Bản</label>
-                        <textarea id="channel_text_voice" class="form-control" placeholder="Nhập text voice" rows="3" required></textarea>
+                        <textarea id="channel_text_voice" class="form-control" placeholder="Nhập text voice" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
