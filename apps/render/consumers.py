@@ -348,12 +348,13 @@ class RenderConsumer(AsyncWebsocketConsumer):
     
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
+        print(video.font_text)
         data  = {
             'video_id': video.id,
             'name_video': video.name_video,
             'text_content': video.text_content_2,
             'images': video.video_image,
-            'font_name': video.font_text,
+            'font_name': video.font_text.font_name,
             'font_size': video.font_size,
             'font_bold': video.font_bold,
             'font_italic': video.font_italic,

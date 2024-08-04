@@ -30,7 +30,7 @@ class VideoRender(models.Model):
     logo_url = models.TextField(blank=True,default='')
     logo_position = models.TextField(max_length=100, blank=True,default='left')
 
-    font_text = models.TextField(default='',blank=True)
+    font_text = models.ForeignKey(Font_Text, on_delete=models.CASCADE, blank=True, null=True)
     font_size = models.IntegerField(default=30,blank=True)
     font_bold = models.BooleanField(default=False,blank=True)
     font_italic = models.BooleanField(default=False,blank=True)

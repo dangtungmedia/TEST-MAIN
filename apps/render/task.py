@@ -215,7 +215,7 @@ def create_video_file(data, task_id, worker_id):
             file.write(f"file 'video/{item['id']}.mp4'\n")
 
     audio_file = f'media/{video_id}/audio.wav'
-    fonts_dir = os.path.dirname(font_text)
+    fonts_dir = 'font'
 
     # Kiểm tra sự tồn tại của file audio
     if not os.path.exists(audio_file):
@@ -331,7 +331,6 @@ def create_subtitles(data, task_id, worker_id):
         font_size = data.get('font_size')
         stroke_text = data.get('stroke_size')
         text  = data.get('text_content')
-        font_name = os.path.basename(font_text).split('.')[0]
 
         with open(subtitle_file, 'w', encoding='utf-8') as ass_file:
             # Viết header cho file ASS
@@ -346,7 +345,7 @@ def create_subtitles(data, task_id, worker_id):
 
             ass_file.write("[V4+ Styles]\n")
             ass_file.write("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
-            ass_file.write(f"Style: Default,{font_name},{font_size},{color},{color_backrought},&H00000000,{color_border},0,0,0,0,100,100,0,0,1,{stroke_text},0,2,10,10,10,0\n\n")
+            ass_file.write(f"Style: Default,{font_text},{font_size},{color},{color_backrought},&H00000000,{color_border},0,0,0,0,100,100,0,0,1,{stroke_text},0,2,10,10,10,0\n\n")
 
             ass_file.write("[Events]\n")
             ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")

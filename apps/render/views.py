@@ -351,25 +351,15 @@ class index(LoginRequiredMixin, TemplateView):
             'content': content
         }
 
-
-        voice = syle_voice.objects.get(style_name='ko-KR-HyunsuNeural')
-
-        VideoRender.objects.all().update(channel_voice_style=voice)
-
         return render(request, self.template_name,form)
     
 
-
-    
     def get_filename_from_url(self,url):
         parsed_url = urlparse(url)
         path = unquote(parsed_url.path)
         filename = path.split('/')[-1]
         return filename
     
-
-
-
     
     def post(self, request):
         action = request.POST.get('action')
@@ -466,7 +456,7 @@ class index(LoginRequiredMixin, TemplateView):
             'name_video': video.name_video,
             'text_content': video.text_content_2,
             'images': video.video_image,
-            'font_name': video.font_text,
+            'font_name': video.font_text.font_name,
             'font_size': video.font_size,
             'font_bold': video.font_bold,
             'font_italic': video.font_italic,
