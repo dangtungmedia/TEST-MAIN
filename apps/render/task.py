@@ -254,13 +254,33 @@ def create_video_with_retries(data, task_id, worker_id, max_retries=10):
     print("Max retries reached, video creation failed.")
     return False
 
-def get_text_lines(data,text):
+def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".woff2"]):
+    print(f"Searching for font '{font_name}' in directory '{font_dir}' with extensions {extensions}")
+    for root, dirs, files in os.walk(font_dir):
+        print(f"Checking directory: {root}")
+        for file in files:
+            print(f"Found file: {file}")
+            if any(file.lower() == f"{font_name.lower()}{ext}" for ext in extensions):
+                print(f"Matched font file: {file}")
+                return os.path.join(root, file)
+    print(f"Font '{font_name}' not found in directory '{font_dir}'")
+    return None
+
+
+def get_text_lines(data, text):
     current_line = ""
     wrapped_text = ""
-    font_text = data.get("font_name")
+    font = data['font_name']
+    font_text = find_font_file(font, r'apps/render/font')
+
     font_size = data.get('font_size')
+
+
+
     font = ImageFont.truetype(font_text,font_size)
+
     img = Image.new('RGB', (1, 1), color='black')
+
     draw = ImageDraw.Draw(img)
 
     for char in text:
@@ -321,70 +341,70 @@ def format_timedelta_ass(ms):
     return "{:01}:{:02}:{:02}.{:02}".format(int(hours), int(minutes), seconds, milliseconds)
 
 def create_subtitles(data, task_id, worker_id):
-    try:
-        video_id = data.get('video_id')
-        subtitle_file = f'media/{video_id}/subtitles.ass'
-        color = data.get('font_color')
-        color_backrought = data.get('color_backrought')
-        color_border = data.get('stroke')
-        font_text = data.get("font_name")
-        font_size = data.get('font_size')
-        stroke_text = data.get('stroke_size')
-        text  = data.get('text_content')
+    # try:
+    video_id = data.get('video_id')
+    subtitle_file = f'media/{video_id}/subtitles.ass'
+    color = data.get('font_color')
+    color_backrought = data.get('color_backrought')
+    color_border = data.get('stroke')
+    font_text = data.get("font_name")
+    font_size = data.get('font_size')
+    stroke_text = data.get('stroke_size')
+    text  = data.get('text_content')
 
-        with open(subtitle_file, 'w', encoding='utf-8') as ass_file:
-            # Viết header cho file ASS
-            ass_file.write("[Script Info]\n")
-            ass_file.write("Title: Subtitles\n")
-            ass_file.write("ScriptType: v4.00+\n")
-            ass_file.write("WrapStyle: 0\n")
-            ass_file.write("ScaledBorderAndShadow: yes\n")
-            ass_file.write("YCbCr Matrix: TV.601\n")
-            ass_file.write(f"PlayResX: 1920\n")
-            ass_file.write(f"PlayResY: 1080\n\n")
+    with open(subtitle_file, 'w', encoding='utf-8') as ass_file:
+        # Viết header cho file ASS
+        ass_file.write("[Script Info]\n")
+        ass_file.write("Title: Subtitles\n")
+        ass_file.write("ScriptType: v4.00+\n")
+        ass_file.write("WrapStyle: 0\n")
+        ass_file.write("ScaledBorderAndShadow: yes\n")
+        ass_file.write("YCbCr Matrix: TV.601\n")
+        ass_file.write(f"PlayResX: 1920\n")
+        ass_file.write(f"PlayResY: 1080\n\n")
 
-            ass_file.write("[V4+ Styles]\n")
-            ass_file.write("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
-            ass_file.write(f"Style: Default,{font_text},{font_size},{color},{color_backrought},&H00000000,{color_border},0,0,0,0,100,100,0,0,1,{stroke_text},0,2,10,10,10,0\n\n")
+        ass_file.write("[V4+ Styles]\n")
+        ass_file.write("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
+        ass_file.write(f"Style: Default,{font_text},{font_size},{color},{color_backrought},&H00000000,{color_border},0,0,0,0,100,100,0,0,1,{stroke_text},0,2,10,10,10,0\n\n")
 
-            ass_file.write("[Events]\n")
-            ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")
+        ass_file.write("[Events]\n")
+        ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")
 
-            start_time = timedelta(0)
+        start_time = timedelta(0)
+        
+        total_entries = len(json.loads(text))
+        if  data.get('file-srt'):
+            srt_path = f'media/{video_id}/cache.srt'
+            # Đọc nội dung tệp SRT
+            with open(srt_path, 'r', encoding='utf-8') as file:
+                srt_content = file.read()
+            print("Nội dung của tệp SRT đã được tải và đọc thành công.")
             
-            total_entries = len(json.loads(text))
-            if  data.get('file-srt'):
-                srt_path = f'media/{video_id}/cache.srt'
-                # Đọc nội dung tệp SRT
-                with open(srt_path, 'r', encoding='utf-8') as file:
-                    srt_content = file.read()
-                print("Nội dung của tệp SRT đã được tải và đọc thành công.")
-                
-                # Trích xuất thời gian các khung trong tệp SRT
-                frame_times = extract_frame_times(srt_content)
+            # Trích xuất thời gian các khung trong tệp SRT
+            frame_times = extract_frame_times(srt_content)
 
-                if len(frame_times) == 0:
-                    return False
-                elif len(frame_times) != total_entries:
-                    return False
+            if len(frame_times) == 0:
+                return False
+            elif len(frame_times) != total_entries:
+                return False
 
-                elif len(frame_times) == total_entries:
-                    for i,iteam in enumerate(json.loads(text)):
-                        start_time, end_time = frame_times[i]
-                        ass_file.write(f"Dialogue: 0,{start_time[:-1].replace(',', '.')},{end_time[:-1].replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
-                    return True
+            elif len(frame_times) == total_entries:
+                for i,iteam in enumerate(json.loads(text)):
+                    start_time, end_time = frame_times[i]
+                    ass_file.write(f"Dialogue: 0,{start_time[:-1].replace(',', '.')},{end_time[:-1].replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+                return True
 
-            for i,iteam in enumerate(json.loads(text)):
-                duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
-                duration_milliseconds = duration * 1000
-                end_time = start_time + timedelta(milliseconds=duration_milliseconds)
-                # end_time = start_time + duration
-                # Viết phụ đề
-                ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
-                start_time = end_time
-            return True
-    except:
-        return False
+        for i,iteam in enumerate(json.loads(text)):
+            duration = get_audio_duration(f'media/{video_id}/voice/{iteam["id"]}.wav')
+            duration_milliseconds = duration * 1000
+            end_time = start_time + timedelta(milliseconds=duration_milliseconds)
+            # end_time = start_time + duration
+            # Viết phụ đề
+            ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+            start_time = end_time
+        return True
+    # except:
+    #     return False
 
 def merge_audio_video(data, task_id, worker_id):
     try:
@@ -688,7 +708,6 @@ def download_and_read_srt(data, video_id):
         print("Không thể tải xuống tệp sau nhiều lần thử.")
         return []
     
-
 def convert_to_seconds(time_str):
     time_format = '%H:%M:%S,%f'
     dt = datetime.strptime(time_str, time_format)
@@ -723,7 +742,8 @@ def create_video(data, task_id, worker_id):
             out_file = f'media/{video_id}/video/{iteam["id"]}.mp4'
 
             files = [f for f in os.listdir('video') if os.path.isfile(os.path.join('video', f))]
-            if iteam['url_video'] == '':
+            file = get_filename_from_url(iteam['url_video'])
+            if file == 'no-image-available.png' or iteam['url_video'] == '':
                 while True:
                     try:
                         random_file = random.choice(files)
@@ -742,7 +762,6 @@ def create_video(data, task_id, worker_id):
 
             else:
                 randoom_choice = random.choice([True, False])
-                file = get_filename_from_url(iteam['url_video'])
                 image_file = f'media/{video_id}/image/{file}'
                 if randoom_choice:
                     image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
