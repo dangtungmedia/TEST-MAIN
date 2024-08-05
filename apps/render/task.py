@@ -215,7 +215,7 @@ def create_video_file(data, task_id, worker_id):
             file.write(f"file 'video/{item['id']}.mp4'\n")
 
     audio_file = f'media/{video_id}/audio.wav'
-    fonts_dir = 'font'
+    fonts_dir = r'apps/render/font'
 
     # Kiểm tra sự tồn tại của file audio
     if not os.path.exists(audio_file):

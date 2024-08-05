@@ -351,6 +351,10 @@ class index(LoginRequiredMixin, TemplateView):
             'content': content
         }
 
+        VideoRender.objects.all().update(font_color='#FFFFFF',font_color_troke='#000000',stroke_text=3)
+
+
+
         return render(request, self.template_name,form)
     
 
