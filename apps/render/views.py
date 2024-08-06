@@ -18,6 +18,7 @@ from pytube import YouTube
 import json ,re ,random ,string
 from datetime import datetime, timedelta
 from django.core.files.storage import default_storage
+from storages.backends.sftpstorage import SFTPStorage
 
 from .forms import VideoForm
 from urllib.parse import urlparse, unquote
@@ -271,10 +272,10 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
                 video.url_thumbnail = self.handle_thumbnail(video, input_data['file-thumnail'])
                 if not is_edit_thumnail:
                     Count_Use_data.objects.create(videoRender_id=video, use=request.user, edit_thumnail=True, url_thumnail=video.url_thumbnail)
-
-            if (input_data.get('file-audio') or input_data.get('file-srt')):
-                if not video.url_audio or not video.url_subtitle:
-                    return JsonResponse({'success': False, 'message': 'Vui lòng điền đầy đủ file audio và phụ đề'}, status=status.HTTP_400_BAD_REQUEST)
+            # print("xxxxxxxx")
+            # if (input_data.get('file-audio') or input_data.get('file-srt')):
+            #     if not video.url_audio or not video.url_subtitle:
+            #         return JsonResponse({'success': False, 'message': 'Vui lòng điền đầy đủ file audio và phụ đề'}, status=status.HTTP_400_BAD_REQUEST)
             
             if input_data.get('file-audio'):
                 video.url_audio = self.handle_audio(video, input_data['file-audio'])
@@ -326,15 +327,6 @@ class index(LoginRequiredMixin, TemplateView):
     template_name = 'render/index.html'
 
     def get(self, request):
-        # folder = Folder.objects.first()
-        # profiles = ProfileChannel.objects.filter(folder_name=folder)
-        # current_time = timezone.now().strftime('%Y-%m-%d')
-        # form = {
-        #     'folder': Folder.objects.all(),
-        #     'profiles': profiles,
-        #     'current_time': current_time
-        # }
-
         content = True
         if request.user.is_superuser:
             folders = Folder.objects.filter(is_content=content)
@@ -350,20 +342,13 @@ class index(LoginRequiredMixin, TemplateView):
             'current_time': current_time,
             'content': content
         }
-
-        VideoRender.objects.all().update(font_color='#FFFFFF',font_color_troke='#000000',stroke_text=3)
-
-
-
         return render(request, self.template_name,form)
     
-
     def get_filename_from_url(self,url):
         parsed_url = urlparse(url)
         path = unquote(parsed_url.path)
         filename = path.split('/')[-1]
         return filename
-    
     
     def post(self, request):
         action = request.POST.get('action')
@@ -510,6 +495,8 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_title': edit_title,
                 'edit_thumnail': edit_thumnail
             })
+      
+
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
 
