@@ -1440,9 +1440,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 var image = $('img.id-thumbnail-video[data-id="' + data.id + '"]');
                 image.attr('src', thumbnailUrl);
 
-                $('div.btn-play-video[data-id="' + data.id + '"]');
-                $('div.btn-play-video[data-url="' + data.url_video + '"]');
-
+                video_url = $('div.btn-play-video[data-id="' + data.id + '"]');
+                // $('div.btn-play-video[data-url="' + data.url_video + '"]');
+                video_url.attr('data-url', data.url_video);
 
 
                 var title = $('label.id-title-video[data-id="' + data.id + '"]');
