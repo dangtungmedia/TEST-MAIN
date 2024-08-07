@@ -230,11 +230,11 @@ SFTP_STORAGE_PARAMS = {
 }
 
 
-# DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
-# SFTP_STORAGE_HOST = "dangtung.synology.me"
-# SFTP_STORAGE_ROOT = "/DATA/TUNG-MEDIA"
-# SFTP_STORAGE_PARAMS = {
-#     "username": "dataserver",
-#     "password": "@@Hien17987",
-#     "port": 18548,
-# }
+DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
+SFTP_STORAGE_HOST = "dangtung.synology.me"
+SFTP_STORAGE_ROOT = "/DATA/TUNG-MEDIA"
+SFTP_STORAGE_PARAMS = {
+    "username": "dataserver",
+    "password": "@@Hien17987",
+    "port": 18548,
+}
