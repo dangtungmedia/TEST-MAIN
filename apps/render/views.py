@@ -342,6 +342,15 @@ class index(LoginRequiredMixin, TemplateView):
             'current_time': current_time,
             'content': content
         }
+        from storages.backends.sftpstorage import SFTPStorage
+        sftp_storage = SFTPStorage()
+        file_path = '/TUNG-MEDIA/data/9/image/2a76d89fbdceeb5cc3cfba8de528f99a.jpg'
+        print("xxxxxx")
+        file_url = sftp_storage.url(file_path)
+        print("List of files in /TUNG-MEDIA:", file_url)
+    
+
+
         return render(request, self.template_name,form)
     
     def get_filename_from_url(self,url):
@@ -495,8 +504,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_title': edit_title,
                 'edit_thumnail': edit_thumnail
             })
-      
-
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
 
