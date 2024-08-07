@@ -100,7 +100,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else {
                         alert(data.data.message);
                     }
+                } else if (data.message === 'btn-play-video') {
+                    console.log('Play video:', data);
+                    let iframe = document.getElementById('videoIframe');
+                    iframe.src = data.data;
                 }
+
             } catch (error) {
                 console.error('Error parsing JSON:', error);
                 console.error('Received data:', event.data);
@@ -1222,9 +1227,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     $(document).on('click', '.btn-play-video', function () {
-        let iframe = document.getElementById('videoIframe');
-        const videoUrl = this.getAttribute('data-url');
-        iframe.src = videoUrl;
+        var id = $(this).data('id');
+        const renderMessage = JSON.stringify({
+            type: 'btn-play-video',
+            id_video: id,
+        });
+        sendMessage(renderMessage);
+
+
     });
 
     // dừng play video xem thử
@@ -1440,9 +1450,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 var image = $('img.id-thumbnail-video[data-id="' + data.id + '"]');
                 image.attr('src', thumbnailUrl);
 
-                $('div.btn-play-video[data-id="' + data.id + '"]');
-                $('div.btn-play-video[data-url="' + data.url_video + '"]');
-
+                video_url = $('div.btn-play-video[data-id="' + data.id + '"]');
+                // $('div.btn-play-video[data-url="' + data.url_video + '"]');
+                video_url.attr('data-url', data.url_video);
 
 
                 var title = $('label.id-title-video[data-id="' + data.id + '"]');
@@ -1457,8 +1467,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
-
 
     function change_color_status() {
         // Lấy tất cả các phần tử có class "status-video"

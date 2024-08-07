@@ -125,6 +125,11 @@ class RenderConsumer(AsyncWebsocketConsumer):
                 count_data = await sync_to_async(get_user_count_data)(self.user_id, current_date)
             await self.send(text_data=json.dumps({'message': 'update_count', 'data': count_data}))
 
+        elif message_type == 'btn-play-video':
+            self.id_video = data['id_video']
+            url = await self.get_video_play(self.id_video)
+            await self.send(text_data=json.dumps({'message': 'btn-play-video', 'data': url}))
+
         elif message_type == 'btn-render':
             self.id_video = data['id_video']
             await self.render_video(self.id_video)
@@ -314,6 +319,13 @@ class RenderConsumer(AsyncWebsocketConsumer):
         except VideoRender.DoesNotExist:
             return {'success': False,"id_video":None,"message": "Video không tồn tại"}
 
+    @sync_to_async
+    def get_video_play(self,id_video):
+        video = VideoRender.objects.get(id=id_video)
+        return video.url_video
+    
+
+
     def check_video_url(self,url):
         match = re.match(r'https?://www\.youtube\.com/watch\?v=.+', url)
         if not match:
@@ -344,7 +356,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
             return data
         except VideoRender.DoesNotExist:
             return None
-        
     
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
