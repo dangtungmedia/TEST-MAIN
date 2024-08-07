@@ -234,7 +234,6 @@ Soft UI Dashboard is a premium Bootstrap 5 Design now available for download in 
 
 
 
-
 # câu lệnh git Hub
 # Bảng các câu lệnh Git
 
@@ -306,7 +305,6 @@ nvidia-settings
 
 # buil chạy trên win cho nhanh 
 docker-compose -f docker-upload-pc.yml up --build
-
 
 
 
