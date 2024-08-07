@@ -149,13 +149,7 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
-STATIC_ROOT = os.path.join(CORE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
 
-# Extra places for collectstatic to find static files.
-STATICFILES_DIRS = (
-    os.path.join(CORE_DIR, 'apps/static'),
-)
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -204,8 +198,17 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
+STATIC_ROOT = os.path.join(CORE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+
+# Extra places for collectstatic to find static files.
+STATICFILES_DIRS = (
+    os.path.join(CORE_DIR, 'apps/static'),
+)
+
+
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = '/mnt/sftp/TUNG-MEDIA/'
 
 
 # DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -218,23 +221,3 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
-
-
-DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
-SFTP_STORAGE_HOST = "dangtung.synology.me"
-SFTP_STORAGE_ROOT = "/DATA/TUNG-MEDIA"
-SFTP_STORAGE_PARAMS = {
-    "username": "dataserver",
-    "password": "@@Hien17987",
-    "port": 18548,
-}
-
-
-DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
-SFTP_STORAGE_HOST = "dangtung.synology.me"
-SFTP_STORAGE_ROOT = "/DATA/TUNG-MEDIA"
-SFTP_STORAGE_PARAMS = {
-    "username": "dataserver",
-    "password": "@@Hien17987",
-    "port": 18548,
-}
