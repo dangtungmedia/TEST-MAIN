@@ -495,15 +495,8 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_title': edit_title,
                 'edit_thumnail': edit_thumnail
             })
-<<<<<<< HEAD
-
-        directory_path = 'test 001'
-        default_storage.mkdir(directory_path)
-        
-=======
       
 
->>>>>>> 4a80d16ee4f425a34ed1f0f11395bd6374d9dffe
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
 

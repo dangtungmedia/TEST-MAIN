@@ -106,8 +106,4 @@ wcwidth==0.2.13
 whitenoise==5.3.0
 yarl==1.9.4
 zope.interface==6.4.post2
-<<<<<<< HEAD
-paramiko
-=======
 paramiko==2.7.2
->>>>>>> 4a80d16ee4f425a34ed1f0f11395bd6374d9dffe

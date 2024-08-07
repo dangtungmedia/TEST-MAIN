@@ -24,4 +24,4 @@ WORKDIR /app
 # Running migrations
 # RUN python manage.py migrate
 
-CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 5504 core.asgi:application"]
+CMD ["sh", "-c", "daphne -b 0.0.0.0 -p 5505 core.asgi:application"]
