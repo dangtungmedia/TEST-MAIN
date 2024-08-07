@@ -30,7 +30,7 @@ services:
     restart: always
     image: "redis:latest"
     ports:
-      - "6379:6530"
+      - "6530:6379"
     command: redis-server --appendonly yes
     networks:
       - web_network
