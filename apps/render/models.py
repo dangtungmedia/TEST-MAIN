@@ -102,13 +102,12 @@ class Count_Use_data(models.Model):
     def __str__(self):
         return self.use.username
     
-class Api_Key_Azure(models.Model):
-    subscription_key = models.TextField(default="",blank=True)
-    endpoint = models.TextField(default="",blank=True)
-    timenow = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class APIKeyGoogle(models.Model):
+    key = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
-        return self.subscription_key
+        return self.key
 
 class Api_Voice_ttsmaker(models.Model):
     Api_Voice_ttsmaker = models.TextField(default="",blank=True)

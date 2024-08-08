@@ -5,7 +5,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from django.utils import timezone
-from .models import VideoRender, Count_Use_data,DataTextVideo
+from .models import VideoRender, Count_Use_data,DataTextVideo,APIKeyGoogle
 from .serializers import RenderSerializer
 from apps.login.models import CustomUser
 from django.core.files.storage import default_storage
@@ -18,7 +18,7 @@ from django.core.files.base import ContentFile
 import base64,re
 from random import randint
 import random
-import string
+import string,requests
 import logging
 from pytube import YouTube
 
@@ -94,7 +94,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
-            print(f"Received data: {data}")
         except json.JSONDecodeError as e:
             await self.send(text_data=json.dumps({'error': 'Invalid JSON', 'details': str(e)}))
             return
@@ -151,6 +150,10 @@ class RenderConsumer(AsyncWebsocketConsumer):
             data =  await self.delete_video(data)
             await self.send(text_data=json.dumps({'message': 'btn-delete', 'data': data}))
 
+
+        elif message_type == 'get-text-video':
+            text  = await self.get_text_video(data)
+            await self.send(text_data=json.dumps({'message': 'get-text-video', 'data': text}))
 
     async def chat_message(self, event):
         message = event['message']
@@ -219,12 +222,10 @@ class RenderConsumer(AsyncWebsocketConsumer):
         video.status_video = data['status']
         video.save()
 
-
     @sync_to_async
     def get_infor_edit_video(self, id_video):
         video = VideoRender.objects.get(id=id_video)
         return RenderSerializer(video).data
-
 
     @sync_to_async
     def add_one_video(self, data):
@@ -325,7 +326,45 @@ class RenderConsumer(AsyncWebsocketConsumer):
         return video.url_video
     
 
+    @sync_to_async
+    def get_text_video(self,data):
+        image_data = data['image']
+        image_data = image_data.replace('data:image/png;base64,', '')
+        image_bytes = base64.b64decode(image_data)
 
+        # Tạo tên file duy nhất
+        KEY_API_GOOGLE = APIKeyGoogle.objects.first().key
+
+        url = f'https://vision.googleapis.com/v1/images:annotate?key={KEY_API_GOOGLE}'
+
+        request_data = {
+            "requests": [
+                {
+                    "image": {
+                        "content": base64.b64encode(image_bytes).decode('utf-8')
+                    },
+                    "features": [
+                        {
+                            "type": "TEXT_DETECTION"
+                        }
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(url, json=request_data)
+
+        if response.status_code == 200:
+            try:
+                response_text = response.json()['responses'][0]['fullTextAnnotation']['text']
+                return response_text
+            except KeyError:
+                response_text = 'Không nhận diện được văn bản'
+            return response_text
+        else:
+            print(f'Error: {response.status_code}')
+            print(response.json())
+       
     def check_video_url(self,url):
         match = re.match(r'https?://www\.youtube\.com/watch\?v=.+', url)
         if not match:
@@ -342,14 +381,12 @@ class RenderConsumer(AsyncWebsocketConsumer):
         except:
             return False, "Video Không Tồn Tại ", None, None
 
-
     def get_filename_from_url(self,url):
         parsed_url = urlparse(url)
         path = unquote(parsed_url.path)
         filename = path.split('/')[-1]
         return filename
       
-
     def get_data_video(self, id_video):
         try:
             data = self.get_infor_render(id_video)
