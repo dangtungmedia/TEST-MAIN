@@ -204,8 +204,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 
 # DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
@@ -228,6 +227,11 @@ SFTP_STORAGE_PARAMS = {
     "password": "@@Hien17987",
     "port": 18548,
 }
+SFTP_BASE_URL = 'http://' + env('SERVER', default='127.0.0.1') + ':5085'
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"

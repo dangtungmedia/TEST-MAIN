@@ -269,14 +269,43 @@ document.addEventListener('DOMContentLoaded', function () {
         canvas.toBlob(function (blob) {
             var reader = new FileReader();
             reader.onloadend = function () {
-                var base64data = reader.result;
+                var base64data = reader.result.replace(/^data:image\/(png|jpg);base64,/, "");
 
-                // Send the base64 encoded image via WebSocket
-                socket.send(JSON.stringify({
-                    type: 'get-text-video',
-                    image: base64data
-                }));
-            }
+                var KEY_API_GOOGLE = "AIzaSyDNoZlY0D2a2xXxVfyAIXBMHsKZpqfd4YM";
+
+                var url = `https://vision.googleapis.com/v1/images:annotate?key=${KEY_API_GOOGLE}`;
+
+                var request_data = {
+                    "requests": [
+                        {
+                            "image": {
+                                "content": base64data
+                            },
+                            "features": [
+                                {
+                                    "type": "TEXT_DETECTION"
+                                }
+                            ]
+                        }
+                    ]
+                };
+
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(request_data)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        var text = data.responses[0].fullTextAnnotation.text;
+                        document.getElementById('text-video').value = text;
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                    });
+            };
             reader.readAsDataURL(blob);
         }, 'image/png');
     });
@@ -296,6 +325,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
     }
+
+
+
+
 
     $('#btn-save-text').click(function () {
         sever_Text()
