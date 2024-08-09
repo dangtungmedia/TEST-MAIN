@@ -229,63 +229,62 @@ class RenderConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def add_one_video(self, data):
-        profile = ProfileChannel.objects.get(id=data['profile_id'])
-        user = CustomUser.objects.get(id=data['userId'])
-        thumbnail_base64 = data['thumbnail']
-        file_url = ''
+        try:
+            profile = ProfileChannel.objects.get(id=data['profile_id'])
+            user = CustomUser.objects.get(id=data['userId'])
+            thumbnail_base64 = data['thumbnail']
+            file_url = ''
 
-        file_name = ''.join(random.choices(string.ascii_letters + string.digits, k=7)) + '.png'
-        if thumbnail_base64:
-            thumbnail_data = ContentFile(base64.b64decode(thumbnail_base64), name=file_name)
-            thumbnail_path = default_storage.save(f"thumbnails/{thumbnail_data.name}", thumbnail_data)
-            file_url = default_storage.url(thumbnail_path)
+            file_name = ''.join(random.choices(string.ascii_letters + string.digits, k=7)) + '.png'
+            if thumbnail_base64:
+                thumbnail_data = ContentFile(base64.b64decode(thumbnail_base64), name=file_name)
+                thumbnail_path = default_storage.save(f"thumbnails/{thumbnail_data.name}", thumbnail_data)
+                file_url = default_storage.url(thumbnail_path)
+                
+            video = VideoRender.objects.create(
+                folder_id= profile.folder_name,
+                profile_id= profile,
+                name_video=''.join(random.choices(string.ascii_letters + string.digits, k=7)),
+
+                title= data['title'],
+                description= data['description'],
+                keywords= data['keywords'],
+                time_upload= data['time_upload'],
+                date_upload= data['date_upload'],
             
-        video = VideoRender.objects.create(
-            folder_id= profile.folder_name,
-            profile_id= profile,
-            name_video=''.join(random.choices(string.ascii_letters + string.digits, k=7)),
-
-            title= data['title'],
-            description= data['description'],
-            keywords= data['keywords'],
-            time_upload= data['time_upload'],
-            date_upload= data['date_upload'],
-        
-            status_video = 'render',
-            is_render_start = True,
-            url_thumbnail = file_url,
-            intro_active=profile.channel_intro_active,
-            intro_url=profile.channel_intro_url,
-            outro_active=profile.channel_outro_active,
-            outro_url=profile.channel_outro_url,
-            logo_active=profile.channel_logo_active,
-            logo_url=profile.channel_logo_url,
-            logo_position=profile.channel_logo_position,
-            font_text=profile.channel_font_text,
-            font_size=profile.channel_font_size,
-            font_bold=profile.channel_font_bold,
-            font_italic=profile.channel_font_italic,
-            font_underline=profile.channel_font_underline,
-            font_strikeout=profile.channel_font_strikeout,
-            font_color=profile.channel_font_color,
-            font_color_opacity=profile.channel_font_color_opacity,
-            font_color_troke=profile.channel_font_color_troke,
-            font_color_troke_opacity=profile.channel_font_color_troke_opacity,
-            stroke_text=profile.channel_stroke_text,
-            font_background=profile.channel_font_background,
-            channel_font_background_opacity=profile.channel_font_background_opacity,
-            voice=profile.channel_voice,
-            voice_style=profile.channel_voice_style,
-            voice_speed=profile.channel_voice_speed,
-            voice_pitch=profile.channel_voice_pitch,
-            voice_volume=profile.channel_voice_volume,
-        )
-        if not user.is_staff:
-            Count_Use_data.objects.create(use=user,videoRender_id=video, creade_video=True, timenow=timezone.now().date())
-            Count_Use_data.objects.create(use=user, videoRender_id=video, edit_title=True, timenow=timezone.now().date())
-            if file_url:
-                Count_Use_data.objects.create(use=user,videoRender_id=video, edit_thumnail=True, timenow=timezone.now().date())
-        return RenderSerializer(video).data
+                status_video = 'render',
+                is_render_start = True,
+                url_thumbnail = file_url,
+                intro_active=profile.channel_intro_active,
+                intro_url=profile.channel_intro_url,
+                outro_active=profile.channel_outro_active,
+                outro_url=profile.channel_outro_url,
+                logo_active=profile.channel_logo_active,
+                logo_url=profile.channel_logo_url,
+                logo_position=profile.channel_logo_position,
+                font_text=profile.channel_font_text,
+                font_size=profile.channel_font_size,
+                font_bold=profile.channel_font_bold,
+                font_italic=profile.channel_font_italic,
+                font_underline=profile.channel_font_underline,
+                font_strikeout=profile.channel_font_strikeout,
+                font_color=profile.channel_font_color,
+                font_color_opacity=profile.channel_font_color_opacity,
+                font_color_troke=profile.channel_font_color_troke,
+                font_color_troke_opacity=profile.channel_font_color_troke_opacity,
+                stroke_text=profile.channel_stroke_text,
+                font_background=profile.channel_font_background,
+                channel_font_background_opacity=profile.channel_font_background_opacity,
+                channel_voice_style=profile.channel_voice_style,
+            )
+            if not user.is_staff:
+                Count_Use_data.objects.create(use=user,videoRender_id=video, creade_video=True, timenow=timezone.now().date())
+                Count_Use_data.objects.create(use=user, videoRender_id=video, edit_title=True, timenow=timezone.now().date())
+                if file_url:
+                    Count_Use_data.objects.create(use=user,videoRender_id=video, edit_thumnail=True, timenow=timezone.now().date())
+            return RenderSerializer(video).data
+        except ProfileChannel.DoesNotExist:
+            return None
 
     @sync_to_async
     def add_text_folder(self, data):

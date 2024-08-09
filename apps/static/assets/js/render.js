@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     add_one_video_web(data.data);
                     show_infor_video(data.data);
                     $('#next-cread-image').click();
+
                 } else if (data.message === 'add-text-folder') {
                     if (data.success === true) {
                         alert(data.message);

@@ -326,10 +326,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-
-
-
-
     $('#btn-save-text').click(function () {
         sever_Text()
     });
