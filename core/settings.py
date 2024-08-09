@@ -207,27 +207,27 @@ CELERY_TIMEZONE = 'UTC'
 
 
 
-# DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-# AWS_ACCESS_KEY_ID = 'AUQESQVFF01YMVGUPVF9'
-# AWS_SECRET_ACCESS_KEY = 'EtuAUr7hiyOQr3LGRbIJvWAlA25oX4GSfahDCCBE'
-# AWS_STORAGE_BUCKET_NAME = '19425936-media'
-# AWS_S3_ENDPOINT_URL = 'https://s3-hcm5-r1.longvan.net/'
-# AWS_QUERYSTRING_EXPIRE = 31*24*3600*1000
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+AWS_ACCESS_KEY_ID = 'AUQESQVFF01YMVGUPVF9'
+AWS_SECRET_ACCESS_KEY = 'EtuAUr7hiyOQr3LGRbIJvWAlA25oX4GSfahDCCBE'
+AWS_STORAGE_BUCKET_NAME = '19425936-media'
+AWS_S3_ENDPOINT_URL = 'https://s3-hcm5-r1.longvan.net/'
+AWS_QUERYSTRING_EXPIRE = 31*24*3600*1000
 
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
 
 
-DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
-SFTP_STORAGE_HOST = "dangtung.synology.me"
-SFTP_STORAGE_ROOT = "/DATA/TUNG-MEDIA"
-SFTP_STORAGE_PARAMS = {
-    "username": "dataserver",
-    "password": "@@Hien17987",
-    "port": 18548,
-}
-SFTP_BASE_URL = 'http://' + env('SERVER', default='127.0.0.1') + ':5085'
+# DEFAULT_FILE_STORAGE = "storages.backends.sftpstorage.SFTPStorage"
+# SFTP_STORAGE_HOST = "dangtung.synology.me"
+# SFTP_STORAGE_ROOT = "/DATA/TUNG-MEDIA"
+# SFTP_STORAGE_PARAMS = {
+#     "username": "dataserver",
+#     "password": "@@Hien17987",
+#     "port": 18548,
+# }
+# SFTP_BASE_URL = 'http://' + env('SERVER', default='127.0.0.1') + ':5085'
 
 
 MEDIA_URL = '/media/'
