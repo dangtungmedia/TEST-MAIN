@@ -52,7 +52,7 @@ from celery.result import AsyncResult
 from celery import shared_task, signals
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-SERVER='http://daphne:5504/'
+SERVER='http://daphne:5504'
 
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
