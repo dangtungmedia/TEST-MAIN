@@ -7,6 +7,7 @@ services:
       context: .
     volumes:
       - .:/app
+      - /mnt/raid0:/mnt/raid0
     depends_on:
       - redis2
     networks:
