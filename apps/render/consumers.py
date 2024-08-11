@@ -148,8 +148,8 @@ class RenderConsumer(AsyncWebsocketConsumer):
 
         elif message_type == 'btn-delete':
             data =  await self.delete_video(data)
+            default_storage.delete(f"data/{data['id_video']}")
             await self.send(text_data=json.dumps({'message': 'btn-delete', 'data': data}))
-
 
         elif message_type == 'get-text-video':
             text  = await self.get_text_video(data)

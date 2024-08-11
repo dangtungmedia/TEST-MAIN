@@ -151,7 +151,7 @@ def upload_video(data, task_id, worker_id):
         video_id = data.get('video_id')
         name_video = data.get('name_video')
         video_path = f'media/{video_id}/{name_video}.mp4'
-        url = f'{SERVER}api/'
+        url = f'{SERVER}/api/'
         update_status_video(f"Đang Render : Đang Upload File Lên Sever", video_id, task_id, worker_id)
         
         payload = {
