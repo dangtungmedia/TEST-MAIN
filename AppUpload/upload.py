@@ -182,7 +182,6 @@ class AddProfileDialog(tk.Toplevel):
         self.destroy()
 
 class Myapp:
-
     def __init__(self, root):
         self.root = root
         self.root.title("Main Window")
@@ -438,7 +437,7 @@ class Myapp:
             "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
         }
 
-        url = f'{self.url}api/'
+        url = f'{self.url}/api/'
         try:
             response = requests.post(url, json=data)
             infor_video = response.json()
@@ -1088,6 +1087,7 @@ class Myapp:
         attempt = 0
         while attempt < retries:
             try:
+                url = f"{self.url}/{url}"
                 response = requests.get(url, stream=True)
                 if response.status_code == 200:
                     if not os.path.exists(directory):

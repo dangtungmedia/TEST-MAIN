@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (data.message === 'btn-play-video') {
                     console.log('Play video:', data);
                     let iframe = document.getElementById('videoIframe');
-                    iframe.src = data.data;
+                    let baseUrl = window.location.origin;
+                    iframe.src = `${baseUrl}${data.data}`;
                 }
 
             } catch (error) {
@@ -1582,7 +1583,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // get_video_render(1);
     function GetProfileSelected() {
         const folderElement = document.getElementById('folder_name');
         const channelElement = document.getElementById('channel_name');
