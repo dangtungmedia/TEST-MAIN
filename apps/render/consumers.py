@@ -394,7 +394,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
     
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
-        print(video.voice_language.name)
         data  = {
             'video_id': video.id,
             'name_video': video.name_video,

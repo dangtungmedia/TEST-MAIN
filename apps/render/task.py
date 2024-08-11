@@ -93,7 +93,7 @@ def render_video(self,data):
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
 
-    if  not data.get('url_audio'):
+    if not data.get('url_audio'):
         # Tải xuống âm thanh
         success = download_audio(data, task_id, worker_id)
         if not success:
@@ -249,6 +249,7 @@ def create_video_with_retries(data, task_id, worker_id, max_retries=10):
     return False
 
 def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".woff2"]):
+
     print(f"Searching for font '{font_name}' in directory '{font_dir}' with extensions {extensions}")
     for root, dirs, files in os.walk(font_dir):
         print(f"Checking directory: {root}")
@@ -409,10 +410,10 @@ def merge_audio_video(data, task_id, worker_id):
         if data.get('url_audio'):
             max_retries = 30
             retries = 0
-            audio_url = data.get('url_audio')
+            url_audio = f"{SERVER}{data.get('url_audio')}"
             while retries < max_retries:
                 try:
-                    response = requests.get(audio_url, stream=True)
+                    response = requests.get(url_audio, stream=True)
                     if response.status_code == 200:
                         os.makedirs(f'media/{video_id}', exist_ok=True)
                         with open(f'media/{video_id}/cache.wav', 'wb') as file:
@@ -664,10 +665,10 @@ def download_and_read_srt(data, video_id):
         max_retries = 30
         retries = 0
         srt_url = data.get('file-srt')  # URL của tệp SRT
-        
+        url = f'{SERVER}{srt_url}'
         while retries < max_retries:
             try:
-                response = requests.get(srt_url, stream=True)
+                response = requests.get(url, stream=True)
                 if response.status_code == 200:
                     os.makedirs(f'media/{video_id}', exist_ok=True)
                     srt_path = f'media/{video_id}/cache.srt'
@@ -716,8 +717,6 @@ def create_video(data, task_id, worker_id):
         create_or_reset_directory(f'media/{video_id}/video')
         processed_entries = 0
         total_entries = len(json.loads(text))
-
-        print(data.get('file-srt'))
         if data.get('file-srt'):
             data_sub = download_and_read_srt(data, video_id)
             if len(data_sub) == 0:
@@ -962,12 +961,13 @@ def download_image(data, task_id, worker_id):
         return True
     
     for image in json.loads(data.get('images')):
+        url = f"{SERVER}/{image}"
         image_downloaded = False
         for attempt in range(30):
             try:
-                response = requests.get(image, stream=True)
+                response = requests.get(url, stream=True)
                 if response.status_code == 200:
-                    file_path = os.path.join(local_directory, get_filename_from_url(image))
+                    file_path = os.path.join(local_directory, get_filename_from_url(url))
                     with open(file_path, 'wb') as file:
                         for chunk in response.iter_content(1024):
                             file.write(chunk)
