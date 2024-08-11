@@ -324,7 +324,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
         video = VideoRender.objects.get(id=id_video)
         return video.url_video
     
-
     @sync_to_async
     def get_text_video(self,data):
         image_data = data['image']
@@ -395,7 +394,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
     
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
-        print(video.font_text)
+        print(video.voice_language.name)
         data  = {
             'video_id': video.id,
             'name_video': video.name_video,

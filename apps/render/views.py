@@ -18,7 +18,7 @@ from pytube import YouTube
 import json ,re ,random ,string
 from datetime import datetime, timedelta
 from django.core.files.storage import default_storage
-from storages.backends.sftpstorage import SFTPStorage
+
 
 from .forms import VideoForm
 from urllib.parse import urlparse, unquote
@@ -496,7 +496,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_thumnail': edit_thumnail
             })
       
-
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
 

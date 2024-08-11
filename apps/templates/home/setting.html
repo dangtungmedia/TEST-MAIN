@@ -53,7 +53,7 @@
                                                 <select id="folder_setting" class="form-select">
                                                     {% if folders %}
                                                         {% for folder in folders %}
-                                                            <option value="{{ folder.id }}">{{ folder.folder_name }}</option>
+                                                            <option value="{{folder.id}}">{{folder.folder_name}}</option>
                                                         {% endfor %}
                                                     {% else %}
                                                         <option value="">---------</option>
@@ -216,7 +216,7 @@
                         <select name="channel_font_text" id="channel_font_text" class="form-select">
                             {% for font in fonts %}
                                 <option value="{{ font.id }}" {% if profilesFirst and font.id == profilesFirst.channel_font_text.id %}selected{% endif %}>
-                                    {{ font.font_language }} ---- {{ font.font_name }}
+                                    {{ font.font_language }}-{{ font.font_name }}
                                 </option>
                             {% endfor %}
                         </select>
@@ -245,7 +245,7 @@
                                                 <label class="input-group-text" for="inputGroupSelect01">Font Chữ</label>
                                                 <select name="channel_font_text_2" id="channel_font_text_setting_2" class="form-select">
                                                     {% for font in fonts%}
-                                                        <option value="{{ font.id}}">{{ font.font_language }} ---- {{ font.font_name }}</option>
+                                                        <option value="{{ font.id}}">{{font.font_language}}-{{font.font_name}}</option>
                                                     {% endfor %}
 
                                                 </select>

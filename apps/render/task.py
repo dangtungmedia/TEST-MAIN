@@ -76,12 +76,6 @@ def render_video(self,data):
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
 
-    print(f"Worker ID: {worker_id}")
-    print(f"Task ID: {task_id}")
-    print(f"Video ID: {video_id}")
-    print(f"Data: {data}")
-
-
     update_status_video("Đang Render : Đang load thông tin video", data['video_id'], task_id, worker_id)
     success =  create_or_reset_directory(f'media/{video_id}')
 
@@ -265,7 +259,6 @@ def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".w
                 return os.path.join(root, file)
     print(f"Font '{font_name}' not found in directory '{font_dir}'")
     return None
-
 
 def get_text_lines(data, text):
     current_line = ""
@@ -570,7 +563,7 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "-t", str(duration),
             "-filter_complex", f"[0:v]scale={scale_width}:{scale_height}[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay[outv]",
             "-map", "[outv]",
-            "-r", "30",
+            "-r", "24",
             "-c:v", "libx264",
             "-pix_fmt", "yuv420p",
             "-an",  # Loại bỏ âm thanh
@@ -584,7 +577,7 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "-ss", start_time_str,
             "-t", end_time,
             "-vf", f"scale={scale_width}:{scale_height}",
-            "-r", "30",
+            "-r", "24",
             "-c:v", "libx264",
             "-pix_fmt", "yuv420p",
             "-an",  # Loại bỏ âm thanh
@@ -798,7 +791,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
         ffmpeg_command = [
             'ffmpeg',
             '-loop', '1',
-            '-framerate','60',
+            '-framerate','24',
             '-i', input_image,
             '-i', base_video,
             '-filter_complex',
@@ -815,7 +808,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
         ffmpeg_command = [
         'ffmpeg',
         '-loop', '1',
-        '-framerate','30',
+        '-framerate','24',
         '-i', input_image,
         '-vf',
         f"format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*60:s={scale_width}x{scale_height}:fps=60",
@@ -839,7 +832,7 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         ffmpeg_command = [
             'ffmpeg',
             '-loop', '1',
-            '-framerate','60',
+            '-framerate','24',
             '-i', input_image,
             '-i', base_video,
             '-filter_complex',

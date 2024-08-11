@@ -21,3 +21,6 @@ urlpatterns = [
     path('download/', download_file, name='download_file'),
     path('render/get-text-video/', get_text_video.as_view(), name='get_text_video'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

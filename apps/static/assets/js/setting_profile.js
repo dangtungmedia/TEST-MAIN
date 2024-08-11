@@ -477,7 +477,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('Card body element not found');
             }
             throw error; // Để lỗi này được xử lý ở phần gọi hàm
+
         }
+
     }
 
     $('#folder_name, #folder_setting').change(function () {
@@ -491,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var selectedText = $(this).find('option:selected').text();
         $('#channel_name, #channel_folder_name_setting').val($(this).val());
         $('#input_profile_name').val(selectedText);
-        GetInforProfile()
+        GetInforProfile();
     });
 
 
@@ -529,11 +531,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then(data => {
-                console.log(JSON.stringify(data));
-
-                select_choice('channel_font_text', data.channel_font_text);
-                select_choice('channel_font_text_setting', data.channel_font_text);
-
                 $('#channel_font_size').val(data.channel_font_size);
 
                 $('#channel_font_color').val(data.channel_font_color);
@@ -561,10 +558,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 $('#channel_url').val(data.channel_url);
                 $('#channel_email_login').val(data.channel_email_login);
                 $('#channel_vps_upload').val(data.channel_vps_upload);
+
+                select_choice('channel_font_text', data.channel_font_text);
+                select_choice('channel_font_text_setting_2', data.channel_font_text);
+
+                console.log('Get Infor Profile');
+                console.log('Get Infor Profile');
+                show_Subtitle();
+
             })
             .catch(error => {
                 console.error('There was a problem with your fetch operation:', error);
             });
+
     }
 
     $('#channel_voice,#channel_voice_setting').change(function () {
@@ -697,4 +703,93 @@ document.addEventListener('DOMContentLoaded', function () {
         return list_time_string;
     }
 
+    function show_Subtitle() {
+        $("#text-Subtitle").text($('#channel_subtitle_text').val());
+        $("#text-Subtitle").css('font-size', $('#channel_font_size').val() + 'px');
+        var selectedText = $("#channel_font_text_setting_2 option:selected").text();
+        $("#text-Subtitle").css('font-family', selectedText);
+
+        $("#text-Subtitle").css('font-weight', $('#channel_font_bold').is(':checked') ? 'bold' : 'normal');
+        $("#text-Subtitle").css('font-style', $('#channel_font_italic').is(':checked') ? 'italic' : 'normal');
+        $("#text-Subtitle").css('text-decoration', $('#channel_font_underline').is(':checked') ? 'underline' : 'none');
+        $("#text-Subtitle").css('text-decoration', $('#channel_font_strikeout').is(':checked') ? 'line-through' : 'none');
+
+        let color = document.getElementById('channel_font_color').value;
+        let opacity = document.getElementById('channel_font_color_opacity').value / 100;
+        let rgbaColor = `rgba(${parseInt(color.substr(1, 2), 16)}, ${parseInt(color.substr(3, 2), 16)}, ${parseInt(color.substr(5, 2), 16)}, ${opacity})`;
+        document.getElementById('text-Subtitle').style.color = rgbaColor;
+
+        let backgroundColor = document.getElementById('channel_font_background').value;
+        let backgroundOpacity = document.getElementById('channel_font_background_opacity').value / 100;
+        let rgbaBackgroundColor = `rgba(${parseInt(backgroundColor.substr(1, 2), 16)}, ${parseInt(backgroundColor.substr(3, 2), 16)}, ${parseInt(backgroundColor.substr(5, 2), 16)}, ${backgroundOpacity})`;
+        document.getElementById('text-Subtitle').style.background = rgbaBackgroundColor;
+
+        let strokeColor = document.getElementById('channel_font_color_troke').value;
+        let strokeOpacity = document.getElementById('channel_font_color_troke_opacity').value / 100;
+        let rgbaStrokeColor = `rgba(${parseInt(strokeColor.substr(1, 2), 16)}, ${parseInt(strokeColor.substr(3, 2), 16)}, ${parseInt(strokeColor.substr(5, 2), 16)}, ${strokeOpacity})`;
+        document.getElementById('text-Subtitle').style.textShadow = `0 0 0 ${rgbaStrokeColor}`;
+
+        const r = document.getElementById('channel_stroke_text').value; // width of outline in pixels
+        const n = Math.ceil(2 * Math.PI * r); // number of shadows
+        var str = '';
+        for (var i = 0; i < n; i++) { // append shadows in n evenly distributed directions
+            const theta = 2 * Math.PI * i / n;
+            str += `${r * Math.cos(theta)}px ${r * Math.sin(theta)}px 0 ${rgbaStrokeColor}${i == n - 1 ? '' : ','}`;
+        }
+        document.getElementById("text-Subtitle").style.textShadow = str;
+    }
+
+    $(document).ready(function () {
+        $('#channel_font_subtitle').on('input', function () {
+            // Lấy giá trị hiện tại của textarea
+            var subtitleText = $(this).val();
+            // Cập nhật nội dung của span
+            $('#text-Subtitle').text(subtitleText);
+        });
+    });
+
+    $('#channel_font_text_setting_2').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_size').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_color').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_color').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_color_opacity').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_color_troke').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_color_troke_opacity').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_background').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_background_opacity').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_stroke_text').change(function () {
+        show_Subtitle();
+    });
+
+    $('#channel_font_subtitle').change(function () {
+        show_Subtitle();
+    });
+    GetInforProfile()
 }); 
