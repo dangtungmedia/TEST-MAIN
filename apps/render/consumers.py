@@ -137,6 +137,10 @@ class RenderConsumer(AsyncWebsocketConsumer):
             video_data = await self.get_infor_edit_video(data['id_video'])
             await self.send(text_data=json.dumps({'message': 'btn-edit', 'data': video_data}))
 
+        elif message_type == 'btn-re-upload':
+            await self.reuploadFile(data['id_video'])
+
+
         elif message_type == 'add-one-video':
             video_data = await self.add_one_video(data)
             await self.send(text_data=json.dumps({'message': 'add-one-video', 'data': video_data}))
@@ -363,6 +367,13 @@ class RenderConsumer(AsyncWebsocketConsumer):
             print(f'Error: {response.status_code}')
             print(response.json())
        
+    @sync_to_async
+    def reuploadFile(self,id_video):
+        video = VideoRender.objects.get(id=id_video)
+        if "Upload VPS Thất Bại" in video.status_video:
+            video.status_video = "Render Thành Công : Đang Chờ Upload lên Kênh"
+            video.save()
+
     def check_video_url(self,url):
         match = re.match(r'https?://www\.youtube\.com/watch\?v=.+', url)
         if not match:

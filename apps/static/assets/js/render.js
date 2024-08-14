@@ -1256,7 +1256,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     $(document).on('click', '.btn-re-upload', function () {
-        alert('Đang tải lại video');
         var id = $(this).data('id');
 
         const reUploadMessage = JSON.stringify({
