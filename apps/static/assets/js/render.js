@@ -1329,7 +1329,6 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Debug information');
         console.log(images);
         var formData = new FormData();
-        alert($('#input-time-upload').val())
         formData.append('title', $('#input-title').val());
         formData.append('description', $('#input-description').val());
         formData.append('keywords', $('#input-keyword').val());
