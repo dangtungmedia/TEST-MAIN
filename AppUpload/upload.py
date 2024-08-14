@@ -436,6 +436,7 @@ class Myapp:
             self.pushButton_4.config(text="Start", bg="green", fg="white")
             self.update_status_app("Stopped, waiting to start...\n")
             self.url_entry.config(state='normal')  # Enable the URL entry
+
             if self.id is not None:
                 self.update_status_video("Upload VPS Thất Bại : dừng sever")
             
@@ -500,7 +501,6 @@ class Myapp:
     def get_infor_video(self, profile):
         if self.stop_thread.is_set():
             return
-
         data = {
             "ip_vps": self.ip_address,
             "action": "upload-video-to-vps",
@@ -542,8 +542,11 @@ class Myapp:
         if self.stop_thread.is_set():
             return
 
-        url_thumnail = infor_video["url_thumbnail"]
-        file_thumnail = self.get_filename_from_url(url_thumnail)
+        path_thumnail = infor_video["url_thumbnail"]
+        file_thumnail = self.get_filename_from_url(path_thumnail)
+
+        url_thumnail = f"{self.url}{path_thumnail}"
+
         thumbnail_success = self.download_file(url_thumnail, "Video_Upload", file_thumnail)
 
         if self.stop_thread.is_set():
@@ -560,11 +563,21 @@ class Myapp:
         if self.stop_thread.is_set():
             return
 
-        url_video = infor_video["video_url"]
-        file_video = self.get_filename_from_url(url_video)
-        self.update_status_app(f"profile {profile['name']} đang tải video  \n")
-        self.update_status_video("Đang Upload Lên VPS : Đang Tải Video")
-        video_success = self.download_file(url_video, "Video_Upload", file_video)
+        path_video = infor_video["video_url"]
+        file_video = self.get_filename_from_url(path_video)
+
+        url_video = f"{self.url}{path_video}"
+
+        try:
+            self.update_status_app(f"profile {profile['name']} đang tải video \n")
+            self.update_status_video("Đang Upload Lên VPS : Đang Tải Video")
+            video_success = self.download_file(url_video, "Video_Upload", file_video)
+        except RequestException as e:
+            self.update_status_app(f"profile {profile['name']} {e}\n")
+
+            self.update_status_app(f"profile {profile['name']} không tải được video \n")
+            self.update_status_video("Upload VPS Thất Bại : Lỗi tải video")
+            return
 
         if self.stop_thread.is_set():
             return
@@ -605,22 +618,36 @@ class Myapp:
                 options = Options()
                 options.profile = webdriver.FirefoxProfile(profile_path)
 
-            
                 service = Service()  # Thay thế bằng đường dẫn tới geckodriver của bạn
                 driver = webdriver.Firefox(service=service, options=options)
-
 
                 driver.get('https://studio.youtube.com/')
 
                 wait = WebDriverWait(driver, 10)
                 self.update_status_video("Đang Upload Lên VPS : bắt đầu upload")
                 self.update_status_app(f"profile {profile['name']} bắt đầu upload \n")
-            except Exception as e:
-                self.update_status_app(f"Lỗi mở trình duyệt {e}\n")
-                self.update_status_video("Upload VPS Thất Bại : Lỗi mở trình duyệt")
+
+            except FileNotFoundError:
+                self.update_status_app(f"Lỗi: Không tìm thấy hồ sơ tại đường dẫn {profile_path}\n")
+                self.update_status_video("Upload VPS Thất Bại : Lỗi hồ sơ Firefox không tìm thấy")
                 self.id = None
-                driver.quit()
                 return
+
+            except WebDriverException as e:
+                self.update_status_app(f"Lỗi WebDriver: {e}\n")
+                self.update_status_video("Upload VPS Thất Bại : Lỗi khởi tạo WebDriver")
+                self.id = None
+                return
+
+            except Exception as e:
+                self.update_status_app(f"Lỗi không mong muốn: {e}\n")
+                self.update_status_video("Upload VPS Thất Bại : Lỗi không mong muốn")
+                self.id = None
+                return
+
+            finally:
+                if 'driver' in locals():
+                    driver.quit()
         try:
             if not self.stop_thread.is_set():
                 self.update_status_video("Đang Upload Lên VPS : Chuẩn bị upload lên kênh")
@@ -1123,14 +1150,14 @@ class Myapp:
         return timestamps
 
     def update_status_video(self, text):
-        if not self.stop_thread.is_set() and self.is_start and self.id:
+        if self.id:
             data = {
                     "action": "update_status",
                     "video_id": self.id,
                     "status": text,
                     "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
                 }
-            url = f'{self.url}api/'
+            url = f'{self.url}/api/'
             response = requests.post(url, json=data)
             infor_video = response.json()
             if 'message' in infor_video:
@@ -1225,15 +1252,15 @@ class Myapp:
         else:
             print(f"Temp directory '{temp_directory}' does not exist.")
 
-    def download_file(self, url, directory, filename, retries=100):
+    def download_file(self, url, directory, filename, retries=30):
         attempt = 0
         while attempt < retries and self.is_start:
             try:
-                url = f"{self.url}{url}"
                 response = requests.get(url, stream=True)
                 total_size = int(response.headers.get('content-length', 0))
                 block_size = 1024  # 1 Kilobyte
                 wrote = 0
+                
                 if response.status_code == 200:
                     if not os.path.exists(directory):
                         os.makedirs(directory)
@@ -1248,10 +1275,7 @@ class Myapp:
                             elapsed_time = time.time() - start_time
                             
                             # Kiểm tra để tránh lỗi division by zero
-                            if elapsed_time > 0:
-                                speed = wrote / 1024 / elapsed_time  # KB/s
-                            else:
-                                speed = 0  # Nếu thời gian quá ngắn, đặt tốc độ bằng 0
+                            speed = wrote / 1024 / elapsed_time if elapsed_time > 0 else 0  # KB/s
                             
                             # Tính toán phần trăm tiến trình
                             percentage = (wrote / total_size) * 100
@@ -1263,17 +1287,17 @@ class Myapp:
                             # Cập nhật giao diện người dùng
                             self.root.update_idletasks()
                             
-                        return True
+                    return True
                 else:
                     print(f"Failed to download file: {response.status_code}")
                     return False
-            except (RequestException, ProtocolError) as e:
+            except (requests.RequestException, requests.exceptions.ProtocolError) as e:
                 attempt += 1
                 print(f"Error while downloading file: {e}")
                 self.update_status_app(f"Lỗi tải file: {e}")
                 if attempt < retries:
-                    print("Retrying...")
-        print("Failed to download the file after multiple attempts")
+                    self.update_status_app("Retrying in 5 seconds...")
+                    time.sleep(5)  # Chờ 5 giây trước khi thử lại
         return False
 
     def start_download(self):
