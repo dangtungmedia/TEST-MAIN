@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.log('Play video:', data);
                     let iframe = document.getElementById('videoIframe');
                     let baseUrl = window.location.origin;
-                    iframe.src = `${baseUrl}${data.data}`;
+                    iframe.src = data.data
                 }
 
             } catch (error) {
@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <button class="btn btn-outline-primary btn-render  bg-success" type="button" data-id="${video.id}">
                         ${getLogoByStatus(video.status_video)}
                     </button>
-                    <button class="btn btn-outline-primary bg-secondary" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary bg-secondary btn-re-upload" type="button" data-id="${video.id}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use>
                         </svg>
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <button class="btn btn-outline-primary btn-render  bg-success" type="button" data-id="${video.id}">
                         ${getLogoByStatus(video.status_video)}
                     </button>
-                    <button class="btn btn-outline-primary bg-secondary" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary bg-secondary btn-re-upload" type="button" data-id="${video.id}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use>
                         </svg>
@@ -1255,6 +1255,18 @@ document.addEventListener('DOMContentLoaded', function () {
         sendMessage(renderMessage);
     });
 
+    $(document).on('click', '.btn-re-upload', function () {
+        alert('Đang tải lại video');
+        var id = $(this).data('id');
+
+        const reUploadMessage = JSON.stringify({
+            type: 'btn-re-upload',
+            id_video: id,
+        });
+        sendMessage(reUploadMessage);
+    });
+
+
     $(document).on('click', '.btn-edit', function () {
         var id = $(this).data('id');
         $('#id-video-edit').val(id);
@@ -1318,6 +1330,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Debug information');
         console.log(images);
         var formData = new FormData();
+        alert($('#input-time-upload').val())
         formData.append('title', $('#input-title').val());
         formData.append('description', $('#input-description').val());
         formData.append('keywords', $('#input-keyword').val());
