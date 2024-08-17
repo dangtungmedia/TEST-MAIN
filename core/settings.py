@@ -31,7 +31,7 @@ DEBUG = env('DEBUG')
 ASSETS_ROOT = os.getenv('ASSETS_ROOT', '/static/assets') 
 
 # load production server from .env
-ALLOWED_HOSTS        = ['localhost', '127.0.0.1',env('SERVER', default='127.0.0.1'),'celery','daphne' ]
+ALLOWED_HOSTS        = ['localhost', '127.0.0.1',env('SERVER', default='127.0.0.1'),'celery','daphne','192.168.1.28' ]
 CSRF_TRUSTED_ORIGINS = ['http://localhost','http://127.0.0.1:5085','http://localhost:5085','http://127.0.0.1','http://' + env('SERVER', default='127.0.0.1') + ':5085' ]
 # Application definition
 
