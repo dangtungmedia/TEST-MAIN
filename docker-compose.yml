@@ -42,7 +42,7 @@ services:
       context: .
     volumes:
       - .:/app
-    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=5
+    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=1
     networks:
       - web_network
       - db_network
