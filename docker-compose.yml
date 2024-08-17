@@ -46,23 +46,23 @@ services:
     networks:
       - web_network
       - db_network
-  voicevox_engine:
-    container_name: voicevox_engine
-    image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
-    restart: always
-    ports:
-      - '50021:50021'
-    networks:
-      - web_network
-      - db_network
-    tty: true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
+  # voicevox_engine:
+  #   container_name: voicevox_engine
+  #   image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
+  #   restart: always
+  #   ports:
+  #     - '50021:50021'
+  #   networks:
+  #     - web_network
+  #     - db_network
+  #   tty: true
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [ gpu ]
 
   flower:
     container_name: flower
