@@ -192,34 +192,50 @@ class RenderConsumer(AsyncWebsocketConsumer):
         video = VideoRender.objects.get(pk=id_video)
         data = self.get_data_video(video.id)
         if video.status_video == "render":
-            task = render_video.apply_async(args=[data])
-            video.task_id = task.id
-            video.status_video = "Đang chờ render : Đợi đến lượt render"
-            video.save()
+            try:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Đợi đến lượt render"
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
 
         elif "Đang chờ render" in video.status_video or "Đang Render" in video.status_video:
-            result = AsyncResult(video.task_id)
-            result.revoke(terminate=True)
-            video.task_id = ''
-            video.status_video = "Render Lỗi : Dừng Render"
-            video.save()
-
+            try:
+                result = AsyncResult(video.task_id)
+                result.revoke(terminate=True)
+                video.task_id = ''
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
         elif "Render Lỗi" in video.status_video:
-            task = render_video.apply_async(args=[data])
-            video.task_id = task.id
-            video.status_video = "Đang chờ render : Render Lại"
-            video.save()
-        
-        elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
-            task = render_video.apply_async(args=[data])
-            video.task_id = task.id
-            video.status_video = "Đang chờ render"
-            folder_path = f"data/{video.id}"
-            file = self.get_filename_from_url(video.url_video)
-            default_storage.delete(f"{folder_path}/{file}")
-            video.url_video = ''
-            video.save()
+            try:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Render Lại"
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
 
+        elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
+            try:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Render Lại"
+                folder_path = f"data/{video.id}"
+                file = self.get_filename_from_url(video.url_video)
+                default_storage.delete(f"{folder_path}/{file}")
+                video.url_video = ''
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
+
+           
     @sync_to_async
     def update_status(self, data):
         video = VideoRender.objects.get(id=data['video_id'])
@@ -370,7 +386,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
     @sync_to_async
     def reuploadFile(self,id_video):
         video = VideoRender.objects.get(id=id_video)
-        if "Upload VPS Thất Bại" in video.status_video:
+        if "Upload VPS Thất Bại" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video:
             video.status_video = "Render Thành Công : Đang Chờ Upload lên Kênh"
             video.save()
 
