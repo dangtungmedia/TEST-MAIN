@@ -1,47 +1,49 @@
 services:
-  daphne_huan:
-    container_name: daphne_huan
+  daphne:
+    container_name: daphne
     restart: always
     env_file: .env
     build:
       context: .
     volumes:
       - .:/app
+      - /mnt/raid0:/mnt/raid0
     depends_on:
-      - redis_huan
+      - redis2
     networks:
       - web_network
       - db_network
-    expose:
-      - 5504
-  nginx_huan:
-    container_name: nginx_huan
+  nginx:
+    container_name: newspro
     restart: always
     image: "nginx:latest"
     ports:
-      - "8000:8000" # Mapping port 5085 on host to port 80 in the container
+      - "5085:5085" # Mapping port 5085 on host to port 80 in the container
     volumes:
       - ./nginx:/etc/nginx/conf.d
     networks:
       - web_network
       - db_network
-  redis_huan:
-    container_name: redis_huan
+    depends_on:
+      - daphne
+
+  redis2:
+    container_name: redis2
     restart: always
     image: "redis:latest"
     ports:
-      - "6636:6379"
+      - "6530:6379"
     command: redis-server --appendonly yes
     networks:
       - web_network
       - db_network
-  celery_huan:
-    container_name: celery_worker_tung_huan
+  celery:
+    container_name: celery_worker_tung
     build:
       context: .
     volumes:
       - .:/app
-    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=10
+    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=5
     networks:
       - web_network
       - db_network
@@ -63,14 +65,14 @@ services:
   #             count: 1
   #             capabilities: [ gpu ]
 
-  flower_huan:
-    container_name: flower_huan
+  flower:
+    container_name: flower
     build:
       context: .
     volumes:
       - .:/app
     ports:
-      - "6666:6666"
+      - "5555:5555"
     command: celery -A core flower
     networks:
       - web_network
