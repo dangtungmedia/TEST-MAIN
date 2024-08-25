@@ -215,5 +215,5 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
 
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/mnt/raid0/media-tung'
+MEDIA_ROOT = '/mnt/raid0/media-huan'
 
