@@ -646,8 +646,7 @@ class Myapp:
                 return
 
             finally:
-                if 'driver' in locals():
-                    driver.quit()
+                pass
         try:
             if not self.stop_thread.is_set():
                 self.update_status_video("Đang Upload Lên VPS : Chuẩn bị upload lên kênh")
