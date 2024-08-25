@@ -31,8 +31,8 @@ DEBUG = env('DEBUG')
 ASSETS_ROOT = os.getenv('ASSETS_ROOT', '/static/assets') 
 
 # load production server from .env
-ALLOWED_HOSTS        = ['localhost', '127.0.0.1',env('SERVER', default='127.0.0.1'),'celery','daphne' ]
-CSRF_TRUSTED_ORIGINS = ['http://localhost','http://127.0.0.1:5085','http://localhost:8000','http://127.0.0.1','http://' + env('SERVER', default='127.0.0.1') + ':8000' ]
+ALLOWED_HOSTS        = ['localhost', '127.0.0.1',env('SERVER', default='127.0.0.1'),'celery','daphne','192.168.1.28']
+CSRF_TRUSTED_ORIGINS = ['http://localhost','http://127.0.0.1:5085','http://localhost:5085','http://127.0.0.1','http://' + env('SERVER', default='127.0.0.1') + ':5085','http://192.168.1.28:5085' ]
 # Application definition
 
 INSTALLED_APPS = [
@@ -149,7 +149,13 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
+STATIC_ROOT = os.path.join(CORE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
 
+# Extra places for collectstatic to find static files.
+STATICFILES_DIRS = (
+    os.path.join(CORE_DIR, 'apps/static'),
+)
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -167,8 +173,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
-
-
 
 
 BROKER_URL =  os.environ.get('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0' )
@@ -198,19 +202,6 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 
-STATIC_ROOT = os.path.join(CORE_DIR, 'staticfiles')
-STATIC_URL = '/static/'
-
-# Extra places for collectstatic to find static files.
-STATICFILES_DIRS = (
-    os.path.join(CORE_DIR, 'apps/static'),
-)
-
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = '/mnt/sftp/TUNG-MEDIA/'
-
-
 # DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 # AWS_ACCESS_KEY_ID = 'AUQESQVFF01YMVGUPVF9'
 # AWS_SECRET_ACCESS_KEY = 'EtuAUr7hiyOQr3LGRbIJvWAlA25oX4GSfahDCCBE'
@@ -221,3 +212,8 @@ MEDIA_ROOT = '/mnt/sftp/TUNG-MEDIA/'
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024 * 1024  # 10GB
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/mnt/raid0/media-tung'
+

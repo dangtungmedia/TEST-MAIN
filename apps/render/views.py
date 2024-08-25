@@ -5,7 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 
 from apps.home.models import Folder, Font_Text, syle_voice, Voice_language, ProfileChannel
-from .models import VideoRender, DataTextVideo, video_url,Count_Use_data,Api_Key_Azure,Api_Voice_ttsmaker
+from .models import VideoRender, DataTextVideo, video_url,Count_Use_data,APIKeyGoogle,Api_Voice_ttsmaker
 
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
@@ -18,7 +18,7 @@ from pytube import YouTube
 import json ,re ,random ,string
 from datetime import datetime, timedelta
 from django.core.files.storage import default_storage
-from storages.backends.sftpstorage import SFTPStorage
+
 
 from .forms import VideoForm
 from urllib.parse import urlparse, unquote
@@ -504,6 +504,7 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_title': edit_title,
                 'edit_thumnail': edit_thumnail
             })
+      
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
 
@@ -638,3 +639,10 @@ def download_file(request):
     # Sử dụng with để đảm bảo file được đóng đúng cách
     response = FileResponse(open(file_path, 'rb'), as_attachment=True, filename='AppUpload.rar')
     return response
+
+#lấy văn bản trong video
+class get_text_video(LoginRequiredMixin, TemplateView):
+    login_url = '/login/'
+    template_name = 'render/get-text-video.html'
+    def get(self, request):
+        return render(request, self.template_name)

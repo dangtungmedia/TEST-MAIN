@@ -1,13 +1,14 @@
 {
-    "url-sever": "http://27.72.80.85:5085/",
+    "url-sever": "http://27.72.80.85:5085",
     "timeupload": 0,
     "profiles": [
         {
             "name": "k1",
             "path_profile": "C:\\Users\\dangt\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\3kk6zjzg.default-release",
             "uploadsToday": 0,
-            "lastUploadTime": "2024-08-02 10:43:20",
+            "lastUploadTime": "2024-08-14 11:15:55",
             "uploadLimitPerDay": 6
         }
-    ]
+    ],
+    "ip_address": "65.108.239.50:yFLEr"
 }

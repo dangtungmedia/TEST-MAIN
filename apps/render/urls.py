@@ -4,7 +4,7 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 
 from apps.render import views
-from .views import index,VideoRenderViewSet,ProfileChannelViewSet,VideoRenderList
+from .views import index,VideoRenderViewSet,ProfileChannelViewSet,VideoRenderList,get_text_video
 from .views import download_file
 
 
@@ -19,4 +19,8 @@ urlpatterns = [
     path('render/', index.as_view(), name='render'),
     path('count-data/', VideoRenderList.as_view(), name='count-data'),
     path('download/', download_file, name='download_file'),
+    path('render/get-text-video/', get_text_video.as_view(), name='get_text_video'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

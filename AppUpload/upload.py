@@ -30,6 +30,9 @@ from requests.exceptions import RequestException
 from urllib3.exceptions import ProtocolError
 from urllib.parse import urlparse, unquote
 from requests.exceptions import HTTPError
+from selenium.common.exceptions import NoSuchElementException
+import string
+import random
 
 class SettingDialog(tk.Toplevel):
     def __init__(self, parent, selected_index, config_data):
@@ -182,7 +185,6 @@ class AddProfileDialog(tk.Toplevel):
         self.destroy()
 
 class Myapp:
-
     def __init__(self, root):
         self.root = root
         self.root.title("Main Window")
@@ -193,15 +195,25 @@ class Myapp:
         self.is_start = False
         self.stop_thread = threading.Event()
 
+
         self.root.update_idletasks()  # Update the widget's size and position info
         self.root.geometry("+%d+%d" % (root.winfo_screenwidth() // 2 - self.root.winfo_width() // 2,
                                        root.winfo_screenheight() // 2 - self.root.winfo_height() // 2))
-        self.get_ip_address()
+        
 
         # Kiểm tra, tạo (nếu cần) và đọc tệp JSON
         self.config_data = self.check_and_create_json_file('config.json')
 
+
+        if not self.config_data.get("ip_address"):
+            self.get_ip_address()
+
+        else:
+            self.ip_address = self.config_data['ip_address']
+            self.label_3.config(text=self.ip_address)
+
         self.url = self.config_data['url-sever']
+
         self.url_entry.delete(0, tk.END)  # Clear any existing text in the entry
         self.url_entry.insert(0, self.url)  # Insert the new text
             
@@ -217,8 +229,6 @@ class Myapp:
         self.create_right_frame()
 
     def create_input_frame(self):
-
-        # Create a frame for the URL server input
         self.input_frame = tk.Frame(self.centralwidget)
         self.input_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
@@ -228,8 +238,32 @@ class Myapp:
         self.url_entry = tk.Entry(self.input_frame, font=("Arial", 14))
         self.url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
 
-    def create_left_frame(self):
+        # Thêm một progress bar dưới phần nhập URL
+        self.progress_frame = tk.Frame(self.centralwidget)
+        self.progress_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
+        self.progress_label = tk.Label(self.progress_frame, text="Download Progress:", font=("Arial", 16))
+        self.progress_label.pack(side=tk.LEFT)
+
+        # Tạo một style để thay đổi màu sắc của thanh progress bar
+        self.style = ttk.Style()
+        self.style.configure("green.Horizontal.TProgressbar", 
+                             thickness=30,
+                             troughcolor='white', 
+                             background='red')
+
+        self.progress_bar = ttk.Progressbar(self.progress_frame, 
+                                            orient="horizontal", 
+                                            length=300, 
+                                            mode="determinate", 
+                                            style="green.Horizontal.TProgressbar")
+        self.progress_bar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=10)
+
+        # Thêm một Label để hiển thị phần trăm tải về bên trong thanh progress bar
+        self.percentage_label = tk.Label(self.progress_bar, text="0%", font=("Arial", 14), anchor="center", background="white")
+        self.percentage_label.place(relx=0.5, rely=0.5, anchor="center")
+        
+    def create_left_frame(self):
         self.frame1 = tk.Frame(self.centralwidget)
         self.frame1.config(relief=tk.RAISED, width=700)
         self.frame1.pack(side=tk.LEFT, fill=tk.BOTH, expand=False)
@@ -245,6 +279,9 @@ class Myapp:
         self.label_3.pack(side=tk.LEFT)
 
         self.copy_button = tk.Button(self.sub_frame1, text="Copy", font=("Arial", 10), command=self.copy_ip)
+        self.copy_button.pack(side=tk.LEFT, padx=10)
+
+        self.copy_button = tk.Button(self.sub_frame1, text="Đổi IP", font=("Arial", 10), command=self.get_ip_address)
         self.copy_button.pack(side=tk.LEFT, padx=10)
 
         self.sub_frame2 = tk.Frame(self.frame1)
@@ -384,8 +421,10 @@ class Myapp:
             messagebox.showerror("Error", "Vui Lòng Nhập Url Đường Dẫn SEVER")
             return
         self.save_config_data()
-
         if not self.is_start:
+            # Initialize or reset the stop_thread event
+            self.stop_thread = threading.Event()
+
             self.pushButton_4.config(text="Stop", bg="red", fg="white")
             self.update_status_app("Server started...\n")
             self.url_entry.config(state='disabled')  # Disable the URL entry
@@ -397,40 +436,71 @@ class Myapp:
             self.pushButton_4.config(text="Start", bg="green", fg="white")
             self.update_status_app("Stopped, waiting to start...\n")
             self.url_entry.config(state='normal')  # Enable the URL entry
+
             if self.id is not None:
                 self.update_status_video("Upload VPS Thất Bại : dừng sever")
-            self.stop_event.set()
-            self.thread.join()
+            
+            # Signal the thread to stop
+            self.stop_thread.set()
+            # Attempt to join the thread with a timeout to avoid freezing the UI
+            self.thread.join(timeout=0)
+
+            # Check if the thread is still alive and handle appropriately
+            if self.thread.is_alive():
+                self.update_status_app("Server did not stop in time, forcing stop...\n")
+                # If necessary, implement additional measures to stop the thread
+            self.update_status_app("Server stopped.\n")
             
     def run_server(self):
-        while self.is_start:
+        while not self.stop_thread.is_set():
             tz = pytz.timezone('Asia/Ho_Chi_Minh')
             current_time = datetime.now(tz)
+
             for profile in self.config_data['profiles']:
+                if self.stop_thread.is_set():
+                    break  # Thoát vòng lặp nếu có yêu cầu dừng
+
                 last_upload_time = datetime.strptime(profile['lastUploadTime'], '%Y-%m-%d %H:%M:%S')
                 last_upload_time = tz.localize(last_upload_time)
-                #xóa bộ nhớ
-                # self.clear_temp_folder()
+
+                #  xóa bộ nhớ
+                self.clear_temp_folder()
+
                 # Kiểm tra nếu đã qua một ngày mới và reset uploadsToday
-                if current_time - last_upload_time >= timedelta(days=1) and self.is_start:
+                if current_time - last_upload_time >= timedelta(days=1):
                     profile['uploadsToday'] = 0
                     profile['lastUploadTime'] = current_time.strftime('%Y-%m-%d %H:%M:%S')
                     self.save_config_data()
+
                 # Kiểm tra nếu profile có thể upload thêm hôm nay
-                if profile['uploadsToday'] < profile['uploadLimitPerDay'] and self.is_start:
+                if profile['uploadsToday'] < profile['uploadLimitPerDay']:
+                    if self.stop_thread.is_set():
+                        break  # Thoát vòng lặp nếu có yêu cầu dừng
+
                     self.update_status_app(f"profile {profile['name']} có thể tải lên ngay hôm nay.\n")
                     self.update_status_app(f"profile {profile['name']} Lấy thông tin upload...\n")
                     self.get_infor_video(profile)
-                    time.sleep(3)
+
+                    # Sử dụng sleep ngắn hơn và kiểm tra dừng
+                    for _ in range(30):  # 30 * 0.1s = 3s
+                        if self.stop_thread.is_set():
+                            break
+                        time.sleep(0.1)
+
                     self.save_config_data()
-                elif profile['uploadsToday'] == profile['uploadLimitPerDay'] and self.is_start:
+
+                elif profile['uploadsToday'] == profile['uploadLimitPerDay']:
                     self.update_status_app(f"profile {profile['name']} đã đạt đến giới hạn tải lên.\n")
-                time.sleep(self.config_data['timeupload'])
+
+                # Sử dụng sleep ngắn hơn và kiểm tra dừng
+                for _ in range(int(self.config_data['timeupload'] * 10)):  # timeupload * 10 * 0.1s
+                    if self.stop_thread.is_set():
+                        break
+                    time.sleep(0.1)
 
     def get_infor_video(self, profile):
-        if not self.is_start:
+        if self.stop_thread.is_set():
             return
-
         data = {
             "ip_vps": self.ip_address,
             "action": "upload-video-to-vps",
@@ -438,7 +508,7 @@ class Myapp:
             "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
         }
 
-        url = f'{self.url}api/'
+        url = f'{self.url}/api/'
         try:
             response = requests.post(url, json=data)
             infor_video = response.json()
@@ -449,16 +519,16 @@ class Myapp:
             self.update_status_app(f"Lỗi kết nối đến server")
             return None
 
-        if not self.is_start:
+        if self.stop_thread.is_set():
             return
 
-        if self.is_start:
+        if not self.stop_thread.is_set():
             self.handle_video_info(infor_video, profile)
 
             self.update_status_app(f"Đã lấy được thông tin video {self.id}\n")
             self.update_status_video(f"Đang Upload Lên VPS : Đang Lấy Thông Tin Upload\n")
 
-        if not self.is_start:
+        if self.stop_thread.is_set():
             return
 
         if os.path.exists("Video_Upload"):
@@ -469,14 +539,17 @@ class Myapp:
         self.update_status_app(f"profile {profile['name']} đang tải video và thumnail \n")
         self.update_status_video(f"Đang Upload Lên VPS : Đang Tải Thumnail \n")
 
-        if not self.is_start:
+        if self.stop_thread.is_set():
             return
 
-        url_thumnail = infor_video["url_thumbnail"]
-        file_thumnail = self.get_filename_from_url(url_thumnail)
+        path_thumnail = infor_video["url_thumbnail"]
+        file_thumnail = self.get_filename_from_url(path_thumnail)
+
+        url_thumnail = f"{self.url}{path_thumnail}"
+
         thumbnail_success = self.download_file(url_thumnail, "Video_Upload", file_thumnail)
 
-        if not self.is_start:
+        if self.stop_thread.is_set():
             return
 
         if thumbnail_success:
@@ -487,16 +560,26 @@ class Myapp:
             self.update_status_app(f"profile {profile['name']} không tải được thumbnail \n")
             return
 
-        if not self.is_start:
+        if self.stop_thread.is_set():
             return
 
-        url_video = infor_video["video_url"]
-        file_video = self.get_filename_from_url(url_video)
-        self.update_status_app(f"profile {profile['name']} đang tải video  \n")
-        self.update_status_video("Đang Upload Lên VPS : Đang Tải Video")
-        video_success = self.download_file(url_video, "Video_Upload", file_video)
+        path_video = infor_video["video_url"]
+        file_video = self.get_filename_from_url(path_video)
 
-        if not self.is_start:
+        url_video = f"{self.url}{path_video}"
+
+        try:
+            self.update_status_app(f"profile {profile['name']} đang tải video \n")
+            self.update_status_video("Đang Upload Lên VPS : Đang Tải Video")
+            video_success = self.download_file(url_video, "Video_Upload", file_video)
+        except RequestException as e:
+            self.update_status_app(f"profile {profile['name']} {e}\n")
+
+            self.update_status_app(f"profile {profile['name']} không tải được video \n")
+            self.update_status_video("Upload VPS Thất Bại : Lỗi tải video")
+            return
+
+        if self.stop_thread.is_set():
             return
 
         if video_success:
@@ -504,15 +587,17 @@ class Myapp:
             self.update_status_app(f"profile {profile['name']} đã tải xong video \n")
         else:
             self.update_status_app(f"profile {profile['name']} không tải được video \n")
-            self.update_status_video("Upload VPS Thất Bại : Không Tải Được Video")
+            self.update_status_video("Upload VPS Thất Bại : Không Tải Được Video & Đã Xóa")
             return
 
-        if not self.is_start:
+        if self.stop_thread.is_set():
             return
         self.upload_video_vps(profile)
     
     def handle_video_info(self, infor_video, profile):
         if self.is_start:
+            if self.stop_thread.is_set():
+                return
             self.update_status_video("Đang Upload : lấy thông tin upload thành công")
             self.update_status_app(f"profile {profile['name']} Lấy thông tin thành công \n")
             self.id = infor_video["video_id"]
@@ -527,24 +612,43 @@ class Myapp:
             return
 
     def upload_video_vps(self, profile):
-        if self.is_start:
-            profile_path = rf"{profile['path_profile']}"
-            options = Options()
-            options.profile = webdriver.FirefoxProfile(profile_path)
+        if not self.stop_thread.is_set():
+            try:
+                profile_path = rf"{profile['path_profile']}"
+                options = Options()
+                options.profile = webdriver.FirefoxProfile(profile_path)
 
-        
-            service = Service()  # Thay thế bằng đường dẫn tới geckodriver của bạn
-            driver = webdriver.Firefox(service=service, options=options)
+                service = Service()  # Thay thế bằng đường dẫn tới geckodriver của bạn
+                driver = webdriver.Firefox(service=service, options=options)
 
+                driver.get('https://studio.youtube.com/')
 
-            driver.get('https://studio.youtube.com/')
+                wait = WebDriverWait(driver, 10)
+                self.update_status_video("Đang Upload Lên VPS : bắt đầu upload")
+                self.update_status_app(f"profile {profile['name']} bắt đầu upload \n")
 
-            wait = WebDriverWait(driver, 10)
-            self.update_status_video("Đang Upload Lên VPS : bắt đầu upload")
-            self.update_status_app(f"profile {profile['name']} bắt đầu upload \n")
+            except FileNotFoundError:
+                self.update_status_app(f"Lỗi: Không tìm thấy hồ sơ tại đường dẫn {profile_path}\n")
+                self.update_status_video("Upload VPS Thất Bại : Lỗi hồ sơ Firefox không tìm thấy")
+                self.id = None
+                return
 
+            except WebDriverException as e:
+                self.update_status_app(f"Lỗi WebDriver: {e}\n")
+                self.update_status_video("Upload VPS Thất Bại : Lỗi khởi tạo WebDriver")
+                self.id = None
+                return
+
+            except Exception as e:
+                self.update_status_app(f"Lỗi không mong muốn: {e}\n")
+                self.update_status_video("Upload VPS Thất Bại : Lỗi không mong muốn")
+                self.id = None
+                return
+
+            finally:
+                pass
         try:
-            if self.is_start:
+            if not self.stop_thread.is_set():
                 self.update_status_video("Đang Upload Lên VPS : Chuẩn bị upload lên kênh")
                 button = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='upload-icon']/tp-yt-iron-icon")))
                 button.click()
@@ -552,6 +656,7 @@ class Myapp:
         except:
             self.update_status_video("Upload VPS Thất Bại : Kênh bị đăng xuất & bị die")
             self.update_status_app( f"profile {profile['name']} không đăng nhập bỏ qua \n")
+            self.id = None
             driver.quit()
             return
         
@@ -568,6 +673,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi Upload video  \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi upload file Video")
+                self.id = None
                 driver.quit()
                 return
 
@@ -583,39 +689,43 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"profile {profile['name']}  Lỗi Upload  thumnail \n ")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi upload file thumnail")
+                self.id = None
                 driver.quit()
                 return
 
         if self.is_start:
             try:
                 time.sleep(3)
-                file_input = wait.until(EC.element_to_be_clickable((By.ID, 'title-textarea')))
+                file_input = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/ytcp-uploads-dialog/tp-yt-paper-dialog/div/ytcp-animatable[1]/ytcp-ve/ytcp-video-metadata-editor/div/ytcp-video-metadata-editor-basics/div[1]/ytcp-video-title/ytcp-social-suggestions-textbox/ytcp-form-input-container/div[1]/div[2]/div/ytcp-social-suggestion-input/div')))
+                time.sleep(1)
+                file_input.clear()
                 time.sleep(2)
-                driver.execute_script("arguments[0].innerText = '';", file_input)
-
-                driver.execute_script("arguments[0].innerText = arguments[1];", file_input, self.title)
+                file_input.send_keys(self.title)
+       
                 self.update_status_video("Đang Upload Lên VPS : điền xong tiêu đề ")
                 self.update_status_app(f"profile {profile['name']}  điền xong tiêu đề \n")
             except Exception as e:
                 self.update_status_app(f"Lỗi tiêu đề {e}\n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi điền tiêu đề ")
+                self.id = None
                 driver.quit()
                 return
 
         if self.is_start:
             try:
                 time.sleep(3)
-                file_input = wait.until(EC.element_to_be_clickable((By.ID,'description-textarea')))
+                file_input = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/ytcp-uploads-dialog/tp-yt-paper-dialog/div/ytcp-animatable[1]/ytcp-ve/ytcp-video-metadata-editor/div/ytcp-video-metadata-editor-basics/div[2]/ytcp-video-description/div/ytcp-social-suggestions-textbox/ytcp-form-input-container/div[1]/div[2]/div/ytcp-social-suggestion-input/div')))
+                time.sleep(1)
+                file_input.clear()
                 time.sleep(2)
-                driver.execute_script("arguments[0].innerText = '';", file_input)
-
-                driver.execute_script("arguments[0].innerText = arguments[1];", file_input, self.description)
+                file_input.send_keys( self.description)
 
                 self.update_status_video("Đang Upload Lên VPS : điền xong mô tả")
                 self.update_status_app(f"profile {profile['name']}  điền xong mô tả \n")
             except Exception as e:
                 self.update_status_app(f"Lỗi điền miêu tả \n")
                 self.update_status_video("Upload VPS Thất Bại: Lỗi điền  mô tả ")
+                self.id = None
                 driver.quit()
                 return
 
@@ -631,6 +741,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi chọn dưới 18 Tuổi \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi chọn dưới 18 Tuổi")
+                self.id = None
                 driver.quit()
                 return
 
@@ -642,6 +753,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi tìm kiếm phần tử tùy chọn keyworld \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi tìm kiếm phần tử tùy chọn keyworld")
+                self.id = None
                 driver.quit()
                 return
         
@@ -657,6 +769,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi điền keyworld\n")
                 self.update_status_video("Upload VPS Thất Bại : lỗi điền keyworld")
+                self.id = None
                 driver.quit()
                 return
 
@@ -668,6 +781,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi tìm kiếm nút next\n")
                 self.update_status_video("Upload VPS Thất Bại  : lỗi tìm phần tử next")
+                self.id = None
                 driver.quit()
                 return
 
@@ -695,6 +809,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi chọn nút kiếm tiền \n")
                 self.update_status_video("Upload VPS Thất Bại :Lỗi chọn nút kiếm tiền")
+                self.id = None
                 driver.quit()
                 return
 
@@ -703,10 +818,12 @@ class Myapp:
                 time.sleep(3)
                 next_button = wait.until(EC.element_to_be_clickable((By.ID, 'save-button')))
                 next_button.click()
+                self.id = None
                 time.sleep(6)
             except Exception as e:
                 self.update_status_app(f"Lỗi chọn nút kiếm tiền \n")
                 self.update_status_video("Upload VPS Thất Bại :Lỗi chọn nút kiếm tiền")
+                self.id = None
                 driver.quit()
                 return
         
@@ -733,6 +850,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi Đọc thời gian video \n")
                 self.update_status_video("Upload VPS Thất Bại:Lỗi Đọc thời gian video")
+                self.id = None
                 driver.quit()
                 return
         
@@ -754,6 +872,7 @@ class Myapp:
                     except Exception as e:
                         self.update_status_app( f"Lỗi chọn set quản cáo \n")
                         self.update_status_video("Upload VPS Thất Bại :Lỗi chọn set quảng cáo")
+                        self.id = None
                         driver.quit()
                         return
             self.update_status_video("Đang Upload : Cài Đặt xong quảng cáo")
@@ -765,8 +884,10 @@ class Myapp:
                 save_button = wait.until(EC.element_to_be_clickable((By.ID, 'save-container')))
                 save_button.click()
             except Exception as e:
+                
                 self.update_status_app(f"Lỗi lưu quản cáo \n")
                 self.update_status_video("Upload VPS Thất Bại: Lỗi Lưu Quảng cáo")
+                self.id = None
                 driver.quit()
                 return
 
@@ -778,6 +899,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi tìm gửi check quảng cáo \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn check quảng cáo")
+                self.id = None
                 driver.quit()
                 return
 
@@ -792,6 +914,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"lỗi tìm gửi check quản cáo \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn check box")
+                self.id = None
                 driver.quit()
                 return
 
@@ -804,6 +927,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"lỗi nhấn phần tử \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn phần tử")
+                self.id = None
                 driver.quit()
                 return
 
@@ -815,6 +939,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"lỗi nhấn phần tử next \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn phần tử next lần 2")
+                self.id = None
                 driver.quit()
                 return
 
@@ -826,6 +951,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"lỗi nhấn phần tử next\n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn phần tử next lần 3")
+                self.id = None
                 driver.quit()
                 return
 
@@ -838,6 +964,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"lỗi nhấn phần tử \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn phần tử lần 1")
+                self.id = None
                 driver.quit()
                 return
 
@@ -849,6 +976,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"lỗi nhấn phần tử \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn phần tử lần 2")
+                self.id = None
                 driver.quit()
                 return
 
@@ -860,6 +988,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"lỗi nhấn phần tử 3\n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn phần tử lần 3")
+                self.id = None
                 driver.quit()
                 return
 
@@ -891,6 +1020,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"ỗi cài đặt ngày uppic \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi cài đặt ngày uppic")
+                self.id = None
                 driver.quit()
                 return
 
@@ -900,6 +1030,7 @@ class Myapp:
                 next_button = wait.until(EC.element_to_be_clickable((By.XPATH,
                                                                      '/html/body/ytcp-uploads-dialog/tp-yt-paper-dialog/div/ytcp-animatable[1]/ytcp-uploads-review/div[2]/div[1]/ytcp-video-visibility-select/div[3]/div[2]/ytcp-visibility-scheduler/div[1]/ytcp-datetime-picker/div/div[2]/form/ytcp-form-input-container/div[1]/div/tp-yt-paper-input/tp-yt-paper-input-container/div[2]/div/iron-input/input')))
                 next_button.click()
+                time.sleep(2)
                 next_button.clear()
                 time.sleep(2)
                 next_button.send_keys(self.time_uppic)
@@ -910,21 +1041,43 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi cài đặt giờ uppic  quá ngyaf upload\n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi cài đặt giờ uppic")
+                self.id = None
                 driver.quit()
                 return
         if self.is_start:
-            css_selector = 'span.progress-label.style-scope.ytcp-video-upload-progress'
+            xpath_selector = '/html/body/ytcp-uploads-dialog/tp-yt-paper-dialog/div/ytcp-animatable[2]/div/div[1]/ytcp-video-upload-progress/span'
+
+            timeout = 900  # Giới hạn thời gian chờ (900 giây)
+            start_time = time.time()
+
             try:
-                # Chờ đợi trong tối đa 900 giây cho đến khi một trong ba văn bản xuất hiện
-                WebDriverWait(driver, 900).until(
-                    EC.or_(
-                        EC.text_to_be_present_in_element((By.CSS_SELECTOR, css_selector), "Upload complete"),
-                        EC.text_to_be_present_in_element((By.CSS_SELECTOR, css_selector), "Processing up to HD"),
-                        EC.text_to_be_present_in_element((By.CSS_SELECTOR, css_selector), "Checks complete.")
-                    )
-                )
-            except Exception as e:
-                pass
+                # Chờ phần tử iframe nếu cần thiết
+                # WebDriverWait(driver, 30).until(EC.frame_to_be_available_and_switch_to_it((By.XPATH, "XPATH_OF_IFRAME")))
+                # Chờ phần tử xuất hiện trong iframe hoặc trang chính
+                WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, xpath_selector)))
+                while True:
+                    try:
+                        # Lấy văn bản từ phần tử
+                        element_text = driver.find_element(By.XPATH, xpath_selector).text
+                        print(element_text)
+                        
+                        # Kiểm tra nếu văn bản chứa một trong các giá trị mong muốn
+                        if any(keyword in element_text for keyword in ["Upload complete", "Processing up to HD", "Checks complete."]):
+                            break
+
+                    except NoSuchElementException:
+                        # Xử lý nếu phần tử không tồn tại
+                        print("Element not found. Retrying...")
+                    
+                    # Kiểm tra nếu đã hết thời gian chờ
+                    if time.time() - start_time > timeout:
+                        print("Timeout exceeded. Exiting loop.")
+                        break
+                    
+                    # Chờ 1 giây trước khi kiểm tra lại
+                    time.sleep(1)
+            except NoSuchElementException:
+                print("Element not found after waiting. Exiting.")
 
         if self.is_start:
             try:
@@ -934,6 +1087,7 @@ class Myapp:
             except Exception as e:
                 self.update_status_app(f"Lỗi  nhấn lưu video \n")
                 self.update_status_video("Upload VPS Thất Bại : Lỗi nhấn lưu video")
+                self.id = None
                 driver.quit()
                 return
             try:
@@ -995,18 +1149,19 @@ class Myapp:
         return timestamps
 
     def update_status_video(self, text):
-        data = {
-                "action": "update_status",
-                "video_id": self.id,
-                "status": text,
-                "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-            }
-        url = f'{self.url}api/'
-        response = requests.post(url, json=data)
-        infor_video = response.json()
-        if 'message' in infor_video:
-            return None
-
+        if self.id:
+            data = {
+                    "action": "update_status",
+                    "video_id": self.id,
+                    "status": text,
+                    "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
+                }
+            url = f'{self.url}/api/'
+            response = requests.post(url, json=data)
+            infor_video = response.json()
+            if 'message' in infor_video:
+                return None
+        
     def update_status_app(self, text):
         # Đặt múi giờ +7 (Ví dụ: Asia/Ho_Chi_Minh cho Việt Nam)
         timezone = pytz.timezone('Asia/Ho_Chi_Minh')
@@ -1024,9 +1179,21 @@ class Myapp:
 
     def retrieve_ip_address(self):
         try:
+            # Lấy địa chỉ IP
             self.ip_address = requests.get('https://ipinfo.io/ip').text.strip()
+
+            # Tạo chuỗi 5 ký tự ngẫu nhiên
+            random_suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
+
+            # Ghép thêm chuỗi ngẫu nhiên vào sau địa chỉ IP
+            self.ip_address += f":{random_suffix}"
             # Cập nhật IP address trên UI từ luồng chính
             self.label_3.config(text=self.ip_address)
+
+
+            self.config_data['ip_address'] = self.ip_address
+            self.save_config_data()
+
         except Exception as e:
             self.ip_address = "Không thể lấy địa chỉ IP"
 
@@ -1084,30 +1251,64 @@ class Myapp:
         else:
             print(f"Temp directory '{temp_directory}' does not exist.")
 
-    def download_file(self, url, directory, filename, retries=100):
+    def download_file(self, url, directory, filename, retries=30):
         attempt = 0
-        while attempt < retries:
+        while attempt < retries and self.is_start:
             try:
                 response = requests.get(url, stream=True)
+                total_size = int(response.headers.get('content-length', 0))
+                block_size = 1024  # 1 Kilobyte
+                wrote = 0
+                
                 if response.status_code == 200:
                     if not os.path.exists(directory):
                         os.makedirs(directory)
                     path = os.path.join(directory, filename)
                     with open(path, 'wb') as file:
-                        response.raw.decode_content = True
-                        shutil.copyfileobj(response.raw, file)
+                        start_time = time.time()
+                        for data in response.iter_content(block_size):
+                            wrote += len(data)
+                            file.write(data)
+                            
+                            # Tính toán thời gian đã trôi qua
+                            elapsed_time = time.time() - start_time
+                            
+                            # Kiểm tra để tránh lỗi division by zero
+                            speed = wrote / 1024 / elapsed_time if elapsed_time > 0 else 0  # KB/s
+                            
+                            # Tính toán phần trăm tiến trình
+                            percentage = (wrote / total_size) * 100
+                            
+                            # Cập nhật progress bar và nhãn hiển thị
+                            self.progress_bar["value"] = percentage
+                            self.percentage_label.config(text=f"{percentage:.2f}% ({speed:.2f} KB/s)")
+                            
+                            # Cập nhật giao diện người dùng
+                            self.root.update_idletasks()
+                            
                     return True
                 else:
                     print(f"Failed to download file: {response.status_code}")
                     return False
-            except (RequestException, ProtocolError) as e:
+            except (requests.RequestException, requests.exceptions.ProtocolError) as e:
                 attempt += 1
                 print(f"Error while downloading file: {e}")
                 self.update_status_app(f"Lỗi tải file: {e}")
                 if attempt < retries:
-                    print("Retrying...")
-        print("Failed to download the file after multiple attempts")
+                    self.update_status_app("Retrying in 5 seconds...")
+                    time.sleep(5)  # Chờ 5 giây trước khi thử lại
         return False
+
+    def start_download(self):
+        # Giả lập quá trình tải về
+        self.progress_bar["maximum"] = 100
+        for i in range(101):
+            self.progress_bar["value"] = i
+            self.percentage_label.config(text=f"{i}%")  # Cập nhật phần trăm
+            if i >= 50:
+                self.style.configure("green.Horizontal.TProgressbar", background='green')
+            self.root.update_idletasks()
+            self.root.after(50)  # Giả lập thời gian tải về
 
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):

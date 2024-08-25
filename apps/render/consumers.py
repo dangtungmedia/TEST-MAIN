@@ -5,7 +5,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from django.utils import timezone
-from .models import VideoRender, Count_Use_data,DataTextVideo
+from .models import VideoRender, Count_Use_data,DataTextVideo,APIKeyGoogle
 from .serializers import RenderSerializer
 from apps.login.models import CustomUser
 from django.core.files.storage import default_storage
@@ -18,7 +18,7 @@ from django.core.files.base import ContentFile
 import base64,re
 from random import randint
 import random
-import string
+import string,requests
 import logging
 from pytube import YouTube
 
@@ -94,7 +94,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
-            print(f"Received data: {data}")
         except json.JSONDecodeError as e:
             await self.send(text_data=json.dumps({'error': 'Invalid JSON', 'details': str(e)}))
             return
@@ -138,6 +137,10 @@ class RenderConsumer(AsyncWebsocketConsumer):
             video_data = await self.get_infor_edit_video(data['id_video'])
             await self.send(text_data=json.dumps({'message': 'btn-edit', 'data': video_data}))
 
+        elif message_type == 'btn-re-upload':
+            await self.reuploadFile(data['id_video'])
+
+
         elif message_type == 'add-one-video':
             video_data = await self.add_one_video(data)
             await self.send(text_data=json.dumps({'message': 'add-one-video', 'data': video_data}))
@@ -149,8 +152,12 @@ class RenderConsumer(AsyncWebsocketConsumer):
 
         elif message_type == 'btn-delete':
             data =  await self.delete_video(data)
+            default_storage.delete(f"data/{data['id_video']}")
             await self.send(text_data=json.dumps({'message': 'btn-delete', 'data': data}))
 
+        elif message_type == 'get-text-video':
+            text  = await self.get_text_video(data)
+            await self.send(text_data=json.dumps({'message': 'get-text-video', 'data': text}))
 
     async def chat_message(self, event):
         message = event['message']
@@ -185,106 +192,119 @@ class RenderConsumer(AsyncWebsocketConsumer):
         video = VideoRender.objects.get(pk=id_video)
         data = self.get_data_video(video.id)
         if video.status_video == "render":
-            task = render_video.apply_async(args=[data])
-            video.task_id = task.id
-            video.status_video = "Đang chờ render : Đợi đến lượt render"
-            video.save()
+            try:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Đợi đến lượt render"
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
 
         elif "Đang chờ render" in video.status_video or "Đang Render" in video.status_video:
-            result = AsyncResult(video.task_id)
-            result.revoke(terminate=True)
-            video.task_id = ''
-            video.status_video = "Render Lỗi : Dừng Render"
-            video.save()
-
+            try:
+                result = AsyncResult(video.task_id)
+                result.revoke(terminate=True)
+                video.task_id = ''
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
         elif "Render Lỗi" in video.status_video:
-            task = render_video.apply_async(args=[data])
-            video.task_id = task.id
-            video.status_video = "Đang chờ render : Render Lại"
-            video.save()
-        
-        elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
-            task = render_video.apply_async(args=[data])
-            video.task_id = task.id
-            video.status_video = "Đang chờ render"
-            folder_path = f"data/{video.id}"
-            file = self.get_filename_from_url(video.url_video)
-            default_storage.delete(f"{folder_path}/{file}")
-            video.url_video = ''
-            video.save()
+            try:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Render Lại"
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
 
+        elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
+            try:
+                task = render_video.apply_async(args=[data])
+                video.task_id = task.id
+                video.status_video = "Đang chờ render : Render Lại"
+                folder_path = f"data/{video.id}"
+                file = self.get_filename_from_url(video.url_video)
+                default_storage.delete(f"{folder_path}/{file}")
+                video.url_video = ''
+                video.save()
+            except Exception as e:
+                video.status_video = "Render Lỗi : Dừng Render"
+                video.save()
+
+           
     @sync_to_async
     def update_status(self, data):
         video = VideoRender.objects.get(id=data['video_id'])
         video.status_video = data['status']
         video.save()
 
-
     @sync_to_async
     def get_infor_edit_video(self, id_video):
         video = VideoRender.objects.get(id=id_video)
         return RenderSerializer(video).data
 
-
     @sync_to_async
     def add_one_video(self, data):
-        profile = ProfileChannel.objects.get(id=data['profile_id'])
-        user = CustomUser.objects.get(id=data['userId'])
-        thumbnail_base64 = data['thumbnail']
-        file_url = ''
+        try:
+            profile = ProfileChannel.objects.get(id=data['profile_id'])
+            user = CustomUser.objects.get(id=data['userId'])
+            thumbnail_base64 = data['thumbnail']
+            file_url = ''
 
-        file_name = ''.join(random.choices(string.ascii_letters + string.digits, k=7)) + '.png'
-        if thumbnail_base64:
-            thumbnail_data = ContentFile(base64.b64decode(thumbnail_base64), name=file_name)
-            thumbnail_path = default_storage.save(f"thumbnails/{thumbnail_data.name}", thumbnail_data)
-            file_url = default_storage.url(thumbnail_path)
+            file_name = ''.join(random.choices(string.ascii_letters + string.digits, k=7)) + '.png'
+            if thumbnail_base64:
+                thumbnail_data = ContentFile(base64.b64decode(thumbnail_base64), name=file_name)
+                thumbnail_path = default_storage.save(f"thumbnails/{thumbnail_data.name}", thumbnail_data)
+                file_url = default_storage.url(thumbnail_path)
+                
+            video = VideoRender.objects.create(
+                folder_id= profile.folder_name,
+                profile_id= profile,
+                name_video=''.join(random.choices(string.ascii_letters + string.digits, k=7)),
+
+                title= data['title'],
+                description= data['description'],
+                keywords= data['keywords'],
+                time_upload= data['time_upload'],
+                date_upload= data['date_upload'],
             
-        video = VideoRender.objects.create(
-            folder_id= profile.folder_name,
-            profile_id= profile,
-            name_video=''.join(random.choices(string.ascii_letters + string.digits, k=7)),
-
-            title= data['title'],
-            description= data['description'],
-            keywords= data['keywords'],
-            time_upload= data['time_upload'],
-            date_upload= data['date_upload'],
-        
-            status_video = 'render',
-            is_render_start = True,
-            url_thumbnail = file_url,
-            intro_active=profile.channel_intro_active,
-            intro_url=profile.channel_intro_url,
-            outro_active=profile.channel_outro_active,
-            outro_url=profile.channel_outro_url,
-            logo_active=profile.channel_logo_active,
-            logo_url=profile.channel_logo_url,
-            logo_position=profile.channel_logo_position,
-            font_text=profile.channel_font_text,
-            font_size=profile.channel_font_size,
-            font_bold=profile.channel_font_bold,
-            font_italic=profile.channel_font_italic,
-            font_underline=profile.channel_font_underline,
-            font_strikeout=profile.channel_font_strikeout,
-            font_color=profile.channel_font_color,
-            font_color_opacity=profile.channel_font_color_opacity,
-            font_color_troke=profile.channel_font_color_troke,
-            font_color_troke_opacity=profile.channel_font_color_troke_opacity,
-            stroke_text=profile.channel_stroke_text,
-            font_background=profile.channel_font_background,
-            channel_font_background_opacity=profile.channel_font_background_opacity,
-            voice=profile.channel_voice,
-            voice_style=profile.channel_voice_style,
-            voice_speed=profile.channel_voice_speed,
-            voice_pitch=profile.channel_voice_pitch,
-            voice_volume=profile.channel_voice_volume,
-        )
-        if not user.is_staff:
-            Count_Use_data.objects.create(use=user,videoRender_id=video, creade_video=True, timenow=timezone.now().date())
-            Count_Use_data.objects.create(use=user, videoRender_id=video, edit_title=True, timenow=timezone.now().date())
-            if file_url:
-                Count_Use_data.objects.create(use=user,videoRender_id=video, edit_thumnail=True, timenow=timezone.now().date())
-        return RenderSerializer(video).data
+                status_video = 'render',
+                is_render_start = True,
+                url_thumbnail = file_url,
+                intro_active=profile.channel_intro_active,
+                intro_url=profile.channel_intro_url,
+                outro_active=profile.channel_outro_active,
+                outro_url=profile.channel_outro_url,
+                logo_active=profile.channel_logo_active,
+                logo_url=profile.channel_logo_url,
+                logo_position=profile.channel_logo_position,
+                font_text=profile.channel_font_text,
+                font_size=profile.channel_font_size,
+                font_bold=profile.channel_font_bold,
+                font_italic=profile.channel_font_italic,
+                font_underline=profile.channel_font_underline,
+                font_strikeout=profile.channel_font_strikeout,
+                font_color=profile.channel_font_color,
+                font_color_opacity=profile.channel_font_color_opacity,
+                font_color_troke=profile.channel_font_color_troke,
+                font_color_troke_opacity=profile.channel_font_color_troke_opacity,
+                stroke_text=profile.channel_stroke_text,
+                font_background=profile.channel_font_background,
+                channel_font_background_opacity=profile.channel_font_background_opacity,
+                channel_voice_style=profile.channel_voice_style,
+            )
+            if not user.is_staff:
+                Count_Use_data.objects.create(use=user,videoRender_id=video, creade_video=True, timenow=timezone.now().date())
+                Count_Use_data.objects.create(use=user, videoRender_id=video, edit_title=True, timenow=timezone.now().date())
+                if file_url:
+                    Count_Use_data.objects.create(use=user,videoRender_id=video, edit_thumnail=True, timenow=timezone.now().date())
+            return RenderSerializer(video).data
+        except ProfileChannel.DoesNotExist:
+            return None
 
     @sync_to_async
     def add_text_folder(self, data):
@@ -324,7 +344,51 @@ class RenderConsumer(AsyncWebsocketConsumer):
         video = VideoRender.objects.get(id=id_video)
         return video.url_video
     
+    @sync_to_async
+    def get_text_video(self,data):
+        image_data = data['image']
+        image_data = image_data.replace('data:image/png;base64,', '')
+        image_bytes = base64.b64decode(image_data)
 
+        # Tạo tên file duy nhất
+        KEY_API_GOOGLE = APIKeyGoogle.objects.first().key
+
+        url = f'https://vision.googleapis.com/v1/images:annotate?key={KEY_API_GOOGLE}'
+
+        request_data = {
+            "requests": [
+                {
+                    "image": {
+                        "content": base64.b64encode(image_bytes).decode('utf-8')
+                    },
+                    "features": [
+                        {
+                            "type": "TEXT_DETECTION"
+                        }
+                    ]
+                }
+            ]
+        }
+
+        response = requests.post(url, json=request_data)
+
+        if response.status_code == 200:
+            try:
+                response_text = response.json()['responses'][0]['fullTextAnnotation']['text']
+                return response_text
+            except KeyError:
+                response_text = 'Không nhận diện được văn bản'
+            return response_text
+        else:
+            print(f'Error: {response.status_code}')
+            print(response.json())
+       
+    @sync_to_async
+    def reuploadFile(self,id_video):
+        video = VideoRender.objects.get(id=id_video)
+        if "Upload VPS Thất Bại" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video:
+            video.status_video = "Render Thành Công : Đang Chờ Upload lên Kênh"
+            video.save()
 
     def check_video_url(self,url):
         match = re.match(r'https?://www\.youtube\.com/watch\?v=.+', url)
@@ -342,14 +406,12 @@ class RenderConsumer(AsyncWebsocketConsumer):
         except:
             return False, "Video Không Tồn Tại ", None, None
 
-
     def get_filename_from_url(self,url):
         parsed_url = urlparse(url)
         path = unquote(parsed_url.path)
         filename = path.split('/')[-1]
         return filename
       
-
     def get_data_video(self, id_video):
         try:
             data = self.get_infor_render(id_video)
@@ -359,7 +421,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
     
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
-        print(video.font_text)
         data  = {
             'video_id': video.id,
             'name_video': video.name_video,

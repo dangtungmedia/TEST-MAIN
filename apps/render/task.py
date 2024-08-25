@@ -52,7 +52,7 @@ from celery.result import AsyncResult
 from celery import shared_task, signals
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-SERVER='http://daphne:5504/'
+SERVER='http://daphne:5504'
 
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
@@ -76,12 +76,6 @@ def render_video(self,data):
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
 
-    print(f"Worker ID: {worker_id}")
-    print(f"Task ID: {task_id}")
-    print(f"Video ID: {video_id}")
-    print(f"Data: {data}")
-
-
     update_status_video("Đang Render : Đang load thông tin video", data['video_id'], task_id, worker_id)
     success =  create_or_reset_directory(f'media/{video_id}')
 
@@ -99,7 +93,7 @@ def render_video(self,data):
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
 
-    if  not data.get('url_audio'):
+    if not data.get('url_audio'):
         # Tải xuống âm thanh
         success = download_audio(data, task_id, worker_id)
         if not success:
@@ -157,7 +151,7 @@ def upload_video(data, task_id, worker_id):
         video_id = data.get('video_id')
         name_video = data.get('name_video')
         video_path = f'media/{video_id}/{name_video}.mp4'
-        url = f'{SERVER}api/'
+        url = f'{SERVER}/api/'
         update_status_video(f"Đang Render : Đang Upload File Lên Sever", video_id, task_id, worker_id)
         
         payload = {
@@ -255,6 +249,7 @@ def create_video_with_retries(data, task_id, worker_id, max_retries=10):
     return False
 
 def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".woff2"]):
+
     print(f"Searching for font '{font_name}' in directory '{font_dir}' with extensions {extensions}")
     for root, dirs, files in os.walk(font_dir):
         print(f"Checking directory: {root}")
@@ -265,7 +260,6 @@ def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".w
                 return os.path.join(root, file)
     print(f"Font '{font_name}' not found in directory '{font_dir}'")
     return None
-
 
 def get_text_lines(data, text):
     current_line = ""
@@ -416,10 +410,10 @@ def merge_audio_video(data, task_id, worker_id):
         if data.get('url_audio'):
             max_retries = 30
             retries = 0
-            audio_url = data.get('url_audio')
+            url_audio = f"{SERVER}{data.get('url_audio')}"
             while retries < max_retries:
                 try:
-                    response = requests.get(audio_url, stream=True)
+                    response = requests.get(url_audio, stream=True)
                     if response.status_code == 200:
                         os.makedirs(f'media/{video_id}', exist_ok=True)
                         with open(f'media/{video_id}/cache.wav', 'wb') as file:
@@ -570,7 +564,7 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "-t", str(duration),
             "-filter_complex", f"[0:v]scale={scale_width}:{scale_height}[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay[outv]",
             "-map", "[outv]",
-            "-r", "30",
+            "-r", "24",
             "-c:v", "libx264",
             "-pix_fmt", "yuv420p",
             "-an",  # Loại bỏ âm thanh
@@ -584,7 +578,7 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "-ss", start_time_str,
             "-t", end_time,
             "-vf", f"scale={scale_width}:{scale_height}",
-            "-r", "30",
+            "-r", "24",
             "-c:v", "libx264",
             "-pix_fmt", "yuv420p",
             "-an",  # Loại bỏ âm thanh
@@ -671,10 +665,10 @@ def download_and_read_srt(data, video_id):
         max_retries = 30
         retries = 0
         srt_url = data.get('file-srt')  # URL của tệp SRT
-        
+        url = f'{SERVER}{srt_url}'
         while retries < max_retries:
             try:
-                response = requests.get(srt_url, stream=True)
+                response = requests.get(url, stream=True)
                 if response.status_code == 200:
                     os.makedirs(f'media/{video_id}', exist_ok=True)
                     srt_path = f'media/{video_id}/cache.srt'
@@ -723,8 +717,6 @@ def create_video(data, task_id, worker_id):
         create_or_reset_directory(f'media/{video_id}/video')
         processed_entries = 0
         total_entries = len(json.loads(text))
-
-        print(data.get('file-srt'))
         if data.get('file-srt'):
             data_sub = download_and_read_srt(data, video_id)
             if len(data_sub) == 0:
@@ -798,7 +790,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
         ffmpeg_command = [
             'ffmpeg',
             '-loop', '1',
-            '-framerate','60',
+            '-framerate','24',
             '-i', input_image,
             '-i', base_video,
             '-filter_complex',
@@ -815,7 +807,7 @@ def image_to_video_zoom_out(input_image, output_video, duration, scale_width, sc
         ffmpeg_command = [
         'ffmpeg',
         '-loop', '1',
-        '-framerate','30',
+        '-framerate','24',
         '-i', input_image,
         '-vf',
         f"format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*60:s={scale_width}x{scale_height}:fps=60",
@@ -839,7 +831,7 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         ffmpeg_command = [
             'ffmpeg',
             '-loop', '1',
-            '-framerate','60',
+            '-framerate','24',
             '-i', input_image,
             '-i', base_video,
             '-filter_complex',
@@ -920,35 +912,47 @@ def get_voice_korea(data, text, file_name):
 
 def get_voice_japanese(data, text, file_name):
     try:
-        voice_id = data.get('voice_id')
-
-        url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
-        response_query = requests.post(url_query, params={'text': text})
-        response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
+        # voice_id = data.get('voice_id')
+        # url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
+        # response_query = requests.post(url_query, params={'text': text})
+        # response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
         
-        query_json = response_query.json()
+        # query_json = response_query.json()
 
-        # Thay đổi giá trị speedScale trong tệp JSON
-        query_json["speedScale"] = 1.0
+        # # Thay đổi giá trị speedScale trong tệp JSON
+        # query_json["speedScale"] = 1.0
 
-        # Gửi yêu cầu POST để tạo tệp âm thanh với tốc độ đã thay đổi
-        url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
-        headers = {"Content-Type": "application/json"}
-        response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
-        response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
+        # # Gửi yêu cầu POST để tạo tệp âm thanh với tốc độ đã thay đổi
+        # url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
+        # headers = {"Content-Type": "application/json"}
+        # response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
+        # response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
 
-        # Tạo thư mục nếu chưa tồn tại
-        directory = os.path.dirname(file_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory, exist_ok=True)
+        # # Tạo thư mục nếu chưa tồn tại
+        # directory = os.path.dirname(file_name)
+        # if not os.path.exists(directory):
+        #     os.makedirs(directory, exist_ok=True)
 
-        # Ghi nội dung phản hồi vào tệp
+        # # Ghi nội dung phản hồi vào tệp
+        # with open(file_name, 'wb') as f:
+        #     f.write(response_synthesis.content)
+
+        data = {
+            "voice_id":  data.get('voice_id'),
+            "action": "get-audio-voicevox",
+            "text_voice": text,
+            "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
+        }
+
+        url = f'{SERVER}/api/'
+
+        response = requests.post(url, json=data)
+
         with open(file_name, 'wb') as f:
-            f.write(response_synthesis.content)
-    except requests.RequestException as e:
-        pass
+            file.write(response.content)
+        return True
     except Exception as e:
-        pass
+        return False
 
 def get_filename_from_url(url):
     parsed_url = urllib.parse.urlparse(url)
@@ -969,12 +973,13 @@ def download_image(data, task_id, worker_id):
         return True
     
     for image in json.loads(data.get('images')):
+        url = f"{SERVER}/{image}"
         image_downloaded = False
         for attempt in range(30):
             try:
-                response = requests.get(image, stream=True)
+                response = requests.get(url, stream=True)
                 if response.status_code == 200:
-                    file_path = os.path.join(local_directory, get_filename_from_url(image))
+                    file_path = os.path.join(local_directory, get_filename_from_url(url))
                     with open(file_path, 'wb') as file:
                         for chunk in response.iter_content(1024):
                             file.write(chunk)

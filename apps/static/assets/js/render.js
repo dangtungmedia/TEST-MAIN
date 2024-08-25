@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     add_one_video_web(data.data);
                     show_infor_video(data.data);
                     $('#next-cread-image').click();
+
                 } else if (data.message === 'add-text-folder') {
                     if (data.success === true) {
                         alert(data.message);
@@ -103,7 +104,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (data.message === 'btn-play-video') {
                     console.log('Play video:', data);
                     let iframe = document.getElementById('videoIframe');
-                    iframe.src = data.data;
+                    let baseUrl = window.location.origin;
+                    iframe.src = data.data
                 }
 
             } catch (error) {
@@ -193,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <button class="btn btn-outline-primary btn-render  bg-success" type="button" data-id="${video.id}">
                         ${getLogoByStatus(video.status_video)}
                     </button>
-                    <button class="btn btn-outline-primary bg-secondary" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary bg-secondary btn-re-upload" type="button" data-id="${video.id}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use>
                         </svg>
@@ -418,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <button class="btn btn-outline-primary btn-render  bg-success" type="button" data-id="${video.id}">
                         ${getLogoByStatus(video.status_video)}
                     </button>
-                    <button class="btn btn-outline-primary bg-secondary" type="button" data-id="${video.id}">
+                    <button class="btn btn-outline-primary bg-secondary btn-re-upload" type="button" data-id="${video.id}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-reload"></use>
                         </svg>
@@ -1253,6 +1255,17 @@ document.addEventListener('DOMContentLoaded', function () {
         sendMessage(renderMessage);
     });
 
+    $(document).on('click', '.btn-re-upload', function () {
+        var id = $(this).data('id');
+
+        const reUploadMessage = JSON.stringify({
+            type: 'btn-re-upload',
+            id_video: id,
+        });
+        sendMessage(reUploadMessage);
+    });
+
+
     $(document).on('click', '.btn-edit', function () {
         var id = $(this).data('id');
         $('#id-video-edit').val(id);
@@ -1581,7 +1594,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // get_video_render(1);
     function GetProfileSelected() {
         const folderElement = document.getElementById('folder_name');
         const channelElement = document.getElementById('channel_name');

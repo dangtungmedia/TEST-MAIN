@@ -1,6 +1,6 @@
 services:
-  daphne:
-    container_name: daphne
+  daphne_huan:
+    container_name: daphne_huan
     restart: always
     env_file: .env
     build:
@@ -9,71 +9,54 @@ services:
       - .:/app
       - /mnt/raid0:/mnt/raid0
     depends_on:
-      - redis2
+      - redis
     networks:
       - web_network
       - db_network
   nginx:
-    container_name: newspro
+    container_name: web_huan
     restart: always
     image: "nginx:latest"
     ports:
-      - "5085:5085" # Mapping port 5085 on host to port 80 in the container
+      - "8000:8000" # Mapping port 5085 on host to port 80 in the container
     volumes:
       - ./nginx:/etc/nginx/conf.d
     networks:
       - web_network
       - db_network
     depends_on:
-      - daphne
+      - daphne_huan
 
-  redis2:
-    container_name: redis2
+  redis:
+    container_name: redis
     restart: always
     image: "redis:latest"
     ports:
-      - "6530:6379"
+      - "6379:6379"
     command: redis-server --appendonly yes
     networks:
       - web_network
       - db_network
-  celery:
-    container_name: celery_worker_tung
+  celery_huan:
+    container_name: celery_huan
     build:
       context: .
     volumes:
       - .:/app
-    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=5
+    command: celery -A core worker -l INFO --hostname=worker1_huan@%h --concurrency=5
     networks:
       - web_network
       - db_network
-  # voicevox_engine:
-  #   container_name: voicevox_engine
-  #   image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
-  #   restart: always
-  #   ports:
-  #     - '50021:50021'
-  #   networks:
-  #     - web_network
-  #     - db_network
-  #   tty: true
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 1
-  #             capabilities: [ gpu ]
 
-  flower:
-    container_name: flower
+  flower_huan:
+    container_name: flower_huan
     build:
       context: .
     volumes:
       - .:/app
     ports:
-      - "5555:5555"
-    command: celery -A core flower
+      - "7777:7777"
+    command: celery -A core flower --port=7777
     networks:
       - web_network
       - db_network

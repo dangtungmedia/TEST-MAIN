@@ -8,7 +8,6 @@ from apps.home.models import ProfileChannel
 from django.http import JsonResponse
 import os, shutil,urllib
 
-
 class ApiApp(APIView):
     permission_classes = [AllowAny]
     parser_classes = [MultiPartParser, JSONParser]
@@ -66,7 +65,6 @@ class ApiApp(APIView):
                 return Response({"error": "Video not found"}, status=404)
 
         elif action == "upload-video-to-vps":
-            
             ip_vps = request.data.get('ip_vps')
             channel_name = request.data.get('channel_name')
             
@@ -99,5 +97,29 @@ class ApiApp(APIView):
             except Exception as e:
                 return Response({"message": str(e)}, status=500)
         
+
+        elif action == "get-audio-voicevox":
+            voice_id = request.json.get('voice_id')
+            text = request.json.get('text_voice')
+
+            # Lấy cấu hình âm thanh
+            url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
+            response_query = requests.post(url_query, params={'text': text})
+            response_query.raise_for_status()
+            query_json = response_query.json()
+
+            # Thay đổi giá trị speedScale trong cấu hình
+            query_json["speedScale"] = 1.0
+
+            # Tạo tệp âm thanh với cấu hình đã thay đổi
+            url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
+            headers = {"Content-Type": "application/json"}
+            response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
+            response_synthesis.raise_for_status()
+
+            # Trả về tệp âm thanh trực tiếp từ bộ nhớ
+            audio_file = io.BytesIO(response_synthesis.content)
+            return send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name='output_audio.wav')
+
         return Response({"message": "Invalid action"}, status=400)
 
