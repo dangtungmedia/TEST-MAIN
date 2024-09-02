@@ -4,7 +4,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const successOutlined = document.getElementById('success-outlined');
     const dangerOutlined = document.getElementById('danger-outlined');
 
+    document.getElementById("btn-add-text-content").style.display = "none";
+    document.getElementById("add-videos").style.display = "none";
+    document.getElementById("btn-add-url-videos").style.display = "none";
+    document.getElementById("btn-render-all").style.display = "none";
+    document.getElementById("btn-render-erron").style.display = "none";
+    document.getElementById("btn-upload-erron").style.display = "none";
+
+    document.getElementById("btn-add-video").style.display = "block";
+
     if (successOutlined) {
+        
+
         successOutlined.addEventListener('change', function () {
             if (this.checked) {
                 GetFolderSelected(true);
@@ -141,11 +152,41 @@ document.addEventListener('DOMContentLoaded', function () {
         return document.querySelector('[name=csrfmiddlewaretoken]').value;
     }
 
+    function checkButtonStatus() {
+        const contentSelected = document.getElementById('success-outlined').checked;
+        const reupSelected = document.getElementById('danger-outlined').checked;
+    
+        if (contentSelected) {
+            console.log("Content selected:", true);
+            return true;
+        } else if (reupSelected) {
+            console.log("Reup-Video selected:", false);
+            return false;
+        }
+    }
+
+
     // Hàm để lấy SVG logo dựa trên trạng thái
-    function show_video(video, count) {
+    function show_video(video) {
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
         tr.setAttribute('data-id', video.id);
+
+        
+        const is_content = checkButtonStatus();
+        let show_tittel = "";
+
+        if (is_content === true) {
+            show_tittel = video.title;
+        } else {
+            // Sửa điều kiện kiểm tra
+            if (video.url_reupload === null || video.url_reupload === false && video.title !== "") {
+                show_tittel = video.title;
+            } else {
+                show_tittel = video.url_video_youtube;
+            }
+        }
+
         const thumbnailUrl = video.url_thumbnail ? video.url_thumbnail : '/static/assets/img/no-image-available.png';
 
         function getLogoByStatus(status) {
@@ -171,7 +212,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 `;
             }
         }
-
         tr.innerHTML = `
             <td class="col-auto gap-0" style="width:40px; padding-left:1rem;">
                 <label class="col-form-label">${video.id}</label>
@@ -180,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <img class="id-thumbnail-video" data-id="${video.id}" src="${thumbnailUrl}" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);" onerror="this.onerror=null; this.src='/static/assets/img/no-image-available.png';">
             </th>
             <td class="col">
-                <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>
+                <label class="col-form-label id-title-video" data-id="${video.id}">${show_tittel}</label>
                 <div>
                     <button class="btn btn-outline-primary btn-play-video" style="background-color: #38b2ac;" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
                         <svg class="icon">
@@ -332,8 +372,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const fetchUrl = `${protocol}//${host}/render-video/?page=${page}&profile_id=${channelId}`;
 
-
-
         fetch(fetchUrl, {
             method: 'GET',
             credentials: 'include',
@@ -358,20 +396,42 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById("myTbody").innerHTML = "";
                 document.getElementById("page_bar").innerHTML = "";
 
+                time_upload = data.results[0]['profile_id']['channel_time_upload']
+
+                document.getElementById("input-time-upload_channel").value = time_upload;
+                document.getElementById("input-time-model-url").value = time_upload;
+
                 // Hiển thị video từ dữ liệu nhận được
                 data.results.forEach((item, i) => {
-                    show_video(item, i + 1);
+                    show_video(item);
                 });
                 show_page_bar(page, data);
             })
             .catch(error => console.error('Error:', error));
     }
 
-    function add_one_video_web(video, count) {
+    function add_one_video_web(video) {
         const tr = document.createElement('tr');
         tr.className = 'align-middle';
         tr.setAttribute('data-id', video.id);
         const thumbnailUrl = video.url_thumbnail ? video.url_thumbnail : '/static/assets/img/no-image-available.png';
+
+        
+        const is_content = checkButtonStatus();
+        let show_tittel = "";
+
+        if (is_content === true) {
+            show_tittel = video.title;
+        } else {
+            // Sửa điều kiện kiểm tra
+            if (video.url_reupload === null || video.url_reupload === false && video.title !== "") {
+                show_tittel = video.title;
+            } else {
+                show_tittel = video.url_video_youtube;
+            }
+        }
+
+
 
         function getLogoByStatus(status) {
             if (status.includes('Đang chờ render video!') || status.includes('Đang Render')) {
@@ -405,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 <img class="id-thumbnail-video" data-id="${video.id}" src="${thumbnailUrl}" style="height: 75px; width:133px; border-radius: 5px; border: 2px solid rgb(255, 132, 0);" onerror="this.onerror=null; this.src='/static/assets/img/no-image-available.png';">
             </th>
             <td class="col">
-                <label class="col-form-label id-title-video" data-id="${video.id}">${video.title}</label>
+                <label class="col-form-label id-title-video" data-id="${video.id}">${show_tittel}</label>
                 <div>
                     <button class="btn btn-outline-primary btn-play-video" style="background-color: #38b2ac;" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
                         <svg class="icon">
@@ -489,81 +549,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => console.error('Error:', error));
     });
 
-
-    $("#create_videos_news").click(async function () {
-        console.log('Create videos');
-        const countVideos = parseInt($('#count-video').val());
-        let dateValue = $('#date-Input').val();
-        const timeValue = $('#input-time-upload').val().split(',');
-        const characters = $('#count-text-video').val();
-
-        $('#progress-bar-status').css('width', `${0}%`);
-        const host = window.location.host;
-        const protocol = window.location.protocol;
-        const csrfToken = getCSRFToken();
-        const profile_id = $('#channel_name').val();
-        const fetchUrl = `${protocol}//${host}/profiles/${profile_id}/add_videos/`;
-
-        $('#progress-bar-status').css('display', 'block'); // Hiển thị thanh tiến trình
-        $('#cread-status-videos').text(`Đang tạo video ...1/${countVideos}`);
-
-        let errorOccurred = false;
-
-        for (let i = 0; i < countVideos && !errorOccurred; i++) {
-            const date = new Date(dateValue);
-            const date_upload_str = date.toISOString().split('T')[0];
-            const time = timeValue[i % timeValue.length].trim();
-            console.log('Date:', date_upload_str);
-            console.log('Time:', time);
-
-            const videoData = {
-                upload_time: time,
-                upload_date: date_upload_str,
-                characters: characters,
-            };
-
-            try {
-                const response = await fetch(fetchUrl, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken
-                    },
-                    body: JSON.stringify(videoData)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                $('#cread-status-videos').text(`Đang tạo video ...${i + 1}/${countVideos}`);
-                const progress = ((i + 1) / countVideos) * 100;
-                $('#progress-bar-status').css('width', `${progress}%`);
-                $('#progress-bar-status').attr('aria-valuenow', progress);
-                if (i + 1 === countVideos) {
-                    $('#cread-status-videos').text(`Đã tạo xong ${i + 1} video`);
-                }
-                console.log(data);
-
-            } catch (error) {
-                console.error('Error:', error);
-                $('#cread-status-videos').text(`Lỗi khi tạo video. Đã tạo được ${i} video.`);
-                errorOccurred = true; // Đánh dấu lỗi đã xảy ra
-            }
-
-            // Kiểm tra nếu đã sử dụng hết tất cả giá trị thời gian upload
-            if ((i + 1) % timeValue.length === 0) {
-                // Tăng ngày lên 1
-                dateValue = new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
-            }
-        }
-
-        if (errorOccurred) {
-            $('#cread-status-videos').text(`Dừng lại do lỗi. Đã tạo được ${i} video.`);
-        }
-    });
+    
     // xử lý sự kiện thêm 1 video   
     // Xử lý sự kiện click vào nút sửa video
 
@@ -576,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#button-back2').css('display', 'none');
         $('#edit_video').css('display', 'none');
     });
-
 
     $(document).on('click', '#next-cread-image', function () {
         if ($('#id-video-edit').val() === '') {
@@ -593,7 +578,6 @@ document.addEventListener('DOMContentLoaded', function () {
             $('#edit_video').css('display', 'block');
         }
     });
-
 
     // button next khi đã nhập nội dung và audio
     $('#edit_video').click(function () {
@@ -1392,6 +1376,154 @@ document.addEventListener('DOMContentLoaded', function () {
         sendMessage(deleteMessage);
     });
 
+
+    $("#create_videos_news").click(async function () {
+        const countVideos = parseInt($('#count-video').val());
+        let dateValue = $('#date-Input').val();
+        const timeValue = $('#input-time-upload').val().split(',');
+        const characters = $('#count-text-video').val();
+
+        $('#progress-bar-status').css('width', `${0}%`);
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const profile_id = $('#channel_name').val();
+        const fetchUrl = `${protocol}//${host}/profiles/${profile_id}/add_videos/`;
+
+        $('#progress-bar-status').css('display', 'block'); // Hiển thị thanh tiến trình
+        $('#cread-status-videos').text(`Đang tạo video ...1/${countVideos}`);
+
+        let errorOccurred = false;
+
+        for (let i = 0; i < countVideos && !errorOccurred; i++) {
+            const date = new Date(dateValue);
+            const date_upload_str = date.toISOString().split('T')[0];
+            const time = timeValue[i % timeValue.length].trim();
+            console.log('Date:', date_upload_str);
+            console.log('Time:', time);
+
+            const videoData = {
+                upload_time: time,
+                upload_date: date_upload_str,
+                characters: characters,
+            };
+
+            try {
+                const response = await fetch(fetchUrl, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(videoData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                $('#cread-status-videos').text(`Đang tạo video ...${i + 1}/${countVideos}`);
+                const progress = ((i + 1) / countVideos) * 100;
+                $('#progress-bar-status').css('width', `${progress}%`);
+                $('#progress-bar-status').attr('aria-valuenow', progress);
+                if (i + 1 === countVideos) {
+                    $('#cread-status-videos').text(`Đã tạo xong ${i + 1} video`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                $('#cread-status-videos').text(`Lỗi khi tạo video. Đã tạo được ${i} video.`);
+                errorOccurred = true; // Đánh dấu lỗi đã xảy ra
+            }
+
+            // Kiểm tra nếu đã sử dụng hết tất cả giá trị thời gian upload
+            if ((i + 1) % timeValue.length === 0) {
+                // Tăng ngày lên 1
+                dateValue = new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+            }
+        }
+
+        if (errorOccurred) {
+            $('#cread-status-videos').text(`Dừng lại do lỗi. Đã tạo được ${i} video.`);
+        }
+    });
+
+    $(document).on('click', '#cread-url-videos', async function () {
+        var countVideos = countLines(textarea);
+        let dateValue = $('#date-Input-url').val();
+        let timeValue = $('#input-time-model-url').val().split(',');
+        if (countVideos === 0) {
+            $('#cread-status-videos').text(`Lỗi : Không có url video`);
+            return;
+        }else{
+            $('#cread-status-videos').text(`Đang tạo video ...1/${countVideos.count}`);
+        }
+
+        $('#progress-bar-status').css('width', `${0}%`);
+
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const csrfToken = getCSRFToken();
+        const fetchUrl = `${protocol}//${host}/render-video/cread-video-url/`;
+        let errorOccurred = false;
+
+        for (let i = 0; i < countVideos.count && !errorOccurred; i++) {
+            const date = new Date(dateValue);
+            const date_upload_str = date.toISOString().split('T')[0];
+            const time = timeValue[i % timeValue.length].trim();
+
+            console.log('Date:', date_upload_str);
+            console.log('Time:', time);
+
+            const videoData = {
+                upload_time: time,
+                upload_date: date_upload_str,
+                url_video: countVideos.lines[i].trim(),
+                profile_id : $('#channel_name').val(),
+                folder_id : $('#folder_name').val()
+            };
+            try {
+                const response = await fetch(fetchUrl, {
+                    method: 'POST',  // Đảm bảo phương thức là 'POST'
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(videoData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                console.log('Kết quả:', data);
+                
+                add_one_video_web(data.video);
+                $('#cread-status-videos').text(`Đang tạo video ...${i + 1}/${countVideos.count}`);
+                const progress = ((i + 1) / countVideos.count) * 100;
+                $('#progress-bar-status').css('width', `${progress}%`);
+                $('#progress-bar-status').attr('aria-valuenow', progress);
+                if (i + 1 === countVideos.count) {
+                    $('#cread-status-videos').text(`Đã tạo xong ${i + 1} video`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                $('#cread-status-videos').text(`Lỗi khi tạo video. Đã tạo được ${i} video.`);
+                errorOccurred = true; // Đánh dấu lỗi đã xảy ra
+            }
+
+            // Kiểm tra nếu đã sử dụng hết tất cả giá trị thời gian upload
+            if ((i + 1) % timeValue.length === 0) {
+                // Tăng ngày lên 1
+                dateValue = new Date(date.setDate(date.getDate() + 1)).toISOString().split('T')[0];
+            }
+        }
+    });
+
     function show_button_model_infor_video() {
         $('#input-title').val('');
         $('#input-description').val('');
@@ -1547,7 +1679,26 @@ document.addEventListener('DOMContentLoaded', function () {
     function GetFolderSelected(is_content) {
         const userElement = document.getElementById('user-id');
         const userId = userElement.getAttribute('data-id');
-
+        // Kiểm tra điều kiện để ẩn hoặc hiện nút
+        if (is_content) {
+            // Nếu is_content là true, hiển thị nút
+            document.getElementById("btn-add-text-content").style.display = "none";
+            document.getElementById("add-videos").style.display = "none";
+            document.getElementById("btn-add-url-videos").style.display = "none";
+            document.getElementById("btn-render-all").style.display = "none";
+            document.getElementById("btn-render-erron").style.display = "none";
+            document.getElementById("btn-upload-erron").style.display = "none";
+            document.getElementById("btn-add-video").style.display = "block";
+        } else {
+            // Nếu is_content là false, ẩn nút
+            document.getElementById("btn-add-text-content").style.display = "inline-block";
+            document.getElementById("add-videos").style.display = "inline-block";
+            document.getElementById("btn-add-url-videos").style.display = "inline-block";
+            document.getElementById("btn-render-all").style.display = "inline-block";
+            document.getElementById("btn-render-erron").style.display = "inline-block";
+            document.getElementById("btn-upload-erron").style.display = "inline-block";
+            document.getElementById("btn-add-video").style.display = "None";
+        }
 
         const host = window.location.host;
         const protocol = window.location.protocol;
@@ -1649,4 +1800,76 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error('There was a problem with the fetch operation:', error);
             });
     }
+
+
+    $("#random-time").click(function () {
+        $('#input-time-model-url').val('');
+        $('#input-time-model-url').val(generateTimeSlots());
+    });
+
+    function generateTimeSlots() {
+        var timeSlots = [];
+        var list_time = [];
+        var count = $('#count-random').val();
+
+        // Tạo danh sách thời gian từ 1 giờ đến 22 giờ với các phút cách nhau là 00, 15, 30 và 45
+        for (var hour = 1; hour <= 22; hour++) {
+            for (var minute = 0; minute < 60; minute += 15) {
+                var formattedHour = hour < 10 ? "0" + hour : hour;
+                var formattedMinute = minute < 10 ? "0" + minute : minute;
+                timeSlots.push(formattedHour + ":" + formattedMinute);
+            }
+        }
+
+        // Lấy ngẫu nhiên các thời gian từ danh sách thời gian
+        while (list_time.length < count) {
+            var randomIndex = Math.floor(Math.random() * timeSlots.length);
+            var timeSlot = timeSlots.splice(randomIndex, 1)[0]; // Remove the selected time slot from timeSlots
+
+            list_time.push(timeSlot);
+        }
+
+        // Sắp xếp thời gian theo thứ tự tăng dần
+        list_time.sort();
+
+        // Chuyển list_time thành chuỗi
+        var list_time_string = list_time.join(",");
+
+        return list_time_string;
+    }
+
+    $(document).on('click', '#add-url-videos', function () {
+        var textarea = document.getElementById('input-url-videos');
+        textarea.value = '';
+    });
+
+    var textarea = document.getElementById('input-url-videos');
+    var urlCountSpan = document.getElementById('url-count');
+
+    // Hàm để đếm số dòng trong textarea
+    function countLines(textarea) {
+        var lines = textarea.value.split('\n');
+        var nonEmptyLines = lines.filter(function(line) {
+            return line.trim() !== ''; // Loại bỏ các dòng trống hoặc chỉ chứa khoảng trắng
+        });
+
+        // Trả về một đối tượng chứa số dòng không rỗng và chuỗi các dòng không rỗng
+        return {
+            count: nonEmptyLines.length,
+            lines: nonEmptyLines
+        };
+    }
+
+    // Hàm để cập nhật số dòng hiển thị
+    function updateUrlCount() {
+        
+        var lineCount = countLines(textarea);
+        urlCountSpan.innerText = lineCount.count;
+    }
+
+    // Gọi hàm updateUrlCount mỗi khi người dùng thay đổi nội dung trong textarea
+    textarea.addEventListener('input', updateUrlCount);
+
+    // Khởi tạo giá trị ban đầu khi trang được tải
+    updateUrlCount();
 });

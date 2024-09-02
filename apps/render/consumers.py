@@ -10,7 +10,7 @@ from .serializers import RenderSerializer
 from apps.login.models import CustomUser
 from django.core.files.storage import default_storage
 
-from apps.render.task import render_video
+from apps.render.task import render_video,render_video_reupload
 from celery.result import AsyncResult
 from urllib.parse import urlparse, unquote
 from asgiref.sync import async_to_sync
@@ -193,10 +193,14 @@ class RenderConsumer(AsyncWebsocketConsumer):
         data = self.get_data_video(video.id)
         if video.status_video == "render":
             try:
-                task = render_video.apply_async(args=[data])
+                if video.folder_id.is_content:
+                    task = render_video.apply_async(args=[data])
+                else:
+                    task = render_video_reupload.apply_async(args=[data])
                 video.task_id = task.id
                 video.status_video = "Đang chờ render : Đợi đến lượt render"
                 video.save()
+
             except Exception as e:
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
@@ -211,19 +215,28 @@ class RenderConsumer(AsyncWebsocketConsumer):
             except Exception as e:
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
-        elif "Render Lỗi" in video.status_video:
+        
+        if "Render Lỗi" in video.status_video:
             try:
-                task = render_video.apply_async(args=[data])
+                if video.folder_id.is_content:
+                    task = render_video.apply_async(args=[data])
+                else:
+                    task = render_video_reupload.apply_async(args=[data])
+
                 video.task_id = task.id
                 video.status_video = "Đang chờ render : Render Lại"
                 video.save()
+
             except Exception as e:
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
 
         elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
             try:
-                task = render_video.apply_async(args=[data])
+                if video.folder_id.is_content:
+                    task = render_video.apply_async(args=[data])
+                else:
+                    task = render_video_reupload.apply_async(args=[data])
                 video.task_id = task.id
                 video.status_video = "Đang chờ render : Render Lại"
                 folder_path = f"data/{video.id}"
@@ -235,7 +248,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
 
-           
     @sync_to_async
     def update_status(self, data):
         video = VideoRender.objects.get(id=data['video_id'])
@@ -422,8 +434,12 @@ class RenderConsumer(AsyncWebsocketConsumer):
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
         data  = {
+            "is_content": video.folder_id.is_content,
+            'url_reupload': video.url_reupload,
+            "url_video_youtube": video.url_video_youtube,
             'video_id': video.id,
             'name_video': video.name_video,
+            'text': video.text_content,
             'text_content': video.text_content_2,
             'images': video.video_image,
             'font_name': video.font_text.font_name,

@@ -38,22 +38,6 @@ services:
       - redis2
     expose:
       - 5504
-
-  voicevox_engine:
-    container_name: voicevox_engine
-    image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
-    restart: always
-    ports:
-      - '50021:50021'
-    tty: true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
-
   flower:
     container_name: flower
     image: dangtung

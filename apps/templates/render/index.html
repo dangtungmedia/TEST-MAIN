@@ -43,15 +43,27 @@
                         </button>
                     </div>
                 {% endif %}
-                <div class="col-auto">
-                    <button class="btn btn-outline-primary" id="add-text-content" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalLive3">Thêm Nội Dung</button>
+                <div class="col-auto" id="btn-add-video">
+                    <button class="btn btn-outline-primary" id ='add-one-video'type="button" data-coreui-toggle="modal" data-coreui-target="#modal-infor-video">Thêm Video</button>
+                </div>
+                <div class="col-auto" id="btn-add-url-videos">
+                    <button class="btn btn-outline-primary" id='add-url-videos'type="button" data-coreui-toggle="modal" data-coreui-target="#modal-url-videos">Url Videos</button>
+                </div>
+                <div class="col-auto" id="btn-add-text-content">
+                    <button class="btn btn-outline-primary" id="add-text-content" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalLive3">Thêm Text</button>
                 </div>
 
-                <div class="col-auto">
-                    <button class="btn btn-outline-primary" id='add-videos'type="button" data-coreui-toggle="modal" data-coreui-target="#modal-videos">Thêm Nhiều videos</button>
+                <div class="col-auto" id="btn-add-videos">
+                    <button class="btn btn-outline-primary" id='add-videos'type="button" data-coreui-toggle="modal" data-coreui-target="#modal-videos">Thêm Videos</button>
                 </div>
-                <div class="col-auto">
-                    <button class="btn btn-outline-primary" id ='add-one-video'type="button" data-coreui-toggle="modal" data-coreui-target="#modal-infor-video">Thêm Videos</button>
+                <div class="col-auto" id="btn-render-all">
+                    <button class="btn btn-outline-primary" id="render-all" type="button" data-coreui-toggle="modal" data-coreui-target="#exampleModalLive3">Render</button>
+                </div>
+                <div class="col-auto" id="btn-render-erron">
+                    <button class="btn btn-outline-primary" id='render-erron'type="button" data-coreui-toggle="modal" data-coreui-target="#modal-url-videos">Render Lại</button>
+                </div>
+                <div class="col-auto" id="btn-upload-erron">
+                    <button class="btn btn-outline-primary" id='upload-erron'type="button" data-coreui-toggle="modal" data-coreui-target="#modal-videos">Upload Lại</button>
                 </div>
             </div>
         </div>
@@ -194,6 +206,51 @@
         <div class="modal-footer">
           <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
           <button class="btn btn-primary" id="create_videos_news" type="button" data-coreui-toggle="modal" data-coreui-target="#modal-status-add-videos">Save changes</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modal-url-videos" tabindex="-1" aria-labelledby="exampleModalLiveLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLiveLabel">ADD URL VIDEOS</h5>
+          <button class="btn-close" id="close-modal-add-videos" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body g-3">
+            <div class="mb-3">
+                <div class="row">
+                    <div class="col">
+                        <input class="form-control" id="input-time-model-url" type="text" placeholder="Time Upload" aria-label="First name" value="">
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <div class="row">
+                    <div class="col">
+                        <input class="form-control" type="date" placeholder="Last name" aria-label="Last name" id="date-Input-url" value="{{ current_time }}">
+                    </div>
+                    <div class="col-auto">
+                        <input type="number" style="width:70px;" id="count-random" class="form-control" value="4" min="0" max="10" step="1">
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" id="random-time" type="button">Random</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="input-infor-video-description">URL VIDEOS</label>
+                <textarea cols="30" rows="10" class="form-control" id="input-url-videos" required=""></textarea>
+                <h5 class="text-success">
+                    <span class="text-primary">Số url:</span>
+                    <span class="text-danger" id="url-count">0</span>
+                </h5>
+            </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" type="button" data-coreui-dismiss="modal">Close</button>
+          <button class="btn btn-primary" id="cread-url-videos" type="button" data-coreui-toggle="modal" data-coreui-target="#modal-status-add-videos">Save changes</button>
         </div>
       </div>
     </div>
@@ -413,7 +470,7 @@
                 <button class="btn-close btn-close-play-video" type="button" data-coreui-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0 m-0" style="flex-grow: 1; display: flex;">
-                <iframe id="videoIframe" style="flex-grow: 1; width: 100%; height:500px;" src="https://s3-hcm5-r1.longvan.net/19425936-media/data/234/PQKOBYZ98Q.mp4?AWSAccessKeyId=AUQESQVFF01YMVGUPVF9&Signature=NuSByhMjHImuxeLn6ejSgC8xFHY%3D&Expires=4400206157" frameborder="0" allowfullscreen></iframe>
+                <iframe id="videoIframe" style="flex-grow: 1; width: 100%; height:500px;" src="" frameborder="0" allowfullscreen></iframe>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary btn-close-play-video" type="button" data-coreui-dismiss="modal">Close</button>

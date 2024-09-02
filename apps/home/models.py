@@ -91,4 +91,4 @@ class ProfileChannel(models.Model):
     channel_view_count = models.IntegerField(default=0,blank=True, null=True)
     
     def __str__(self):  
-        return self.channel_name
+        return f'{self.folder_name} {self.channel_name}'

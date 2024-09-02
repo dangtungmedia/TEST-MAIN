@@ -51,6 +51,10 @@ from asgiref.sync import async_to_sync
 from celery.result import AsyncResult
 from celery import shared_task, signals
 
+# import whisper
+import re
+import yt_dlp
+
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
 SERVER='http://daphne:5504'
 
@@ -70,13 +74,13 @@ def worker_shutdown_handler(sender, **kwargs):
             video.status_video = f'Render Lỗi : Worker bị tắt đột ngột {worker_id}'
             video.save()
 
-@shared_task(bind=True)
+@shared_task(bind=True,priority=0)
 def render_video(self,data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
 
-    update_status_video("Đang Render : Đang load thông tin video", data['video_id'], task_id, worker_id)
+    update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
     success =  create_or_reset_directory(f'media/{video_id}')
 
     if not success:
@@ -145,6 +149,55 @@ def render_video(self,data):
         return
     
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
+
+
+@shared_task(bind=True,priority=10)
+def render_video_reupload(self,data):
+    print(data)
+    task_id = render_video.request.id
+    worker_id = render_video.request.hostname 
+    video_id = data.get('video_id')
+    # print("Reupload")
+    # print("Đang chờ 30s")
+    # update_status_video("Đang Render : Render Bằng Reupload", data['video_id'], task_id, worker_id)
+    # time.sleep(30)
+    # print("Reupload")
+    # update_status_video("Render Lỗi : Test xong", data['video_id'], task_id, worker_id)
+
+    update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
+    success =  create_or_reset_directory(f'media/{video_id}')
+
+    if not success:
+        shutil.rmtree(f'media/{video_id}')
+        update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
+        return
+    
+    success = download_image(data, task_id, worker_id)
+
+    if not success:
+        shutil.rmtree(f'media/{video_id}')
+        update_status_video("Render Lỗi : Không thể tải xuống hình ảnh", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
+
+    if not data.get('url_audio'):
+        # Tải xuống âm thanh
+        success = download_audio(data, task_id, worker_id)
+        if not success:
+            update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
+            shutil.rmtree(f'media/{video_id}')
+            return
+        update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
+
+    #nối giọng đọc và chèn nhạc nền
+    success = merge_audio_video(data, task_id, worker_id)
+
+
+
+
+
+
+
 
 def upload_video(data, task_id, worker_id):
     try:
@@ -402,107 +455,135 @@ def create_subtitles(data, task_id, worker_id):
 
 def merge_audio_video(data, task_id, worker_id):
     try:
-        update_status_video("Đang Render: đang ghép giọng đọc", data['video_id'], task_id, worker_id)
-        video_id = data.get('video_id')
-        fade_duration = 2000
+        if data.is_content:
+            update_status_video("Đang Render: đang ghép giọng đọc", data['video_id'], task_id, worker_id)
+            video_id = data.get('video_id')
+            fade_duration = 2000
 
-        # Tải xuống tệp âm thanh nếu có URL âm thanh
-        if data.get('url_audio'):
-            max_retries = 30
-            retries = 0
-            url_audio = f"{SERVER}{data.get('url_audio')}"
-            while retries < max_retries:
-                try:
-                    response = requests.get(url_audio, stream=True)
-                    if response.status_code == 200:
-                        os.makedirs(f'media/{video_id}', exist_ok=True)
-                        with open(f'media/{video_id}/cache.wav', 'wb') as file:
-                            for chunk in response.iter_content(chunk_size=1024):
-                                if chunk:  # Lọc bỏ các keep-alive chunks mới
-                                    file.write(chunk)
-                        print("Tải xuống thành công.")
-                        break
-                    else:
-                        print(f"Lỗi {response.status_code}: Không thể tải xuống tệp.")
-                except requests.RequestException as e:
-                    print(f"Lỗi tải xuống: {e}")
-                retries += 1
-                time.sleep(5)
-                print(f"Thử lại {retries}/{max_retries}")
+            # Tải xuống tệp âm thanh nếu có URL âm thanh
+            if data.get('url_audio'):
+                max_retries = 30
+                retries = 0
+                url_audio = f"{SERVER}{data.get('url_audio')}"
+                while retries < max_retries:
+                    try:
+                        response = requests.get(url_audio, stream=True)
+                        if response.status_code == 200:
+                            os.makedirs(f'media/{video_id}', exist_ok=True)
+                            with open(f'media/{video_id}/cache.wav', 'wb') as file:
+                                for chunk in response.iter_content(chunk_size=1024):
+                                    if chunk:  # Lọc bỏ các keep-alive chunks mới
+                                        file.write(chunk)
+                            print("Tải xuống thành công.")
+                            break
+                        else:
+                            print(f"Lỗi {response.status_code}: Không thể tải xuống tệp.")
+                    except requests.RequestException as e:
+                        print(f"Lỗi tải xuống: {e}")
+                    retries += 1
+                    time.sleep(5)
+                    print(f"Thử lại {retries}/{max_retries}")
+                else:
+                    return False  # Nếu không thể tải xuống tệp sau nhiều lần thử
             else:
-                return False  # Nếu không thể tải xuống tệp sau nhiều lần thử
-        else:
-            ffmpeg_command = [
-                'ffmpeg',
-                '-f', 'concat',
-                '-safe', '0',
-                '-i', f'media/{video_id}/input_files.txt',
-                '-c', 'copy',
-                f'media/{video_id}/cache.wav'
-            ]
-            subprocess.run(ffmpeg_command, check=True)
+                ffmpeg_command = [
+                    'ffmpeg',
+                    '-f', 'concat',
+                    '-safe', '0',
+                    '-i', f'media/{video_id}/input_files.txt',
+                    '-c', 'copy',
+                    f'media/{video_id}/cache.wav'
+                ]
+                subprocess.run(ffmpeg_command, check=True)
 
-        # Chọn nhạc nền ngẫu nhiên từ thư mục 'music_background'
-        music_path = random.choice([f for f in os.listdir('music_background') if os.path.isfile(os.path.join('music_background', f))])
-        music_path = os.path.join('music_background', music_path)
+            # Chọn nhạc nền ngẫu nhiên từ thư mục 'music_background'
+            music_path = random.choice([f for f in os.listdir('music_background') if os.path.isfile(os.path.join('music_background', f))])
+            music_path = os.path.join('music_background', music_path)
 
-        voice = AudioSegment.from_file(f'media/{video_id}/cache.wav')
-        music = AudioSegment.from_file(music_path)
+            voice = AudioSegment.from_file(f'media/{video_id}/cache.wav')
+            music = AudioSegment.from_file(music_path)
 
-        # Lặp lại nhạc nền để đảm bảo đủ độ dài
-        while len(music) < len(voice):
-            music += music
+            # Lặp lại nhạc nền để đảm bảo đủ độ dài
+            while len(music) < len(voice):
+                music += music
 
-        # Chỉnh âm lượng nhạc nền
-        db_reduction_during_speech = 20 * math.log10(0.10)  # Giảm âm lượng nhạc nền xuống 10%
-        db_reduction_without_speech = 20 * math.log10(0.14)  # Giảm âm lượng nhạc nền xuống 14%
+            # Chỉnh âm lượng nhạc nền
+            db_reduction_during_speech = 20 * math.log10(0.10)  # Giảm âm lượng nhạc nền xuống 10%
+            db_reduction_without_speech = 20 * math.log10(0.14)  # Giảm âm lượng nhạc nền xuống 14%
 
-        # Phát hiện các đoạn không im lặng trong giọng nói
-        nonsilent_ranges = detect_nonsilent(voice, min_silence_len=500, silence_thresh=voice.dBFS-16)
+            # Phát hiện các đoạn không im lặng trong giọng nói
+            nonsilent_ranges = detect_nonsilent(voice, min_silence_len=500, silence_thresh=voice.dBFS-16)
 
-        # Tạo bản sao của nhạc nền để điều chỉnh
-        adjusted_music = AudioSegment.silent(duration=len(voice))
+            # Tạo bản sao của nhạc nền để điều chỉnh
+            adjusted_music = AudioSegment.silent(duration=len(voice))
 
-        current_position = 0
-        for start, end in nonsilent_ranges:
-            # Chèn nhạc nền trong khoảng trước đoạn giọng nói (nếu có)
-            if start > current_position:
-                segment = music[current_position:start].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2).fade_out(fade_duration // 2)
+            current_position = 0
+            for start, end in nonsilent_ranges:
+                # Chèn nhạc nền trong khoảng trước đoạn giọng nói (nếu có)
+                if start > current_position:
+                    segment = music[current_position:start].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2).fade_out(fade_duration // 2)
+                    adjusted_music = adjusted_music.overlay(segment, position=current_position)
+
+                # Chèn nhạc nền trong đoạn có giọng nói
+                segment = music[start:end].apply_gain(db_reduction_during_speech)
+                adjusted_music = adjusted_music.overlay(segment, position=start)
+
+                current_position = end
+
+            # Chèn nhạc nền sau đoạn giọng nói cuối cùng (nếu có)
+            if current_position < len(voice):
+                segment = music[current_position:].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2)
                 adjusted_music = adjusted_music.overlay(segment, position=current_position)
 
-            # Chèn nhạc nền trong đoạn có giọng nói
-            segment = music[start:end].apply_gain(db_reduction_during_speech)
-            adjusted_music = adjusted_music.overlay(segment, position=start)
+            # Thêm giọng nói vào nhạc nền đã điều chỉnh
+            combined = adjusted_music.overlay(voice, loop=False)
 
-            current_position = end
+            output_wav_path = f'media/{video_id}/cache1.wav'
+            
+            # Xuất file âm thanh kết hợp
+            combined.export(output_wav_path, format="wav")
 
-        # Chèn nhạc nền sau đoạn giọng nói cuối cùng (nếu có)
-        if current_position < len(voice):
-            segment = music[current_position:].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2)
-            adjusted_music = adjusted_music.overlay(segment, position=current_position)
-
-        # Thêm giọng nói vào nhạc nền đã điều chỉnh
-        combined = adjusted_music.overlay(voice, loop=False)
-
-        output_wav_path = f'media/{video_id}/cache1.wav'
+            # Mã hóa âm thanh đầu ra thành định dạng MP3
+            output_mp3_path = f'media/{video_id}/audio.wav'
+            ffmpeg_encode_command = [
+                'ffmpeg',
+                '-i', output_wav_path,
+                '-codec:a', 'libmp3lame',
+                '-q:a', '2',
+                output_mp3_path
+            ]
+            subprocess.run(ffmpeg_encode_command, check=True)
+            return True
         
-        # Xuất file âm thanh kết hợp
-        combined.export(output_wav_path, format="wav")
+        else:
+            if data.url_reupload:
+                video_id = data.get('video_id')
+                output_file = f'media/{video_id}/audio'
+                update_status_video("Đang Render: đang tải audio", data['video_id'], task_id, worker_id)
+                download_youtube_audio(data.url_reupload, output_file)
+                
 
-        # Mã hóa âm thanh đầu ra thành định dạng MP3
-        output_mp3_path = f'media/{video_id}/audio.wav'
-        ffmpeg_encode_command = [
-            'ffmpeg',
-            '-i', output_wav_path,
-            '-codec:a', 'libmp3lame',
-            '-q:a', '2',
-            output_mp3_path
-        ]
-        subprocess.run(ffmpeg_encode_command, check=True)
-        return True
+               
+                
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
+    
+def download_youtube_audio(url, output_file):
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': f"{output_file}",  # Định dạng tên file đầu ra
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '192',  # Chất lượng âm thanh
+        }],
+        'noplaylist': True,  # Không tải playlist, chỉ tải video đầu tiên
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        print(f"Tải âm thanh từ: {url}")
+        ydl.download([url])
 
 def get_video_duration(video_path):
     # Lệnh ffprobe để lấy thông tin video dưới dạng JSON

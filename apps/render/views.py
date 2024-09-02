@@ -45,7 +45,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser,JSONParser 
 from apps.home.models import Voice_language, syle_voice,Folder,ProfileChannel
 
 from apps.home.serializers import ProfileSerializer
@@ -156,7 +156,7 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
     queryset = VideoRender.objects.all()
     serializer_class = RenderSerializer
     permission_classes = [IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)
+    parser_classes = (MultiPartParser, FormParser,JSONParser)
 
     def get_queryset(self):
         profile_id = self.request.query_params.get('profile_id', None)
@@ -195,6 +195,75 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             date_formatted = None
 
         return self.update_video_info(request, video, input_data, date_formatted)
+    @action(detail=False,methods=['POST'], url_path='cread-video-url')
+    
+    def cread_video_url(self, request):
+        try:
+            # Lấy dữ liệu từ request
+            upload_time = request.data.get('upload_time')
+            upload_date = request.data.get('upload_date')
+            url_video = request.data.get('url_video')
+            profile_id = int(request.data.get('profile_id'))
+            folder_id = int(request.data.get('folder_id'))
+
+            # In ra dữ liệu nhận được để kiểm tra
+            print("Dữ liệu nhận được từ client:", request.data)
+
+            # Truy vấn các đối tượng ProfileChannel và Folder
+            profile = ProfileChannel.objects.get(id=profile_id)
+            folder = Folder.objects.get(id=folder_id)
+
+            # Kiểm tra nếu folder là Content
+            if folder.is_content:
+                return JsonResponse({'error': 'Không thể tạo video từ URL trong thư mục Content!'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Tạo đối tượng VideoRender
+            video = VideoRender.objects.create(
+                folder_id=folder,
+                profile_id=profile,
+                name_video=''.join(random.choices(string.ascii_letters + string.digits, k=7)),
+                text_content='',
+                url_video_youtube=url_video,
+                url_reupload = True,
+                description=profile.channel_description,
+                keywords=profile.channel_keywords,
+                time_upload=upload_time,
+                date_upload=upload_date,
+                status_video = 'render',
+                intro_active=profile.channel_intro_active,
+                intro_url=profile.channel_intro_url,
+                outro_active=profile.channel_outro_active,
+                outro_url=profile.channel_outro_url,
+                logo_active=profile.channel_logo_active,
+                logo_url=profile.channel_logo_url,
+                logo_position=profile.channel_logo_position,
+                font_text=profile.channel_font_text,
+                font_size=profile.channel_font_size,
+                font_bold=profile.channel_font_bold,
+                font_italic=profile.channel_font_italic,
+                font_underline=profile.channel_font_underline,
+                font_strikeout=profile.channel_font_strikeout,
+                font_color=profile.channel_font_color,
+                font_color_opacity=profile.channel_font_color_opacity,
+                font_color_troke=profile.channel_font_color_troke,
+                font_color_troke_opacity=profile.channel_font_color_troke_opacity,
+                stroke_text=profile.channel_stroke_text,
+                font_background=profile.channel_font_background,
+                channel_font_background_opacity=profile.channel_font_background_opacity,
+                channel_voice_style=profile.channel_voice_style,
+            )
+            # Trả về kết quả thành công
+            serializer = RenderSerializer(video)
+            return JsonResponse({'success': True, 'message': 'Tạo video từ URL thành công!', 'video': serializer.data}, status=status.HTTP_200_OK)
+
+        except ProfileChannel.DoesNotExist:
+            return JsonResponse({'error': 'Profile không tìm thấy'}, status=status.HTTP_404_NOT_FOUND)
+        except Folder.DoesNotExist:
+            return JsonResponse({'error': 'Folder không tìm thấy'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            # Ghi log lỗi chi tiết hơn
+            print("Lỗi xảy ra:", str(e))
+            return JsonResponse({'error': 'Lỗi hệ thống nội bộ', 'details': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def handle_thumbnail(self, video, thumnail):
         if video.url_thumbnail:
@@ -498,9 +567,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
       
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
-
-    
-
     def post(self, request):
         action = request.POST.get('action')
         if action == 'Seach':
@@ -624,7 +690,6 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
 
             return JsonResponse({'success': True, 'title_html': title_html, 'page_bar_html': page_bar_html})
         
-
 def download_file(request):
     file_path = os.path.join(settings.BASE_DIR, 'AppUpload.rar')
     # Sử dụng with để đảm bảo file được đóng đúng cách
