@@ -1,13 +1,13 @@
 import os
-from celery import shared_task,Celery
-import os, shutil,urllib
+from celery import shared_task, Celery
+import os, shutil, urllib
 import time
 from django.core.files.storage import default_storage
 from django.core.cache import cache
 from apps.render.models import VideoRender
 import requests
 import json
-import subprocess,random
+import subprocess, random
 from datetime import timedelta
 from pydub import AudioSegment
 from PIL import Image, ImageDraw, ImageFont
@@ -29,8 +29,8 @@ import os
 import requests
 import urllib
 
-import edge_tts,random,subprocess
-import asyncio,json,shutil
+import edge_tts, random, subprocess
+import asyncio, json, shutil
 from pydub import AudioSegment
 import nltk
 from googletrans import Translator
@@ -40,7 +40,7 @@ from nltk.probability import FreqDist
 from pydub import AudioSegment
 from pydub.silence import detect_nonsilent
 import math
-from datetime import timedelta,datetime
+from datetime import timedelta, datetime
 from pydub import AudioSegment
 from PIL import Image, ImageDraw, ImageFont
 from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
@@ -51,9 +51,9 @@ from asgiref.sync import async_to_sync
 from celery.result import AsyncResult
 from celery import shared_task, signals
 
-# import whisper
+import whisper
 import re
-import yt_dlp
+from yt_dlp import YoutubeDL
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
 SERVER='http://daphne:5504'
@@ -64,8 +64,6 @@ def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, ei
     worker_id = "None"
     update_status_video("Render Lỗi : Lỗi Render Không Xác Định", video_id, task_id, worker_id)
 
-
-
 @worker_shutdown.connect
 def worker_shutdown_handler(sender, **kwargs):
     worker_id = sender.hostname
@@ -74,14 +72,14 @@ def worker_shutdown_handler(sender, **kwargs):
             video.status_video = f'Render Lỗi : Worker bị tắt đột ngột {worker_id}'
             video.save()
 
-@shared_task(bind=True,priority=0)
-def render_video(self,data):
+@shared_task(bind=True, priority=0)
+def render_video(self, data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
 
     update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
-    success =  create_or_reset_directory(f'media/{video_id}')
+    success = create_or_reset_directory(f'media/{video_id}')
 
     if not success:
         shutil.rmtree(f'media/{video_id}')
@@ -108,7 +106,6 @@ def render_video(self,data):
 
     #nối giọng đọc và chèn nhạc nền
     success = merge_audio_video(data, task_id, worker_id)
-
     if not success:
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
@@ -150,23 +147,15 @@ def render_video(self,data):
     
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
-
-@shared_task(bind=True,priority=10)
-def render_video_reupload(self,data):
+@shared_task(bind=True, priority=10)
+def render_video_reupload(self, data):
     print(data)
     task_id = render_video.request.id
     worker_id = render_video.request.hostname 
     video_id = data.get('video_id')
-    # print("Reupload")
-    # print("Đang chờ 30s")
-    # update_status_video("Đang Render : Render Bằng Reupload", data['video_id'], task_id, worker_id)
-    # time.sleep(30)
-    # print("Reupload")
-    # update_status_video("Render Lỗi : Test xong", data['video_id'], task_id, worker_id)
-
     update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
-    success =  create_or_reset_directory(f'media/{video_id}')
-
+    success = create_or_reset_directory(f'media/{video_id}')
+   
     if not success:
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
@@ -180,22 +169,41 @@ def render_video_reupload(self,data):
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
 
-    if not data.get('url_audio'):
-        # Tải xuống âm thanh
-        success = download_audio(data, task_id, worker_id)
+    if data.get('url_reupload'):
+        success = download_audio_reup(data, task_id, worker_id)
         if not success:
             update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
             shutil.rmtree(f'media/{video_id}')
             return
         update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
+    
+    success = get_sub_audio(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể lấy phụ đề video", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Lấy xong phụ đề video", data['video_id'], task_id, worker_id)
 
-    #nối giọng đọc và chèn nhạc nền
-    success = merge_audio_video(data, task_id, worker_id)
+    success = create_video_url_lines(data, task_id, worker_id)
+    if not success:
+        shutil.rmtree(f'media/{video_id}')
+        update_status_video("Render Lỗi : Không thể tạo video", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Đã tạo xong video", data['video_id'], task_id, worker_id)
 
+    success = create_subtitles_reup_url(data, task_id, worker_id)
+    if not success:
+        shutil.rmtree(f'media/{video_id}')
+        update_status_video("Render Lỗi : Không thể tạo phụ đề", data['video_id'], task_id, worker_id)
+        return
 
+    update_status_video("Đang Render : Tạo phụ đề thành công", data['video_id'], task_id, worker_id)
 
-
-
+    success = create_video_reup_urls(data, task_id, worker_id)
+    if not success:
+        shutil.rmtree(f'media/{video_id}')
+        update_status_video("Render Lỗi : Lỗi tạo file video", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Render Lỗi : Tạo thành công video", data['video_id'], task_id, worker_id)
 
 
 
@@ -247,7 +255,6 @@ def upload_video(data, task_id, worker_id):
 
 def create_video_file(data, task_id, worker_id):
     video_id = data.get('video_id')
-    font_text = data.get("font_name")
     name_video = data.get('name_video')
     text = data.get('text_content')
 
@@ -314,7 +321,7 @@ def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".w
     print(f"Font '{font_name}' not found in directory '{font_dir}'")
     return None
 
-def get_text_lines(data, text):
+def get_text_lines(data, text,width=1920):
     current_line = ""
     wrapped_text = ""
     font = data['font_name']
@@ -336,7 +343,7 @@ def get_text_lines(data, text):
         text_width = bbox[2] - bbox[0]
 
         # Kiểm tra nếu thêm dấu câu vào dòng mới vẫn giữ cho chiều rộng trên 50%
-        if text_width <= 1920:
+        if text_width <= width:
             current_line = test_line
         else:
             # Nếu chiều rộng vượt quá giới hạn, tìm vị trí của dấu câu cuối cùng
@@ -348,7 +355,7 @@ def get_text_lines(data, text):
                 bbox_1 = draw.textbbox((0, 0), text_1, font=font)
                 text_width_1 = bbox_1[2] - bbox_1[0]
 
-                if text_width_1 <= int(1920 / 2):
+                if text_width_1 <= int(width / 2):
                     text_count = find_last_punctuation_index(text_2)
 
                     if text_count != -1:
@@ -455,116 +462,105 @@ def create_subtitles(data, task_id, worker_id):
 
 def merge_audio_video(data, task_id, worker_id):
     try:
-        if data.is_content:
-            update_status_video("Đang Render: đang ghép giọng đọc", data['video_id'], task_id, worker_id)
-            video_id = data.get('video_id')
-            fade_duration = 2000
+        update_status_video("Đang Render: đang ghép giọng đọc", data['video_id'], task_id, worker_id)
+        video_id = data.get('video_id')
+        fade_duration = 2000
 
-            # Tải xuống tệp âm thanh nếu có URL âm thanh
-            if data.get('url_audio'):
-                max_retries = 30
-                retries = 0
-                url_audio = f"{SERVER}{data.get('url_audio')}"
-                while retries < max_retries:
-                    try:
-                        response = requests.get(url_audio, stream=True)
-                        if response.status_code == 200:
-                            os.makedirs(f'media/{video_id}', exist_ok=True)
-                            with open(f'media/{video_id}/cache.wav', 'wb') as file:
-                                for chunk in response.iter_content(chunk_size=1024):
-                                    if chunk:  # Lọc bỏ các keep-alive chunks mới
-                                        file.write(chunk)
-                            print("Tải xuống thành công.")
-                            break
-                        else:
-                            print(f"Lỗi {response.status_code}: Không thể tải xuống tệp.")
-                    except requests.RequestException as e:
-                        print(f"Lỗi tải xuống: {e}")
-                    retries += 1
-                    time.sleep(5)
-                    print(f"Thử lại {retries}/{max_retries}")
-                else:
-                    return False  # Nếu không thể tải xuống tệp sau nhiều lần thử
+        # Tải xuống tệp âm thanh nếu có URL âm thanh
+        if data.get('url_audio'):
+            max_retries = 30
+            retries = 0
+            url_audio = f"{SERVER}{data.get('url_audio')}"
+            while retries < max_retries:
+                try:
+                    response = requests.get(url_audio, stream=True)
+                    if response.status_code == 200:
+                        os.makedirs(f'media/{video_id}', exist_ok=True)
+                        with open(f'media/{video_id}/cache.wav', 'wb') as file:
+                            for chunk in response.iter_content(chunk_size=1024):
+                                if chunk:  # Lọc bỏ các keep-alive chunks mới
+                                    file.write(chunk)
+                        print("Tải xuống thành công.")
+                        break
+                    else:
+                        print(f"Lỗi {response.status_code}: Không thể tải xuống tệp.")
+                except requests.RequestException as e:
+                    print(f"Lỗi tải xuống: {e}")
+                retries += 1
+                time.sleep(5)
+                print(f"Thử lại {retries}/{max_retries}")
             else:
-                ffmpeg_command = [
-                    'ffmpeg',
-                    '-f', 'concat',
-                    '-safe', '0',
-                    '-i', f'media/{video_id}/input_files.txt',
-                    '-c', 'copy',
-                    f'media/{video_id}/cache.wav'
-                ]
-                subprocess.run(ffmpeg_command, check=True)
+                return False  # Nếu không thể tải xuống tệp sau nhiều lần thử
+        else:
+            ffmpeg_command = [
+                'ffmpeg',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', f'media/{video_id}/input_files.txt',
+                '-c', 'copy',
+                f'media/{video_id}/cache.wav'
+            ]
+            subprocess.run(ffmpeg_command, check=True)
 
-            # Chọn nhạc nền ngẫu nhiên từ thư mục 'music_background'
-            music_path = random.choice([f for f in os.listdir('music_background') if os.path.isfile(os.path.join('music_background', f))])
-            music_path = os.path.join('music_background', music_path)
+        # Chọn nhạc nền ngẫu nhiên từ thư mục 'music_background'
+        music_path = random.choice([f for f in os.listdir('music_background') if os.path.isfile(os.path.join('music_background', f))])
+        music_path = os.path.join('music_background', music_path)
 
-            voice = AudioSegment.from_file(f'media/{video_id}/cache.wav')
-            music = AudioSegment.from_file(music_path)
+        voice = AudioSegment.from_file(f'media/{video_id}/cache.wav')
+        music = AudioSegment.from_file(music_path)
 
-            # Lặp lại nhạc nền để đảm bảo đủ độ dài
-            while len(music) < len(voice):
-                music += music
+        # Lặp lại nhạc nền để đảm bảo đủ độ dài
+        while len(music) < len(voice):
+            music += music
 
-            # Chỉnh âm lượng nhạc nền
-            db_reduction_during_speech = 20 * math.log10(0.10)  # Giảm âm lượng nhạc nền xuống 10%
-            db_reduction_without_speech = 20 * math.log10(0.14)  # Giảm âm lượng nhạc nền xuống 14%
+        # Chỉnh âm lượng nhạc nền
+        db_reduction_during_speech = 20 * math.log10(0.10)  # Giảm âm lượng nhạc nền xuống 10%
+        db_reduction_without_speech = 20 * math.log10(0.14)  # Giảm âm lượng nhạc nền xuống 14%
 
-            # Phát hiện các đoạn không im lặng trong giọng nói
-            nonsilent_ranges = detect_nonsilent(voice, min_silence_len=500, silence_thresh=voice.dBFS-16)
+        # Phát hiện các đoạn không im lặng trong giọng nói
+        nonsilent_ranges = detect_nonsilent(voice, min_silence_len=500, silence_thresh=voice.dBFS-16)
 
-            # Tạo bản sao của nhạc nền để điều chỉnh
-            adjusted_music = AudioSegment.silent(duration=len(voice))
+        # Tạo bản sao của nhạc nền để điều chỉnh
+        adjusted_music = AudioSegment.silent(duration=len(voice))
 
-            current_position = 0
-            for start, end in nonsilent_ranges:
-                # Chèn nhạc nền trong khoảng trước đoạn giọng nói (nếu có)
-                if start > current_position:
-                    segment = music[current_position:start].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2).fade_out(fade_duration // 2)
-                    adjusted_music = adjusted_music.overlay(segment, position=current_position)
-
-                # Chèn nhạc nền trong đoạn có giọng nói
-                segment = music[start:end].apply_gain(db_reduction_during_speech)
-                adjusted_music = adjusted_music.overlay(segment, position=start)
-
-                current_position = end
-
-            # Chèn nhạc nền sau đoạn giọng nói cuối cùng (nếu có)
-            if current_position < len(voice):
-                segment = music[current_position:].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2)
+        current_position = 0
+        for start, end in nonsilent_ranges:
+            # Chèn nhạc nền trong khoảng trước đoạn giọng nói (nếu có)
+            if start > current_position:
+                segment = music[current_position:start].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2).fade_out(fade_duration // 2)
                 adjusted_music = adjusted_music.overlay(segment, position=current_position)
 
-            # Thêm giọng nói vào nhạc nền đã điều chỉnh
-            combined = adjusted_music.overlay(voice, loop=False)
+            # Chèn nhạc nền trong đoạn có giọng nói
+            segment = music[start:end].apply_gain(db_reduction_during_speech)
+            adjusted_music = adjusted_music.overlay(segment, position=start)
 
-            output_wav_path = f'media/{video_id}/cache1.wav'
-            
-            # Xuất file âm thanh kết hợp
-            combined.export(output_wav_path, format="wav")
+            current_position = end
 
-            # Mã hóa âm thanh đầu ra thành định dạng MP3
-            output_mp3_path = f'media/{video_id}/audio.wav'
-            ffmpeg_encode_command = [
-                'ffmpeg',
-                '-i', output_wav_path,
-                '-codec:a', 'libmp3lame',
-                '-q:a', '2',
-                output_mp3_path
-            ]
-            subprocess.run(ffmpeg_encode_command, check=True)
-            return True
+        # Chèn nhạc nền sau đoạn giọng nói cuối cùng (nếu có)
+        if current_position < len(voice):
+            segment = music[current_position:].apply_gain(db_reduction_without_speech).fade_in(fade_duration // 2)
+            adjusted_music = adjusted_music.overlay(segment, position=current_position)
+
+        # Thêm giọng nói vào nhạc nền đã điều chỉnh
+        combined = adjusted_music.overlay(voice, loop=False)
+
+        output_wav_path = f'media/{video_id}/cache1.wav'
         
-        else:
-            if data.url_reupload:
-                video_id = data.get('video_id')
-                output_file = f'media/{video_id}/audio'
-                update_status_video("Đang Render: đang tải audio", data['video_id'], task_id, worker_id)
-                download_youtube_audio(data.url_reupload, output_file)
-                
+        # Xuất file âm thanh kết hợp
+        combined.export(output_wav_path, format="wav")
 
-               
-                
+        # Mã hóa âm thanh đầu ra thành định dạng MP3
+        output_mp3_path = f'media/{video_id}/audio.wav'
+        ffmpeg_encode_command = [
+            'ffmpeg',
+            '-i', output_wav_path,
+            '-codec:a', 'libmp3lame',
+            '-q:a', '2',
+            output_mp3_path
+        ]
+        subprocess.run(ffmpeg_encode_command, check=True)
+        return True
+        
     except Exception as e:
         print(f"An error occurred: {e}")
         return False
@@ -736,7 +732,6 @@ def get_video_random(data,duration,input_text,file_name):
         return video_path
 # lấy thời gian của các file srt
 def extract_frame_times(srt_content):
-
     time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
     matches = time_pattern.findall(srt_content)
     return matches
@@ -980,6 +975,81 @@ def download_audio(data, task_id, worker_id):
         print(f"An error occurred: {e}")
         return False
 
+def download_audio_reup(data, task_id, worker_id):
+    video_id = data.get('video_id')
+    output_file = f'media/{video_id}/cache'
+    url = data.get('url_video_youtube')
+
+    # Hàm xử lý tiến trình tải
+    def progress_hook(d):
+        if d['status'] == 'downloading':
+            percent = d['_percent_str'].strip()
+            update_status_video(f"Đang Render : Đang tải audio {percent}", data['video_id'], task_id, worker_id)
+        elif d['status'] == 'finished':
+            update_status_video(f"Đang Render : Tải xong âm thanh ", data['video_id'], task_id, worker_id)
+
+    # Cấu hình yt-dlp
+    ydl_opts = {
+        'format': 'bestaudio/best',
+        'outtmpl': f"{output_file}",
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'wav',
+            'preferredquality': '192',
+        }],
+        'noplaylist': True,
+        'progress_hooks': [progress_hook],  # Thêm hàm xử lý tiến trình
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        print(f"Tải âm thanh từ: {url}")
+        ydl.download([url])
+    return True
+
+def get_sub_audio(data, task_id, worker_id):
+    video_id = data.get('video_id')
+    audio_file = f'media/{video_id}/cache.wav'
+    model = whisper.load_model('base')
+    update_status_video("Đang Render : Đang lấy phụ đề video", data['video_id'], task_id, worker_id)
+    output_srt = f"media/{video_id}/output.srt" 
+    # Tạo thư mục nếu chưa tồn tại
+    # Giải mã âm thanh và trích xuất phụ đề
+    result = model.transcribe(audio_file)
+
+    # Lưu kết quả dưới dạng file .srt
+    with open(output_srt, "w") as f:
+        combined_text = ""
+        combined_start = None
+
+        for i, segment in enumerate(result['segments']):
+            start = segment['start']
+            end = segment['end']
+            text = segment['text'].strip()
+            
+            # Kiểm tra nếu dòng mới bắt đầu
+            if combined_start is None:
+                combined_start = start
+            
+            # Kết hợp nội dung của các đoạn
+            if combined_text:
+                combined_text += " "
+            combined_text += text
+            
+            # Nếu kết thúc đoạn hoặc không còn đoạn nào khác
+            if i == len(result['segments']) - 1 or re.search(r'[.?!]$', text):
+                start_time = f"{int(combined_start//3600):02}:{int((combined_start%3600)//60):02}:{int(combined_start%60):02},{int((combined_start%1)*1000):03}"
+                end_time = f"{int(end//3600):02}:{int((end%3600)//60):02}:{int(end%60):02},{int((end%1)*1000):03}"
+
+                # Ghi vào file .srt
+                f.write(f"{i + 1}\n")
+                f.write(f"{start_time} --> {end_time}\n")
+                f.write(f"{combined_text}\n\n")
+                
+                # Reset lại cho đoạn tiếp theo
+                combined_text = ""
+                combined_start = None
+    return True
+
 async def text_to_speech(text, voice, output_file):
     communicate = edge_tts.Communicate(text=text, voice=voice)
     await communicate.save(output_file)
@@ -1099,6 +1169,164 @@ def create_or_reset_directory(directory_path):
     except Exception as e:
         print(f"Lỗi: {e}")
         return False
+
+def extract_subtitles(srt_content):
+    # Định dạng để phân tích nội dung phụ đề
+    subtitle_pattern = re.compile(
+        r'(\d+)\s*'              # Số thứ tự
+        r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})\s*' # Thời gian
+        r'(.*?)\s*(?=\d+\s*\d{2}:\d{2}|\Z)', # Văn bản
+        re.DOTALL
+    )
+    
+    subtitles = []
+    for match in subtitle_pattern.finditer(srt_content):
+        index = match.group(1)
+        start_time = match.group(2)
+        end_time = match.group(3)
+        text = match.group(4).strip().replace('\n', ' ')
+        subtitles.append({
+            'index': index,
+            'start_time': start_time,
+            'end_time': end_time,
+            'text': text
+        })
+    return subtitles
+
+def create_video_reup_url(data, task_id, worker_id):
+    video_id = data.get('video_id')
+    srt_path = f'media/{video_id}/output.srt'
+    create_or_reset_directory(f'media/{video_id}/video')
+    try:
+        with open(srt_path, 'r', encoding='utf-8') as file:
+            srt_content = file.read()
+        subtitles = extract_subtitles(srt_content)
+        list_video = []
+        processed_entries = 0
+        for i,iteam in enumerate(subtitles):
+            duration = convert_to_seconds(iteam['end_time']) - convert_to_seconds(iteam['start_time'])
+            out_file = f'media/{video_id}/video/{iteam["index"]}.mp4'
+            files = [f for f in os.listdir('video') if os.path.isfile(os.path.join('video', f))]
+            while True:
+                try:
+                    random_file = random.choice(files)
+                    video_path = os.path.join('video', random_file)
+                    if os.path.exists(video_path):
+                        video_duration = get_video_duration(video_path)
+                        print(f"Duration: {video_duration},{duration}")
+                        if random_file not in list_video and duration < video_duration:
+                            list_video.append(random_file)
+                            break
+                    else:
+                        print(f"File not found: {video_path}")
+                except Exception as e:
+                    print(f"Error processing file {random_file}: {e}")
+            cut_and_scale_video_random(video_path,out_file, duration, 1280, 720, 'video_screen')
+            processed_entries += 1
+            percent_complete = (processed_entries / len(subtitles)) * 100
+            update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", data['video_id'], task_id, worker_id)
+        return True
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return False
+
+def create_video_url_lines(data, task_id, worker_id):
+    for attempt in range(5):
+        if create_video_reup_url(data, task_id, worker_id):
+            print(f"Video creation succeeded on attempt {attempt + 1}")
+            return True
+        else:
+            print(f"Attempt {attempt + 1} failed, retrying...")
+            time.sleep(1)  # Chờ một chút trước khi thử lại
+    print("Max retries reached, video creation failed.")
+    return False
+
+def create_subtitles_reup_url(data, task_id, worker_id):
+    video_id = data.get('video_id')
+    subtitle_file = f'media/{video_id}/subtitles.ass'
+    color = data.get('font_color')
+    color_backrought = data.get('color_backrought')
+    color_border = data.get('stroke')
+    font_text = data.get("font_name")
+    font_size = data.get('font_size')
+    stroke_text = data.get('stroke_size')
+    text  = data.get('text_content')
+    srt_path = f'media/{video_id}/output.srt'
+
+    with open(subtitle_file, 'w', encoding='utf-8') as ass_file:
+        # Viết header cho file ASS
+        ass_file.write("[Script Info]\n")
+        ass_file.write("Title: Subtitles\n")
+        ass_file.write("ScriptType: v4.00+\n")
+        ass_file.write("WrapStyle: 0\n")
+        ass_file.write("ScaledBorderAndShadow: yes\n")
+        ass_file.write("YCbCr Matrix: TV.601\n")
+        ass_file.write(f"PlayResX: 1270\n")
+        ass_file.write(f"PlayResY: 720\n\n")
+        ass_file.write("[V4+ Styles]\n")
+        ass_file.write("Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n")
+        ass_file.write(f"Style: Default,{font_text},{font_size},{color},{color_backrought},&H00000000,{color_border},0,0,0,0,100,100,0,0,1,{stroke_text},0,2,10,10,10,0\n\n")
+
+        ass_file.write("[Events]\n")
+        ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")
+
+        start_time = timedelta(0)
+        with open(srt_path, 'r', encoding='utf-8') as file:
+            srt_content = file.read()
+        subtitles = extract_subtitles(srt_content)
+
+        for i,iteam in enumerate(subtitles):
+            ass_file.write(f"Dialogue: 0,{iteam['start_time'][:-1].replace(',', '.')},{iteam['end_time'][:-1].replace(',', '.')},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'],width=1280)}\n")
+        return True
+
+def create_video_reup_urls(data, task_id, worker_id):
+    video_id = data.get('video_id')
+    name_video = data.get('name_video')
+    # Tạo file subtitles.ass
+    ass_file_path = f'media/{video_id}/subtitles.ass'
+
+    # Tạo file input_files_video.txt
+    input_files_video_path = f'media/{video_id}/input_files_video.txt'
+    os.makedirs(os.path.dirname(input_files_video_path), exist_ok=True)
+
+    srt_path = f'media/{video_id}/output.srt'
+    with open(srt_path, 'r', encoding='utf-8') as file:
+        srt_content = file.read()
+    subtitles = extract_subtitles(srt_content)
+
+    with open(input_files_video_path, 'w') as file:
+        for item in subtitles:
+            file.write(f"file 'video/{item['index']}.mp4'\n")
+
+    audio_file = f'media/{video_id}/cache.wav'
+    fonts_dir = r'apps/render/font'
+
+    # Kiểm tra sự tồn tại của file audio
+    if not os.path.exists(audio_file):
+        print(f"Audio file not found: {audio_file}")
+        return False
+    
+    ffmpeg_command = [
+        'ffmpeg',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', input_files_video_path,
+        '-i', audio_file,
+        '-vf', f"subtitles={ass_file_path}:fontsdir={fonts_dir}",
+        '-c:v', 'libx264',
+        '-map', '0:v',
+        '-map', '1:a',
+        '-y',
+        f"media/{video_id}/{name_video}.mp4"
+    ]
+
+    try:
+        result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"ffmpeg failed with error: {e.stderr}")
+        return False
+    return True
+
 
 @shared_task(queue='check_worker_status')
 def check_worker_status():

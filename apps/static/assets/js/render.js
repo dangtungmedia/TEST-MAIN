@@ -1588,6 +1588,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     function updateVideoRender(data) {
+
+        const is_content = checkButtonStatus();
+        let show_tittel = "";
+
+        if (is_content === true) {
+            show_tittel = data.title;
+        } else {
+            // Sửa điều kiện kiểm tra
+            if (data.url_reupload === null || data.url_reupload === false && data.title !== "") {
+                show_tittel = data.title;
+            } else {
+                show_tittel = data.url_video_youtube;
+            }
+        }
         var ID_VIDEOS = document.querySelectorAll('.align-middle');
         ID_VIDEOS.forEach(item => {
             if (item.getAttribute('data-id') == data.id) {
@@ -1601,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
                 var title = $('label.id-title-video[data-id="' + data.id + '"]');
-                title.text(data.title);
+                title.text(show_tittel);
 
                 var status = $('div.status-video[data-id="' + data.id + '"]');
                 status.text(data.status_video);

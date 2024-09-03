@@ -216,13 +216,12 @@ class RenderConsumer(AsyncWebsocketConsumer):
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
         
-        if "Render Lỗi" in video.status_video:
+        elif "Render Lỗi" in video.status_video:
             try:
                 if video.folder_id.is_content:
                     task = render_video.apply_async(args=[data])
                 else:
                     task = render_video_reupload.apply_async(args=[data])
-
                 video.task_id = task.id
                 video.status_video = "Đang chờ render : Render Lại"
                 video.save()
