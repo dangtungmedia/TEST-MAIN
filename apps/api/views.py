@@ -133,7 +133,7 @@ class ApiApp(APIView):
                 video.description = description
                 video.url_thumbnail = url_thumbnail
                 video.save()
-                return Response({"message": "Video updated successfully"})
+                return Response({"message": "Video updated successfully"}, status=200)
             except VideoRender.DoesNotExist:
                 return Response({"error": "Video not found"}, status=404)
 

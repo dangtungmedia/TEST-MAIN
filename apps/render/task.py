@@ -1381,19 +1381,12 @@ def update_info_video(data, task_id, worker_id):
     video_url  = data.get('url_video_youtube')
 
     yt = YouTube(video_url)
-    video_id = data.get('video_id')
 
-    # Lấy tiêu đề video
     title = yt.title
-    status_video = "Đang Render : lấy thông tin video render"
-
-    # Lấy URL thumbnail của video
     thumbnail_url = yt.thumbnail_url
 
-   
+
     video_id = data.get('video_id')
-    name_video = data.get('name_video')
-    video_path = f'media/{video_id}/{name_video}.mp4'
     url = f'{SERVER}/api/'
     update_status_video(f"Đang Render : Đang lấy thông tin video", video_id, task_id, worker_id)
     
