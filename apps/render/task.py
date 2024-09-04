@@ -54,6 +54,9 @@ from celery import shared_task, signals
 import whisper
 import re
 from yt_dlp import YoutubeDL
+from pytube import YouTube
+
+import librosa
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
 SERVER='http://daphne:5504'
@@ -154,13 +157,19 @@ def render_video_reupload(self, data):
     worker_id = render_video.request.hostname 
     video_id = data.get('video_id')
     update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
+    
+    success = update_info_video(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể cập nhật thông tin video", data['video_id'], task_id, worker_id)
+        return
+    update_status_video("Đang Render : Cập nhật thông tin video thành công", data['video_id'], task_id, worker_id)
+    
+    
     success = create_or_reset_directory(f'media/{video_id}')
-   
     if not success:
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
         return
-    
     success = download_image(data, task_id, worker_id)
 
     if not success:
@@ -205,7 +214,12 @@ def render_video_reupload(self, data):
         return
     update_status_video("Render Lỗi : Tạo thành công video", data['video_id'], task_id, worker_id)
 
-
+    success = upload_video(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
+        return
+    update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
+    shutil.rmtree(f'media/{video_id}')
 
 def upload_video(data, task_id, worker_id):
     try:
@@ -1006,6 +1020,14 @@ def download_audio_reup(data, task_id, worker_id):
         ydl.download([url])
     return True
 
+def format_timestamp(seconds):
+    """Chuyển đổi thời gian từ giây thành định dạng SRT (hh:mm:ss,ms)"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds - int(seconds)) * 1000)
+    return f"{hours:02}:{minutes:02}:{secs:02},{millis:03}"
+
 def get_sub_audio(data, task_id, worker_id):
     video_id = data.get('video_id')
     audio_file = f'media/{video_id}/cache.wav'
@@ -1016,38 +1038,64 @@ def get_sub_audio(data, task_id, worker_id):
     # Giải mã âm thanh và trích xuất phụ đề
     result = model.transcribe(audio_file)
 
+    # Biến lưu trữ các đoạn phụ đề đã kết hợp
+    combined_segments = []
+    current_segment = None
+
+    # Các dấu chấm kết thúc câu trong tiếng Anh và tiếng Nhật
+    sentence_endings = ('.', '。', '．')
+
+    for i, segment in enumerate(result['segments']):
+        start = segment['start']
+        end = segment['end']
+        text = segment['text'].strip()
+
+        if current_segment is None:
+            # Khởi tạo đoạn phụ đề mới
+            current_segment = {
+                'start': start,
+                'end': end,
+                'text': text
+            }
+        else:
+            if current_segment['text'].endswith(sentence_endings):
+                # Nếu đoạn trước kết thúc bằng dấu chấm, thêm đoạn hiện tại vào danh sách
+                combined_segments.append(current_segment)
+                current_segment = {
+                    'start': start,
+                    'end': end,
+                    'text': text
+                }
+            else:
+                # Nếu đoạn trước không kết thúc bằng dấu chấm, gộp đoạn hiện tại với đoạn trước
+                current_segment['end'] = end
+                current_segment['text'] += ' ' + text
+
+    # Thêm đoạn cuối cùng vào danh sách nếu có
+    if current_segment:
+        combined_segments.append(current_segment)
+
+    # Đặt thời gian kết thúc của đoạn trước bằng thời gian bắt đầu của đoạn sau
+    for i in range(len(combined_segments) - 1):
+        combined_segments[i]['end'] = combined_segments[i + 1]['start']
+
+    # Lấy thời gian kết thúc của file âm thanh
+    audio_duration = librosa.get_duration(filename=audio_file)
+
+    # Cập nhật thời gian kết thúc của đoạn phụ đề cuối cùng bằng thời gian kết thúc của file âm thanh
+    combined_segments[-1]['end'] = audio_duration
+
     # Lưu kết quả dưới dạng file .srt
     with open(output_srt, "w") as f:
-        combined_text = ""
-        combined_start = None
-
-        for i, segment in enumerate(result['segments']):
+        for i, segment in enumerate(combined_segments):
             start = segment['start']
             end = segment['end']
             text = segment['text'].strip()
-            
-            # Kiểm tra nếu dòng mới bắt đầu
-            if combined_start is None:
-                combined_start = start
-            
-            # Kết hợp nội dung của các đoạn
-            if combined_text:
-                combined_text += " "
-            combined_text += text
-            
-            # Nếu kết thúc đoạn hoặc không còn đoạn nào khác
-            if i == len(result['segments']) - 1 or re.search(r'[.?!]$', text):
-                start_time = f"{int(combined_start//3600):02}:{int((combined_start%3600)//60):02}:{int(combined_start%60):02},{int((combined_start%1)*1000):03}"
-                end_time = f"{int(end//3600):02}:{int((end%3600)//60):02}:{int(end%60):02},{int((end%1)*1000):03}"
 
-                # Ghi vào file .srt
-                f.write(f"{i + 1}\n")
-                f.write(f"{start_time} --> {end_time}\n")
-                f.write(f"{combined_text}\n\n")
-                
-                # Reset lại cho đoạn tiếp theo
-                combined_text = ""
-                combined_start = None
+            # Ghi thông tin vào file SRT
+            f.write(f"{i + 1}\n")  # Số thứ tự đoạn phụ đề
+            f.write(f"{format_timestamp(start)} --> {format_timestamp(end)}\n")  # Thời gian bắt đầu và kết thúc
+            f.write(f"{text}\n")  # Nội dung phụ đề
     return True
 
 async def text_to_speech(text, voice, output_file):
@@ -1326,6 +1374,46 @@ def create_video_reup_urls(data, task_id, worker_id):
         print(f"ffmpeg failed with error: {e.stderr}")
         return False
     return True
+
+
+def update_info_video(data, task_id, worker_id):
+
+    video_url  = data.get('url_video_youtube')
+
+    yt = YouTube(video_url)
+    video_id = data.get('video_id')
+
+    # Lấy tiêu đề video
+    title = yt.title
+    status_video = "Đang Render : lấy thông tin video render"
+
+    # Lấy URL thumbnail của video
+    thumbnail_url = yt.thumbnail_url
+
+   
+    video_id = data.get('video_id')
+    name_video = data.get('name_video')
+    video_path = f'media/{video_id}/{name_video}.mp4'
+    url = f'{SERVER}/api/'
+    update_status_video(f"Đang Render : Đang lấy thông tin video", video_id, task_id, worker_id)
+    
+    payload = {
+        'video_id': str(video_id),
+        'action': 'update-info-video',
+        'secret_key': SECRET_KEY,
+        'title': title,
+        'thumbnail_url': thumbnail_url,
+    }
+
+    response = requests.post(url, json=payload)
+
+    if response.status_code == 200:
+        print("Thông tin video đã được cập nhật thành công.")
+        return True
+    else:
+        print(f"Lỗi cập nhật thông tin video: {response.status_code}")
+        return False
+
 
 
 @shared_task(queue='check_worker_status')
