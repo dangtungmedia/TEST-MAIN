@@ -1385,6 +1385,11 @@ def update_info_video(data, task_id, worker_id):
     title = yt.title
     thumbnail_url = yt.thumbnail_url
 
+    print("xxxxxx")
+
+    print(thumbnail_url)
+    print("xxxxxx")
+
 
     video_id = data.get('video_id')
     url = f'{SERVER}/api/'
