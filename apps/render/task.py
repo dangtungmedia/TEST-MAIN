@@ -1385,12 +1385,6 @@ def update_info_video(data, task_id, worker_id):
     title = yt.title
     thumbnail_url = yt.thumbnail_url
 
-    print("xxxxxx")
-
-    print(thumbnail_url)
-    print("xxxxxx")
-
-
     video_id = data.get('video_id')
     url = f'{SERVER}/api/'
     update_status_video(f"Đang Render : Đang lấy thông tin video", video_id, task_id, worker_id)
@@ -1400,7 +1394,7 @@ def update_info_video(data, task_id, worker_id):
         'action': 'update-info-video',
         'secret_key': SECRET_KEY,
         'title': title,
-        'thumbnail_url': thumbnail_url,
+        'thumbnail_url': thumbnail_url,  # Tên trường khác
     }
 
     response = requests.post(url, json=payload)

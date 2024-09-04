@@ -126,11 +126,10 @@ class ApiApp(APIView):
             video_id = request.data.get('video_id')
             title = request.data.get('title')
             description = request.data.get('title')
-            url_thumbnail = request.data.get('url_thumbnail')
+            url_thumbnail = request.data.get('thumbnail_url')
 
             print("xxxxxx")
             print(url_thumbnail)
-            print("xxxxxx")
             try:
                 video = VideoRender.objects.get(id=video_id)
                 video.title = title
