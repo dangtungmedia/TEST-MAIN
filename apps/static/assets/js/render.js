@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else if (data.message === 'btn-play-video') {
                     console.log('Play video:', data);
                     let videoUrl = data.data; // URL của video
-                    let fullUrl = window.location.protocol + '//' + window.location.host + '/' + videoUrl; // Tạo URL đầy đủ
+                    let fullUrl = window.location.protocol + '//' + window.location.host + videoUrl; // Tạo URL đầy đủ
                     console.log('Full URL:', fullUrl); // Sử dụng console.log để in ra URL đầy đủ
                     window.open(fullUrl, '_blank'); // Mở URL trong tab mới
                 }
