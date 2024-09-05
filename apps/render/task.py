@@ -1406,8 +1406,6 @@ def update_info_video(data, task_id, worker_id):
         print(f"Lỗi cập nhật thông tin video: {response.status_code}")
         return False
 
-
-
 @shared_task(queue='check_worker_status')
 def check_worker_status():
     inspector = Celery('core').control.inspect()

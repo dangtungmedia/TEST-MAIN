@@ -114,9 +114,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 } else if (data.message === 'btn-play-video') {
                     console.log('Play video:', data);
-                    let iframe = document.getElementById('videoIframe');
-                    let baseUrl = window.location.origin;
-                    iframe.src = data.data
+                    //let iframe = document.getElementById('videoIframe');
+                    //iframe.src = data.data
+                    let fullUrl = window.location.protocol + '//' + window.location.host + videoUrl; // Tạo URL đầy đủ
+                    window.open(fullUrl, '_blank'); // Mở URL trong tab mới
                 }
 
             } catch (error) {
@@ -222,7 +223,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <td class="col">
                 <label class="col-form-label id-title-video" data-id="${video.id}">${show_tittel}</label>
                 <div>
-                    <button class="btn btn-outline-primary btn-play-video" style="background-color: #38b2ac;" type="button" data-id="${video.id}" data-url="${video.url_video}" data-coreui-toggle="modal" data-coreui-target="#modal-watch-video">
+                    <button class="btn btn-outline-primary btn-play-video" style="background-color: #38b2ac;" type="button" data-id="${video.id}" data-url="${video.url_video}">
                         <svg class="icon">
                             <use xlink:href="/static/assets/vendors/@coreui/icons/svg/free.svg#cil-airplay"></use>
                         </svg>
