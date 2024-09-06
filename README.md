@@ -301,6 +301,7 @@ sudo docker start $(sudo docker ps -a -q)
 
 nvidia-settings
 
+sudo aa-remove-unknown
 
 
 # buil chạy trên win cho nhanh 
