@@ -1035,16 +1035,18 @@ def get_sub_audio(data, task_id, worker_id):
     update_status_video("Đang Render : Đang lấy phụ đề video", data['video_id'], task_id, worker_id)
     output_srt = f"media/{video_id}/output.srt" 
     # Tạo thư mục nếu chưa tồn tại
+
     # Giải mã âm thanh và trích xuất phụ đề
     result = model.transcribe(audio_file)
-
+    detected_language = result['language']
     # Biến lưu trữ các đoạn phụ đề đã kết hợp
     combined_segments = []
     current_segment = None
 
     # Các dấu chấm kết thúc câu trong tiếng Anh và tiếng Nhật
-    sentence_endings = ('.', '。', '．')
+    sentence_endings = ('.', '．')
 
+    # Xử lý các đoạn phụ đề
     for i, segment in enumerate(result['segments']):
         start = segment['start']
         end = segment['end']
@@ -1058,18 +1060,32 @@ def get_sub_audio(data, task_id, worker_id):
                 'text': text
             }
         else:
-            if current_segment['text'].endswith(sentence_endings):
-                # Nếu đoạn trước kết thúc bằng dấu chấm, thêm đoạn hiện tại vào danh sách
+            print(f"Đoạn {i + 1}: {text}")
+            # Nếu là tiếng Nhật, không kiểm tra dấu câu
+            if detected_language == 'ja':
+                print("Không kiểm tra dấu câu cho tiếng Nhật")
+                current_segment['end'] = end
+                current_segment['text'] += ' ' + text
                 combined_segments.append(current_segment)
                 current_segment = {
                     'start': start,
                     'end': end,
                     'text': text
                 }
+
             else:
-                # Nếu đoạn trước không kết thúc bằng dấu chấm, gộp đoạn hiện tại với đoạn trước
-                current_segment['end'] = end
-                current_segment['text'] += ' ' + text
+                if current_segment['text'].endswith(sentence_endings):
+                    # Nếu đoạn trước kết thúc bằng dấu chấm, thêm đoạn hiện tại vào danh sách
+                    combined_segments.append(current_segment)
+                    current_segment = {
+                        'start': start,
+                        'end': end,
+                        'text': text
+                    }
+                else:
+                    # Nếu đoạn trước không kết thúc bằng dấu chấm, gộp đoạn hiện tại với đoạn trước
+                    current_segment['end'] = end
+                    current_segment['text'] += ' ' + text
 
     # Thêm đoạn cuối cùng vào danh sách nếu có
     if current_segment:
@@ -1095,7 +1111,7 @@ def get_sub_audio(data, task_id, worker_id):
             # Ghi thông tin vào file SRT
             f.write(f"{i + 1}\n")  # Số thứ tự đoạn phụ đề
             f.write(f"{format_timestamp(start)} --> {format_timestamp(end)}\n")  # Thời gian bắt đầu và kết thúc
-            f.write(f"{text}\n")  # Nội dung phụ đề
+            f.write(f"{text}\n\n")  # Nội dung phụ đề
     return True
 
 async def text_to_speech(text, voice, output_file):
