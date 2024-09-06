@@ -39,6 +39,7 @@ services:
       - db_network
   celery:
     container_name: celery_worker_tung
+    restart: always
     build:
       context: .
     volumes:
@@ -50,6 +51,7 @@ services:
 
   flower:
     container_name: flower
+    restart: always
     build:
       context: .
     volumes:

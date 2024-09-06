@@ -108,6 +108,7 @@ def render_video(self, data):
         update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
 
     #nối giọng đọc và chèn nhạc nền
+
     success = merge_audio_video(data, task_id, worker_id)
     if not success:
         shutil.rmtree(f'media/{video_id}')
@@ -188,6 +189,7 @@ def render_video_reupload(self, data):
         update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
     
     success = get_sub_audio(data, task_id, worker_id)
+    update_status_video("Đang Render : Đang chuyển audio thành văn bản", data['video_id'], task_id, worker_id)
     if not success:
         update_status_video("Render Lỗi : Không thể lấy phụ đề video", data['video_id'], task_id, worker_id)
         return
@@ -213,7 +215,7 @@ def render_video_reupload(self, data):
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Lỗi tạo file video", data['video_id'], task_id, worker_id)
         return
-    update_status_video("Render Lỗi : Tạo thành công video", data['video_id'], task_id, worker_id)
+    update_status_video("Đang Render : Tạo thành công video", data['video_id'], task_id, worker_id)
 
     success = upload_video(data, task_id, worker_id)
     if not success:

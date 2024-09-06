@@ -1,21 +1,21 @@
 version: '3.8'
 services:
-  nginx:
-    container_name: newspro
-    restart: always
-    image: "nginx:latest"
-    ports:
-      - "5085:5085" # Mapping port 5085 on host to port 80 in the container
-    volumes:
-      - ./nginx:/etc/nginx/conf.d
+  # nginx:
+  #   container_name: newspro
+  #   restart: always
+  #   image: "nginx:latest"
+  #   ports:
+  #     - "5085:5085" # Mapping port 5085 on host to port 80 in the container
+  #   volumes:
+  #     - ./nginx:/etc/nginx/conf.d
 
-  redis2:
-    container_name: redis2
-    restart: always
-    image: "redis:latest"
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+  # redis2:
+  #   container_name: redis2
+  #   restart: always
+  #   image: "redis:latest"
+  #   ports:
+  #     - "6379:6379"
+  #   command: redis-server --appendonly yes
 
   celery:
     container_name: celery_worker_tung
@@ -24,8 +24,8 @@ services:
     volumes:
       - .:/app
     command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=1
-    depends_on:
-      - redis2
+    # depends_on:
+      # - redis2
 
   daphne:
     container_name: daphne
@@ -34,19 +34,19 @@ services:
     image: dangtung
     volumes:
       - .:/app
-    depends_on:
-      - redis2
+    # depends_on:
+    #   - redis2
     expose:
       - 5504
-  flower:
-    container_name: flower
-    image: dangtung
-    volumes:
-      - .:/app
-    restart: always
-    ports:
-      - "5555:5555"
-    command: celery -A core flower
+  # flower:
+  #   container_name: flower
+  #   image: dangtung
+  #   volumes:
+  #     - .:/app
+  #   restart: always
+  #   ports:
+  #     - "5555:5555"
+  #   command: celery -A core flower
 
 volumes:
   media_volume:
