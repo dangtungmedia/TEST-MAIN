@@ -10,12 +10,11 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById("btn-render-all").style.display = "none";
     document.getElementById("btn-render-erron").style.display = "none";
     document.getElementById("btn-upload-erron").style.display = "none";
+    document.getElementById("btn-delete-success").style.display = "none";
 
     document.getElementById("btn-add-video").style.display = "block";
 
     if (successOutlined) {
-        
-
         successOutlined.addEventListener('change', function () {
             if (this.checked) {
                 GetFolderSelected(true);
@@ -106,12 +105,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         alert(data.message);
                     }
                 } else if (data.message === 'btn-delete') {
-                    if (data.data.success === true) {
-                        var id = data.data.id_video;
-                        $('tr.align-middle[data-id="' + id + '"]').remove();
-                    } else {
-                        alert(data.data.message);
+                    const id = data.data.id;
+                    const element = $('tr.align-middle[data-id="' + id + '"]');
+                    if (element.length) {
+                        element.remove();
                     }
+                   
                 } else if (data.message === 'btn-play-video') {
                     console.log('Play video:', data);
                     let videoUrl = data.data; // URL của video
@@ -165,7 +164,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return false;
         }
     }
-
 
     // Hàm để lấy SVG logo dựa trên trạng thái
     function show_video(video) {
@@ -1378,6 +1376,43 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 
+    $(document).on('click', '#render-all', function () {
+        const renderMessage = JSON.stringify({
+
+            type: 'render-all',
+            "channel_name": $('#channel_name').val(),
+        });
+        sendMessage(renderMessage);
+    });
+
+    $(document).on('click', '#render-erron', function () {
+        const renderMessage = JSON.stringify({
+
+            type: 'render-erron',
+            "channel_name": $('#channel_name').val(),
+        });
+        sendMessage(renderMessage);
+    });
+
+    $(document).on('click', '#upload-erron', function () {
+        const renderMessage = JSON.stringify({
+            type: 'upload-erron',
+            "channel_name": $('#channel_name').val(),
+        });
+        sendMessage(renderMessage);
+    });
+
+    $(document).on('click', '#delete-all-success', function () {
+        const renderMessage = JSON.stringify({
+            type: 'delete-all-success',
+            "channel_name": $('#channel_name').val(),
+        });
+        sendMessage(renderMessage);
+    });
+
+            
+
+
     $("#create_videos_news").click(async function () {
         const countVideos = parseInt($('#count-video').val());
         let dateValue = $('#date-Input').val();
@@ -1703,6 +1738,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById("btn-render-all").style.display = "none";
             document.getElementById("btn-render-erron").style.display = "none";
             document.getElementById("btn-upload-erron").style.display = "none";
+            document.getElementById("btn-delete-success").style.display = "none";
             document.getElementById("btn-add-video").style.display = "block";
         } else {
             // Nếu is_content là false, ẩn nút
@@ -1712,6 +1748,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById("btn-render-all").style.display = "inline-block";
             document.getElementById("btn-render-erron").style.display = "inline-block";
             document.getElementById("btn-upload-erron").style.display = "inline-block";
+            document.getElementById("btn-delete-success").style.display = "inline-block";
             document.getElementById("btn-add-video").style.display = "None";
         }
 
@@ -1857,7 +1894,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var textarea = document.getElementById('input-url-videos');
         textarea.value = '';
     });
-
     var textarea = document.getElementById('input-url-videos');
     var urlCountSpan = document.getElementById('url-count');
 
@@ -1884,7 +1920,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Gọi hàm updateUrlCount mỗi khi người dùng thay đổi nội dung trong textarea
     textarea.addEventListener('input', updateUrlCount);
-
     // Khởi tạo giá trị ban đầu khi trang được tải
     updateUrlCount();
 });

@@ -62,7 +62,6 @@ services:
     networks:
       - web_network
       - db_network
-
 volumes:
   media_volume:
     driver: local

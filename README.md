@@ -307,8 +307,6 @@ sudo aa-remove-unknown
 # buil chạy trên win cho nhanh 
 docker-compose -f docker-upload-pc.yml up --build
 
-
-
 git reflog
 
 
