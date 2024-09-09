@@ -21,6 +21,7 @@ import random
 import string,requests
 import logging
 from pytube import YouTube
+import os
 
 
 from apps.home.models import Voice_language, syle_voice
@@ -43,9 +44,30 @@ def notify_video_change(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=VideoRender)
 def notify_video_delete(sender, instance, **kwargs):
-    channel_layer = get_channel_layer()
-    default_storage.delete(f"data/{instance.id}")
-    
+    video_path = f"data/{instance.id}/"
+
+    if default_storage.exists(video_path):
+        try:
+            # Liệt kê tất cả các tệp và thư mục con
+            dirs, files = default_storage.listdir(video_path)
+            
+            # Đệ quy xóa các thư mục con
+            for directory in dirs:
+                subdir_path = os.path.join(video_path, directory)
+                delete_recursive(subdir_path)  # Hàm xóa đệ quy (được định nghĩa bên dưới)
+
+            # Xóa tất cả các tệp trong thư mục
+            for file in files:
+                file_path = os.path.join(video_path, file)
+                default_storage.delete(file_path)
+            
+            # Sau khi xóa hết tệp và thư mục con, xóa thư mục hiện tại
+            default_storage.delete(video_path)
+
+        except Exception as e:
+            print(f"Error deleting files for video {instance.id}: {e}")
+
+    # Thông báo qua WebSocket
     async_to_sync(channel_layer.group_send)(
         "public",
         {
@@ -56,6 +78,22 @@ def notify_video_delete(sender, instance, **kwargs):
             }
         }
     )
+
+def delete_recursive(path):
+    """Hàm đệ quy để xóa các thư mục con."""
+    if default_storage.exists(path):
+        dirs, files = default_storage.listdir(path)
+        
+        # Đệ quy xóa các thư mục con trước
+        for directory in dirs:
+            delete_recursive(os.path.join(path, directory))
+
+        # Xóa các tệp trong thư mục hiện tại
+        for file in files:
+            default_storage.delete(os.path.join(path, file))
+        
+        # Xóa thư mục sau khi các tệp và thư mục con đã bị xóa
+        default_storage.delete(path)
     
 
 @receiver(post_save, sender=Count_Use_data)
@@ -169,6 +207,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
 
         elif message_type == 'btn-delete':
            await self.delete_video(data)
+
             
 
         elif message_type == 'get-text-video':
