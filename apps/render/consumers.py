@@ -44,6 +44,8 @@ def notify_video_change(sender, instance, **kwargs):
 
 @receiver(post_delete, sender=VideoRender)
 def notify_video_delete(sender, instance, **kwargs):
+
+    channel_layer = get_channel_layer()
     video_path = f"data/{instance.id}/"
 
     if default_storage.exists(video_path):
