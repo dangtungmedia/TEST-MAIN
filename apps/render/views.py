@@ -53,8 +53,6 @@ from apps.home.serializers import ProfileSerializer
 from itertools import chain
 from django.db.models import Q
 
-
-
 class ProfileChannelViewSet(viewsets.ModelViewSet):
     queryset = ProfileChannel.objects.all()
     serializer_class = ProfileSerializer
@@ -270,7 +268,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
             image = video.url_thumbnail
             file_name = self.get_filename_from_url(image)
             default_storage.delete(f"data/{video.id}/image/{file_name}")
-            print("xong thumnail")
         filename = thumnail.name.strip().replace(" ", "_")
         file_name = default_storage.save(f"data/{video.id}/thumnail/{filename}", thumnail)
         file_url = default_storage.url(file_name)
@@ -394,7 +391,6 @@ class VideoRenderViewSet(viewsets.ModelViewSet):
 class index(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'render/index.html'
-
     def get(self, request):
         content = True
         if request.user.is_superuser:
@@ -411,11 +407,6 @@ class index(LoginRequiredMixin, TemplateView):
             'current_time': current_time,
             'content': content
         }
-       
-        VideoRender.objects.all().delete()
-        Count_Use_data.objects.all().delete()
-        DataTextVideo.objects.all().delete()
-
         return render(request, self.template_name,form)
     
     def get_filename_from_url(self,url):
@@ -569,6 +560,7 @@ class VideoRenderList(LoginRequiredMixin, TemplateView):
                 'edit_title': edit_title,
                 'edit_thumnail': edit_thumnail
             })
+      
         return render(request, self.template_name, {'data': data, 'current_date_old': date, 'current_date_new': date})
     
     def post(self, request):
