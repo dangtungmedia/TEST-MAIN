@@ -121,5 +121,24 @@ class ApiApp(APIView):
             audio_file = io.BytesIO(response_synthesis.content)
             return send_file(audio_file, mimetype='audio/wav', as_attachment=True, download_name='output_audio.wav')
 
+
+        elif action == "update-info-video":
+            video_id = request.data.get('video_id')
+            title = request.data.get('title')
+            description = request.data.get('title')
+            url_thumbnail = request.data.get('thumbnail_url')
+
+            print("xxxxxx")
+            print(url_thumbnail)
+            try:
+                video = VideoRender.objects.get(id=video_id)
+                video.title = title
+                video.description = description
+                video.url_thumbnail = url_thumbnail
+                video.save()
+                return Response({"message": "Video updated successfully"}, status=200)
+            except VideoRender.DoesNotExist:
+                return Response({"error": "Video not found"}, status=404)
+
         return Response({"message": "Invalid action"}, status=400)
 

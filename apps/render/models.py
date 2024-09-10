@@ -8,6 +8,7 @@ class VideoRender(models.Model):
     profile_id = models.ForeignKey(ProfileChannel, on_delete=models.CASCADE)
     name_video = models.TextField(max_length=100, blank=True)
     url_video_youtube = models.TextField(max_length=100, blank=True)
+    url_reupload = models.BooleanField(default=False,blank=True)
     text_content = models.TextField(default="",blank=True)
     text_content_2 = models.TextField(default="",blank=True)
     task_id = models.CharField(max_length=255, blank=True, null=True)
@@ -56,8 +57,6 @@ class VideoRender(models.Model):
     
     timenow = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-
     def __str__(self):
         return self.name_video
     

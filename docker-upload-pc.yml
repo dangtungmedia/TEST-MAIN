@@ -14,7 +14,7 @@ services:
     restart: always
     image: "redis:latest"
     ports:
-      - "6379:6379"
+      - "6530:6379"
     command: redis-server --appendonly yes
 
   celery:
@@ -23,7 +23,7 @@ services:
     restart: always
     volumes:
       - .:/app
-    command: celery -A core worker -l INFO --hostname=worker1@%h --concurrency=1
+    command: celery -A core worker -l INFO --hostname=worker2@%h --concurrency=1
     depends_on:
       - redis2
 
@@ -38,22 +38,6 @@ services:
       - redis2
     expose:
       - 5504
-
-  voicevox_engine:
-    container_name: voicevox_engine
-    image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
-    restart: always
-    ports:
-      - '50021:50021'
-    tty: true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
-
   flower:
     container_name: flower
     image: dangtung

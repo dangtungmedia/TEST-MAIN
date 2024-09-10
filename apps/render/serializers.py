@@ -20,7 +20,13 @@ class FolderSerializer(ModelSerializer):
         model = Folder
         fields = ['id','folder_name']
 
+class ProfileChannelSerializer(ModelSerializer):
+    class Meta:
+        model = ProfileChannel
+        fields = '__all__'
+
 class RenderSerializer(ModelSerializer):
+    profile_id = ProfileChannelSerializer()
     class Meta:
         model = VideoRender
         fields = '__all__'

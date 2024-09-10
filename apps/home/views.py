@@ -90,8 +90,6 @@ class StyleVoiceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(channels, many=True)
         return Response(serializer.data)
 
-
-
 class IndexView(LoginRequiredMixin, TemplateView):
     login_url = '/login/'
     template_name = 'home/User-profile.html'

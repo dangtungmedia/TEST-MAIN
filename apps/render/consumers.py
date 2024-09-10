@@ -1,7 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from asgiref.sync import sync_to_async, async_to_sync
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from django.utils import timezone
@@ -10,7 +10,7 @@ from .serializers import RenderSerializer
 from apps.login.models import CustomUser
 from django.core.files.storage import default_storage
 
-from apps.render.task import render_video
+from apps.render.task import render_video,render_video_reupload
 from celery.result import AsyncResult
 from urllib.parse import urlparse, unquote
 from asgiref.sync import async_to_sync
@@ -21,6 +21,7 @@ import random
 import string,requests
 import logging
 from pytube import YouTube
+import os
 
 
 from apps.home.models import Voice_language, syle_voice
@@ -40,6 +41,62 @@ def notify_video_change(sender, instance, **kwargs):
             'data': data
         }
     )
+
+@receiver(post_delete, sender=VideoRender)
+def notify_video_delete(sender, instance, **kwargs):
+
+    channel_layer = get_channel_layer()
+    video_path = f"data/{instance.id}/"
+
+    if default_storage.exists(video_path):
+        try:
+            # Liệt kê tất cả các tệp và thư mục con
+            dirs, files = default_storage.listdir(video_path)
+            
+            # Đệ quy xóa các thư mục con
+            for directory in dirs:
+                subdir_path = os.path.join(video_path, directory)
+                delete_recursive(subdir_path)  # Hàm xóa đệ quy (được định nghĩa bên dưới)
+
+            # Xóa tất cả các tệp trong thư mục
+            for file in files:
+                file_path = os.path.join(video_path, file)
+                default_storage.delete(file_path)
+            
+            # Sau khi xóa hết tệp và thư mục con, xóa thư mục hiện tại
+            default_storage.delete(video_path)
+
+        except Exception as e:
+            print(f"Error deleting files for video {instance.id}: {e}")
+
+    # Thông báo qua WebSocket
+    async_to_sync(channel_layer.group_send)(
+        "public",
+        {
+            'type': 'chat_message',
+            'message': 'btn-delete',
+            'data': {
+                'id': instance.id
+            }
+        }
+    )
+
+def delete_recursive(path):
+    """Hàm đệ quy để xóa các thư mục con."""
+    if default_storage.exists(path):
+        dirs, files = default_storage.listdir(path)
+        
+        # Đệ quy xóa các thư mục con trước
+        for directory in dirs:
+            delete_recursive(os.path.join(path, directory))
+
+        # Xóa các tệp trong thư mục hiện tại
+        for file in files:
+            default_storage.delete(os.path.join(path, file))
+        
+        # Xóa thư mục sau khi các tệp và thư mục con đã bị xóa
+        default_storage.delete(path)
+    
 
 @receiver(post_save, sender=Count_Use_data)
 def notify_count_video(sender, instance, **kwargs):
@@ -151,13 +208,33 @@ class RenderConsumer(AsyncWebsocketConsumer):
 
 
         elif message_type == 'btn-delete':
-            data =  await self.delete_video(data)
-            default_storage.delete(f"data/{data['id_video']}")
-            await self.send(text_data=json.dumps({'message': 'btn-delete', 'data': data}))
+           await self.delete_video(data)
+
+            
 
         elif message_type == 'get-text-video':
             text  = await self.get_text_video(data)
             await self.send(text_data=json.dumps({'message': 'get-text-video', 'data': text}))
+
+        elif message_type == "render-all" :
+            channel_name = data.get('channel_name', None)
+            if channel_name:
+                await self.render_all_videos(channel_name)
+
+        elif message_type == "render-erron":
+            channel_name = data.get('channel_name', None)
+            if channel_name:
+                await self.render_erron(channel_name)
+    
+        elif message_type == "upload-erron":
+            channel_name = data.get('channel_name', None)
+            if channel_name:
+                await self.upload_erron(channel_name)
+
+        elif message_type == "delete-all-success":
+            channel_name = data.get('channel_name', None)
+            if channel_name:
+                await self.delete_all_reup(channel_name)
 
     async def chat_message(self, event):
         message = event['message']
@@ -171,6 +248,9 @@ class RenderConsumer(AsyncWebsocketConsumer):
     async def render_status(self, event):
         await self.update_status(event['data'])
         
+
+
+
     @sync_to_async
     def check_if_staff(self, user_id):
         try:
@@ -186,6 +266,56 @@ class RenderConsumer(AsyncWebsocketConsumer):
             return user.username
         except CustomUser.DoesNotExist:
             return None
+        
+    @sync_to_async
+    def delete_all_reup(self, channel_name):
+        render_all_videos = VideoRender.objects.filter(profile_id=channel_name, status_video__icontains='Upload VPS Thành Công')
+        for video in render_all_videos:
+            video.delete()
+
+    @sync_to_async
+    def upload_erron(self, channel_name):
+        render_all_videos = VideoRender.objects.filter(profile_id=channel_name, status_video__icontains='Upload VPS Thất Bại')
+        for video in render_all_videos:
+            data = self.get_data_video(video.id)
+            if video.folder_id.is_content:
+                task = render_video.apply_async(args=[data])
+            else:
+                task = render_video_reupload.apply_async(args=[data])
+            video.task_id = task.id
+            video.status_video = "Render Thành Công : Đang Chờ Upload lại lên Kênh"
+            video.save()
+
+
+    @sync_to_async
+    def render_erron(self, channel_name):
+        render_all_videos = VideoRender.objects.filter(profile_id=channel_name, status_video__icontains='Render Lỗi')
+        for video in render_all_videos:
+            data = self.get_data_video(video.id)
+            if video.folder_id.is_content:
+                task = render_video.apply_async(args=[data])
+            else:
+                task = render_video_reupload.apply_async(args=[data])
+            video.task_id = task.id
+            video.status_video = "Đang chờ render : Đợi đến lượt render lại"
+            video.save()
+
+
+
+    @sync_to_async
+    def render_all_videos(self, channel_name):
+        render_all_videos = VideoRender.objects.filter(profile_id=channel_name, status_video='render')
+        for video in render_all_videos:
+            data = self.get_data_video(video.id)
+            if video.folder_id.is_content:
+                    task = render_video.apply_async(args=[data])
+            else:
+                task = render_video_reupload.apply_async(args=[data])
+            video.task_id = task.id
+            video.status_video = "Đang chờ render : Đợi đến lượt render"
+            video.save()
+
+
 
     @sync_to_async
     def render_video(self, id_video):
@@ -193,10 +323,14 @@ class RenderConsumer(AsyncWebsocketConsumer):
         data = self.get_data_video(video.id)
         if video.status_video == "render":
             try:
-                task = render_video.apply_async(args=[data])
+                if video.folder_id.is_content:
+                    task = render_video.apply_async(args=[data])
+                else:
+                    task = render_video_reupload.apply_async(args=[data])
                 video.task_id = task.id
                 video.status_video = "Đang chờ render : Đợi đến lượt render"
                 video.save()
+
             except Exception as e:
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
@@ -211,19 +345,27 @@ class RenderConsumer(AsyncWebsocketConsumer):
             except Exception as e:
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
+        
         elif "Render Lỗi" in video.status_video:
             try:
-                task = render_video.apply_async(args=[data])
+                if video.folder_id.is_content:
+                    task = render_video.apply_async(args=[data])
+                else:
+                    task = render_video_reupload.apply_async(args=[data])
                 video.task_id = task.id
                 video.status_video = "Đang chờ render : Render Lại"
                 video.save()
+
             except Exception as e:
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
 
         elif "Render Thành Công" in video.status_video or "Đang Upload Lên VPS" in video.status_video or "Upload VPS Thành Công" in video.status_video or "Upload VPS Thất Bại" in video.status_video:
             try:
-                task = render_video.apply_async(args=[data])
+                if video.folder_id.is_content:
+                    task = render_video.apply_async(args=[data])
+                else:
+                    task = render_video_reupload.apply_async(args=[data])
                 video.task_id = task.id
                 video.status_video = "Đang chờ render : Render Lại"
                 folder_path = f"data/{video.id}"
@@ -235,7 +377,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
                 video.status_video = "Render Lỗi : Dừng Render"
                 video.save()
 
-           
     @sync_to_async
     def update_status(self, data):
         video = VideoRender.objects.get(id=data['video_id'])
@@ -422,8 +563,12 @@ class RenderConsumer(AsyncWebsocketConsumer):
     def get_infor_render(self,id_video):
         video = VideoRender.objects.get(id=id_video)
         data  = {
+            "is_content": video.folder_id.is_content,
+            'url_reupload': video.url_reupload,
+            "url_video_youtube": video.url_video_youtube,
             'video_id': video.id,
             'name_video': video.name_video,
+            'text': video.text_content,
             'text_content': video.text_content_2,
             'images': video.video_image,
             'font_name': video.font_text.font_name,
