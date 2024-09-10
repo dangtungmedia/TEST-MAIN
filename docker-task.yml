@@ -1,0 +1,20 @@
+services:
+  celery_huan:
+    container_name: celery_huan
+    build:
+      context: .
+    volumes:
+      - .:/app
+    command: celery -A core worker -l INFO --hostname=worker1_huan@%h --concurrency=5
+    networks:
+      - web_network
+      - db_network
+volumes:
+  media_volume:
+    driver: local
+
+networks:
+  db_network:
+    driver: bridge
+  web_network:
+    driver: bridge

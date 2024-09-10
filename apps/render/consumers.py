@@ -300,8 +300,6 @@ class RenderConsumer(AsyncWebsocketConsumer):
             video.status_video = "Đang chờ render : Đợi đến lượt render lại"
             video.save()
 
-
-
     @sync_to_async
     def render_all_videos(self, channel_name):
         render_all_videos = VideoRender.objects.filter(profile_id=channel_name, status_video='render')
