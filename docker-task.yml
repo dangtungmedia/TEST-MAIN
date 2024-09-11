@@ -1,14 +1,27 @@
+version: '3'
 services:
   celery_huan:
     container_name: celery_huan
     build:
       context: .
+    restart: always
     volumes:
       - .:/app
     command: celery -A core worker -l INFO --hostname=worker1_huan@%h --concurrency=5
     networks:
       - web_network
       - db_network
+
+  voicevox:
+    container_name: voicevox
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+    ports:
+      - "127.0.0.1:50021:50021"
+    restart: always
+    networks:
+      - web_network
+      - db_network
+
 volumes:
   media_volume:
     driver: local

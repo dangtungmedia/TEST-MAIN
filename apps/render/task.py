@@ -59,7 +59,7 @@ from pytube import YouTube
 import librosa
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-SERVER='http://daphne:5504'
+SERVER='http://27.72.153.24:8000'
 
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
@@ -1129,44 +1129,44 @@ def get_voice_korea(data, text, file_name):
 
 def get_voice_japanese(data, text, file_name):
     try:
-        # voice_id = data.get('voice_id')
-        # url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
-        # response_query = requests.post(url_query, params={'text': text})
-        # response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
+        voice_id = data.get('voice_id')
+        url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
+        response_query = requests.post(url_query, params={'text': text})
+        response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
         
-        # query_json = response_query.json()
+        query_json = response_query.json()
 
-        # # Thay đổi giá trị speedScale trong tệp JSON
-        # query_json["speedScale"] = 1.0
+        # Thay đổi giá trị speedScale trong tệp JSON
+        query_json["speedScale"] = 1.0
 
-        # # Gửi yêu cầu POST để tạo tệp âm thanh với tốc độ đã thay đổi
-        # url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
-        # headers = {"Content-Type": "application/json"}
-        # response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
-        # response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
+        # Gửi yêu cầu POST để tạo tệp âm thanh với tốc độ đã thay đổi
+        url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
+        headers = {"Content-Type": "application/json"}
+        response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
+        response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
 
-        # # Tạo thư mục nếu chưa tồn tại
-        # directory = os.path.dirname(file_name)
-        # if not os.path.exists(directory):
-        #     os.makedirs(directory, exist_ok=True)
+        # Tạo thư mục nếu chưa tồn tại
+        directory = os.path.dirname(file_name)
+        if not os.path.exists(directory):
+            os.makedirs(directory, exist_ok=True)
 
-        # # Ghi nội dung phản hồi vào tệp
-        # with open(file_name, 'wb') as f:
-        #     f.write(response_synthesis.content)
-
-        data = {
-            "voice_id":  data.get('voice_id'),
-            "action": "get-audio-voicevox",
-            "text_voice": text,
-            "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-        }
-
-        url = f'{SERVER}/api/'
-
-        response = requests.post(url, json=data)
-
+        # Ghi nội dung phản hồi vào tệp
         with open(file_name, 'wb') as f:
-            file.write(response.content)
+            f.write(response_synthesis.content)
+
+        # data = {
+        #     "voice_id":  data.get('voice_id'),
+        #     "action": "get-audio-voicevox",
+        #     "text_voice": text,
+        #     "secret_key": "ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
+        # }
+
+        # url = f'{SERVER}/api/'
+
+        # response = requests.post(url, json=data)
+
+        # with open(file_name, 'wb') as f:
+        #     file.write(response.content)
         return True
     except Exception as e:
         return False
@@ -1392,7 +1392,6 @@ def create_video_reup_urls(data, task_id, worker_id):
         print(f"ffmpeg failed with error: {e.stderr}")
         return False
     return True
-
 
 def update_info_video(data, task_id, worker_id):
 

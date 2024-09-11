@@ -310,3 +310,4 @@ docker-compose -f docker-upload-pc.yml up --build
 git reflog
 
 
+docker-compose -f docker-task.yml up --build
