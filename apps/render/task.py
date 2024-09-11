@@ -98,7 +98,11 @@ def render_video(self, data):
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
 
-    if data.get('url_audio'):
+    print("xxxxxx")
+    print(data.get('url_audio'))
+    print("xxxxxx")
+
+    if not data.get('url_audio'):
         # Tải xuống âm thanh
         success = download_audio(data, task_id, worker_id)
         if not success:
