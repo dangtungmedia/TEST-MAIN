@@ -98,12 +98,9 @@ def render_video(self, data):
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
 
-    print("xxxxxx")
-    print(data.get('url_audio'))
-    print("xxxxxx")
 
-    if data.get('url_audio') == "":
-        print("xxxxxx 11111")
+    if not data.get('url_audio'):
+        print("Không có URL âm thanh")
         # Tải xuống âm thanh
         success = download_audio(data, task_id, worker_id)
         if not success:
@@ -116,7 +113,7 @@ def render_video(self, data):
 
     success = merge_audio_video(data, task_id, worker_id)
     if not success:
-        shutil.rmtree(f'media/{video_id}')
+        # shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
@@ -1133,9 +1130,13 @@ def get_voice_korea(data, text, file_name):
     asyncio.run(text_to_speech(text,name_langue, file_name))
 
 def get_voice_japanese(data, text, file_name):
+    print(data)
+    directory = os.path.dirname(file_name)
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
     try:
         voice_id = data.get('voice_id')
-        url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
+        url_query = f"http://voicevox:50021/audio_query?speaker={voice_id}"
         response_query = requests.post(url_query, params={'text': text})
         response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
         
@@ -1145,15 +1146,10 @@ def get_voice_japanese(data, text, file_name):
         query_json["speedScale"] = 1.0
 
         # Gửi yêu cầu POST để tạo tệp âm thanh với tốc độ đã thay đổi
-        url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
+        url_synthesis = f"http://voicevox:50021/synthesis?speaker={voice_id}"
         headers = {"Content-Type": "application/json"}
         response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
         response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
-
-        # Tạo thư mục nếu chưa tồn tại
-        directory = os.path.dirname(file_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory, exist_ok=True)
 
         # Ghi nội dung phản hồi vào tệp
         with open(file_name, 'wb') as f:
@@ -1171,7 +1167,7 @@ def get_voice_japanese(data, text, file_name):
         # response = requests.post(url, json=data)
 
         # with open(file_name, 'wb') as f:
-        #     file.write(response.content)
+        #     f.write(response.content)
         return True
     except Exception as e:
         return False

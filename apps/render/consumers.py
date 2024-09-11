@@ -581,6 +581,7 @@ class RenderConsumer(AsyncWebsocketConsumer):
             'stroke_size': video.stroke_text,
             'language': video.channel_voice_style.voice_language.name,
             'style': video.channel_voice_style.style_name,
+            'voice_id': video.channel_voice_style.id_style,
             'name_langue': video.channel_voice_style.name_voice,
             'url_audio': video.url_audio,
             'file-srt': video.url_subtitle,
