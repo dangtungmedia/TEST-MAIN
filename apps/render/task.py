@@ -1191,7 +1191,8 @@ def download_image(data, task_id, worker_id):
         return True
     
     for image in json.loads(data.get('images')):
-        url = f"{SERVER}/{image}"
+        url = image
+        print(f"Đang tải xuống hình ảnh từ: {url}")
         image_downloaded = False
         for attempt in range(30):
             try:
@@ -1211,7 +1212,6 @@ def download_image(data, task_id, worker_id):
             except Exception as e:
                 pass
             time.sleep(1)
-        # Nếu không tải được hình ảnh sau 30 lần thử, thay đổi trạng thái thành False
         if not image_downloaded:
             success = False
             update_status_video(f"Đang Render : Không thể tải xuống hình ảnh", video_id, task_id, worker_id)
