@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     const dangerOutlined = document.getElementById('danger-outlined');
-
+    
     if (successOutlined) {
         successOutlined.addEventListener('change', function () {
             if (this.checked) {
@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
         dangerOutlined.addEventListener('change', function () {
             if (this.checked) {
                 GetFolderSelected(false);
-
             }
         });
     }
@@ -144,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(response => response.json())
             .then(data => {
                 data.folders.forEach(folder => {
-                    console.log(folder);
                     let option = document.createElement('option');
                     option.value = folder.id;
                     option.text = folder.folder_name; // Assuming 'folder_name' is the field name
@@ -222,6 +220,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     option2.text = profile.channel_name; // Assuming 'channel_name' is the field name
                     channelNameSetting.appendChild(option2);
                 });
+                GetInforProfile();
             })
             .catch(error => {
                 console.error('There was a problem with the fetch operation:', error);
@@ -487,6 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
         $('#folder_name, #folder_setting').val($(this).val());
         $('#input_folder_name').val(selectedText);
         GetProfileSelected();
+        GetInforProfile();
     });
 
     $('#channel_name, #channel_folder_name_setting').change(function () {
@@ -503,8 +503,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function GetInforProfile() {
         const profile_id = document.getElementById('channel_name');
-        if (!profile_id) {
-            console.error('Profile element not found');
+        if (!profile_id.value) {
+            $('#channel_vps_upload').val('');
+            $('#channel_title').val('');
+            $('#channel_description').val('');
+            $('#channel_keyword').val('');
+            $('#channel_time_upload').val('');
+            $('#channel_url').val('');
+            $('#channel_email_login').val('');
+            $('#channel_vps_upload').val('');
             return;
         }
 
@@ -570,7 +577,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .catch(error => {
                 console.error('There was a problem with your fetch operation:', error);
             });
-
     }
 
     $('#channel_voice,#channel_voice_setting').change(function () {
@@ -791,5 +797,5 @@ document.addEventListener('DOMContentLoaded', function () {
     $('#channel_font_subtitle').change(function () {
         show_Subtitle();
     });
-    GetInforProfile()
+    GetFolderSelected(true);
 }); 

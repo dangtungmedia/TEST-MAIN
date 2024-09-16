@@ -22,16 +22,19 @@ app.autodiscover_tasks()
 
 
 
+
+
+
 # Celery Beat schedule
-app.conf.beat_schedule = {
-    'check_worker_status': {
-        'task': 'apps.render.tasks.check_worker_status',
-        'schedule': crontab(minute='*'),
-        'options': {
-            'queue': 'check_worker_status',
-        },
-    },
-}
+# app.conf.beat_schedule = {
+#     'check_worker_status': {
+#         'task': 'apps.render.tasks.check_worker_status',
+#         'schedule': crontab(minute='*'),
+#         'options': {
+#             'queue': 'check_worker_status',
+#         },
+#     },
+# }
 
 
 

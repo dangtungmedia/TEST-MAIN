@@ -7,7 +7,7 @@ services:
     restart: always
     volumes:
       - .:/app
-    command: celery -A core worker -l INFO --hostname=worker1_huan@%h --concurrency=5
+    command: celery -A core worker -l INFO --hostname=worker1_huan@%h --concurrency=3
     networks:
       - web_network
       - db_network
