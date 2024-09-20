@@ -26,6 +26,9 @@ class FolderSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ProfileSerializer(serializers.ModelSerializer):
+    channel_voice = serializers.IntegerField(
+        source='channel_voice_style.voice_language.id', read_only=True
+    )
     class Meta:
         model = ProfileChannel
-        fields = '__all__'
+        fields = '__all__' 
