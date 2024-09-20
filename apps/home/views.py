@@ -45,9 +45,6 @@ class FolderViewSet(viewsets.ModelViewSet):
     def get_folders_by_user(self, request):
         is_content = request.data.get('is_content', None)
         user_id = request.data.get('userId', None)
-        print(type(is_content))
-        print(is_content)
-        print(user_id)
         is_content = is_content.lower() == 'true' if isinstance(is_content, str) else bool(is_content)
 
         if is_content is None or user_id is None:
