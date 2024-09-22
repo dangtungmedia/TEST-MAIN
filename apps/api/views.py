@@ -30,6 +30,8 @@ class ApiApp(APIView):
         if action == "update_status":
             video_id = request.data.get('video_id')
             status = request.data.get('status')
+            task_id = request.data.get('task_id')
+            worker_id = request.data.get('worker_id')
             try:
                 video = VideoRender.objects.get(id=video_id)
                 video.status_video = status

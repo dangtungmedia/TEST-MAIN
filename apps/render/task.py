@@ -100,7 +100,6 @@ def render_video(self, data):
 
 
     if not data.get('url_audio'):
-        print("Không có URL âm thanh")
         # Tải xuống âm thanh
         success = download_audio(data, task_id, worker_id)
         if not success:
@@ -1154,7 +1153,6 @@ def get_voice_japanese(data, text, file_name):
         # Ghi nội dung phản hồi vào tệp
         with open(file_name, 'wb') as f:
             f.write(response_synthesis.content)
-
         # data = {
         #     "voice_id":  data.get('voice_id'),
         #     "action": "get-audio-voicevox",
