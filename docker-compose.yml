@@ -1,14 +1,5 @@
 version: '3'
 services:
-  redis_task:
-    container_name: redis_task
-    restart: always
-    image: "redis:latest"
-    ports:
-      - "6530:6379"
-    networks:
-      - app_network
-
   celery:
     container_name: celery
     restart: always
@@ -17,11 +8,6 @@ services:
     command: celery -A celeryworker worker -l INFO --hostname=Tùng001@%h --concurrency=10 -Q render_content
     volumes:
       - .:/app
-    depends_on:
-      - redis_task
-    environment:
-      - CELERY_BROKER_URL=redis://redis_task:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis_task:6379/0
     networks:
       - app_network
 
@@ -41,7 +27,3 @@ services:
               capabilities: [ gpu ]
     networks:
       - app_network
-
-networks:
-  app_network:
-    driver: bridge
