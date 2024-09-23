@@ -57,7 +57,7 @@ import librosa
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
 # SERVER='http://daphne:5504'
-SERVER='http://27.72.153.24:8000'
+SERVER='http://27.72.153.24:5085'
 
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
@@ -65,7 +65,7 @@ def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, ei
     worker_id = "None"
     update_status_video("Render Lỗi : Quá Thời gian render videos", video_id, task_id, worker_id)
 
-@shared_task(bind=True, priority=0,name='render_video',time_limit=7200)
+@shared_task(bind=True, priority=0,name='render_video',time_limit=7200,equeue='render_video')
 def render_video(self, data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
@@ -141,7 +141,7 @@ def render_video(self, data):
     
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
-@shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=7200)
+@shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=7200,equeue='render_video')
 def render_video_reupload(self, data):
     print(data)
     task_id = render_video.request.id
