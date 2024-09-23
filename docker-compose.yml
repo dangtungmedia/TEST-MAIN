@@ -1,4 +1,3 @@
-version: '3'
 services:
   celery:
     container_name: celery
@@ -8,9 +7,16 @@ services:
     command: celery -A celeryworker worker -l INFO --hostname=Tùng001@%h --concurrency=10 -Q render_content
     volumes:
       - .:/app
-    networks:
-      - app_network
 
+  # voicevox:
+  #   container_name: voicevox
+  #   image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+  #   ports:
+  #     - "127.0.0.1:50021:50021"
+  #   restart: always 
+  #   volumes:
+  #     - .:/app
+      
   voicevox_engine:
     container_name: voicevox_engine
     image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
@@ -25,5 +31,3 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
-    networks:
-      - app_network
