@@ -4,17 +4,30 @@ services:
     restart: always
     build:
       context: .
-    command: celery -A celeryworker worker -l INFO --hostname=Tùng001@%h --concurrency=3
+    command: celery -A celeryworker worker -l INFO --hostname=Tùng001@%h --concurrency=10 -Q render_content
     volumes:
       - .:/app
 
-  voicevox:
-    container_name: voicevox
-    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+  # voicevox:
+  #   container_name: voicevox
+  #   image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+  #   ports:
+  #     - "127.0.0.1:50021:50021"
+  #   restart: always 
+  #   volumes:
+  #     - .:/app
+      
+  voicevox_engine:
+    container_name: voicevox_engine
+    image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
+    restart: always
     ports:
       - "127.0.0.1:50021:50021"
-    restart: always 
-    volumes:
-      - .:/app
-      
-    
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
