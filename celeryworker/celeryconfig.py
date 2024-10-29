@@ -10,8 +10,8 @@ result_backend  = os.environ.get('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:637
 accept_content  = ['json']
 task_serializer  = 'json'
 result_serializer  = 'json'
-TIMEZONE = 'Asia/Ho_Chi_Minh'
-ENABLE_UTC = True
+timezone  = 'Asia/Ho_Chi_Minh'
+enable_utc = True
 worker_timeout = 120
 worker_heartbeat_interval = 60
 
