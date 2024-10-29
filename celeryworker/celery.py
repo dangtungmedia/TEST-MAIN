@@ -14,6 +14,7 @@ app.conf.timezone = 'Asia/Ho_Chi_Minh'  # Sử dụng đúng cú pháp với ch�
 
 # Các cấu hình khác
 app.conf.worker_timeout = 120
+#thời gian chờ giữa các lần kiểm tra worker
 app.conf.worker_heartbeat_interval = 30
 app.conf.broker_connection_retry_on_startup = True
 app.conf.accept_content = ['json']
