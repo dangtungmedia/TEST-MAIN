@@ -7,6 +7,8 @@ services:
     command: celery -A celeryworker worker -l INFO --hostname=worker@%h --concurrency=1 -Q render_video_reupload,render_video_content 
     volumes:
       - .:/app
+    environment:  # Thêm phần này
+      - DD_USE_TZ=false  # Thiết lập biến môi trường
 
   voicevox:
     container_name: voicevox
