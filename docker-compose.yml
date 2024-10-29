@@ -4,7 +4,7 @@ services:
     restart: always
     build:
       context: .
-    command: celery -A celeryworker worker -l INFO --hostname=Tùng001@%h --concurrency=10 -Q render_content
+    command: celery -A celeryworker worker -l INFO --hostname=worker@%h --concurrency=1 -Q render_video_reupload,render_video_content 
     volumes:
       - .:/app
 
