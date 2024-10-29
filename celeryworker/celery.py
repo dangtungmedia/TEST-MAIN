@@ -13,6 +13,14 @@ app.autodiscover_tasks(['celeryworker'])  # Chỉ định đúng tên package
 
 # Thiết lập timezone cho Celery
 app.conf.timezone = 'UTC'
+app.conf.timezone = 'asia/ho_chi_minh'
+app.conf.worker_timeout = 120
+app.conf.worker_heartbeat_interval = 30
+app.conf.broker_connection_retry_on_startup = True
+
+app.conf.accept_content = ['json']
+app.conf.task_serializer = 'json'
+app.conf.result_serializer = 'json'
 
 # Định nghĩa một task debug đơn giản
 @app.task(bind=True, ignore_result=True)
