@@ -8,26 +8,26 @@ services:
     volumes:
       - .:/app
 
-  # voicevox:
-  #   container_name: voicevox
-  #   image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
-  #   ports:
-  #     - "127.0.0.1:50021:50021"
-  #   restart: always 
-  #   volumes:
-  #     - .:/app
-      
-  voicevox_engine:
-    container_name: voicevox_engine
-    image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
-    restart: always
+  voicevox:
+    container_name: voicevox
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
     ports:
       - "127.0.0.1:50021:50021"
-    tty: true
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
+    restart: always 
+    volumes:
+      - .:/app
+      
+  # voicevox_engine:
+  #   container_name: voicevox_engine
+  #   image: voicevox/voicevox_engine:nvidia-ubuntu20.04-latest
+  #   restart: always
+  #   ports:
+  #     - "127.0.0.1:50021:50021"
+  #   tty: true
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [ gpu ]
