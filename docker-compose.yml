@@ -18,7 +18,7 @@ services:
     restart: always
     build:
       context: .
-    command: celery -A celeryworker worker -l INFO --hostname=worker@%h --concurrency=1 -Q render_video_reupload,render_video_content  
+    command: celery -A celeryworker worker -l INFO --hostname=worker@%h --concurrency=2 -Q render_video_reupload,render_video_content  
     volumes:
       - .:/app
     
