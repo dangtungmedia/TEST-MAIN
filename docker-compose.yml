@@ -1,27 +1,32 @@
 version: '3.8'
-
 services:
-  celery:
-    container_name: celery  # Đặt tên container là 'celery'
-    restart: always  # Tự động khởi động lại khi có lỗi
+  video_screen:
     build:
-      context: .  # Xây dựng image từ thư mục hiện tại
-    command: celery -A celeryworker worker -l INFO --hostname=render6@%h --concurrency=3 -Q render_content
+      context: .
+    container_name: video_screen
     volumes:
-      - .:/app  # Mount thư mục hiện tại của host vào /app trong container
-    depends_on:
-      video_screen:
-        condition: service_healthy  # Đảm bảo dịch vụ video_screen đã khỏe mạnh trước khi celery chạy
+      - .:/app
+    command: sh /app/downdload.sh
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/video_screen/ready.txt"]
+      interval: 1m30s
+      timeout: 20s
+      retries: 5
 
-  # Dịch vụ Voicevox
-  voicevox:
-    container_name: voicevox  # Đặt tên container là 'voicevox'
-    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest  # Sử dụng image có sẵn của Voicevox
-    ports:
-      - "127.0.0.1:50021:50021"  # Liên kết cổng 50021 của host với cổng 50021 của container
-    restart: always  # Tự động khởi động lại khi có lỗi
+  celery:
+    container_name: celery
+    restart: always
+    build:
+      context: .
+    command: celery -A celeryworker worker -l INFO --hostname=render6@%h --concurrency=1
     volumes:
-      - .:/app  # Mount thư mục hiện tại của host vào /app trong container
-    depends_on:
-      video_screen:
-        condition: service_healthy  # Đảm bảo dịch vụ video_screen đã khỏe mạnh trước khi voicevox chạy
+      - .:/app
+
+  voicevox:
+    container_name: voicevox
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+    ports:
+      - "127.0.0.1:50021:50021"
+    restart: always 
+    volumes:
+      - .:/app

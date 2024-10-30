@@ -4,23 +4,20 @@ FROM python:3.10.12
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Install necessary packages
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    wget \
     unrar-free \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+COPY fonts/* /usr/share/fonts/truetype/custom/
+
 # Install dependencies
-COPY requirements.txt .  # Copy requirements file to container
+COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
+# RUN python -m nltk.downloader punkt
+# RUN python -m nltk.downloader stopwords
 
-# Copy all files to the container's working directory
-COPY . .  # Corrected COPY command
-
-# Set working directory
 WORKDIR /app
-
-# Ensure download.sh is executable and run it
-RUN chmod +x /app/download.sh && /app/download.sh
