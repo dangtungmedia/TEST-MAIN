@@ -84,7 +84,7 @@ def clean_up_on_revoke(sender, request, terminated, signum, expired, **kw):
         print(f"Không thể tìm thấy video_id cho task {task_id} vì không có args.")
 
 
-@shared_task(bind=True, priority=0,name='render_video',time_limit=7200,queue='render_video_content')
+@shared_task(bind=True, priority=0,name='render_video_content',time_limit=7200,queue='render_video_content')
 def render_video(self, data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
