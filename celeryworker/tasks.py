@@ -84,7 +84,7 @@ def clean_up_on_revoke(sender, request, terminated, signum, expired, **kw):
         print(f"Không thể tìm thấy video_id cho task {task_id} vì không có args.")
 
 
-@shared_task(bind=True, priority=0,name='render_video_content',time_limit=7200,queue='render_video_content')
+@shared_task(bind=True, priority=0,name='render_video',time_limit=7200,queue='render_video_content')
 def render_video(self, data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname  # Lưu worker ID
@@ -1049,7 +1049,7 @@ def download_audio(data, task_id, worker_id):
         processed_entries = 0
 
         # Khởi tạo luồng xử lý tối đa 20 luồng
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
                 executor.submit(process_voice_entry, data, text_entry, video_id, task_id, worker_id, language): idx
                 for idx, text_entry in enumerate(text_entries)
