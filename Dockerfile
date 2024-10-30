@@ -22,7 +22,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
 
-COPY download.sh /app/download.sh
-
-# Đảm bảo download.sh có quyền thực thi
-RUN chmod +x /app/download.sh
