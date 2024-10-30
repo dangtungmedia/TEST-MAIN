@@ -21,6 +21,7 @@ services:
     command: celery -A celeryworker worker -l INFO --hostname=render6@%h --concurrency=1
     volumes:
       - .:/app
+    
 
   voicevox:
     container_name: voicevox
