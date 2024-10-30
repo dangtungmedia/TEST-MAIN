@@ -19,5 +19,10 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 # RUN python -m nltk.downloader punkt
 # RUN python -m nltk.downloader stopwords
-COPY . .  
+
 WORKDIR /app
+
+COPY download.sh /app/download.sh
+
+# Đảm bảo download.sh có quyền thực thi
+RUN chmod +x /app/download.sh

@@ -5,23 +5,22 @@ services:
       context: .
     container_name: video_screen
     volumes:
-      - .:/app
-    command: sh /app/downdload.sh
+      - .:/app  # Mount thư mục hiện tại của host vào /app trong container
+    command: sh /app/init_video_screen.sh  # Chạy script khi container khởi động
     healthcheck:
-      test: ["CMD", "test", "-f", "/app/video_screen/ready.txt"]
+      test: ["CMD", "test", "-f", "/app/video_screen/ready.txt"]  # Kiểm tra xem file ready.txt đã tồn tại chưa
       interval: 1m30s
       timeout: 20s
       retries: 5
 
-  celery:
-    container_name: celery
+  celery_worker:
+    container_name: celery_worker_content
     restart: always
     build:
       context: .
-    command: celery -A celeryworker worker -l INFO --hostname=render6@%h --concurrency=1
+    command: celery -A celeryworker worker -l INFO --hostname=worker@%h --concurrency=1 -Q render_video_reupload,render_video_content 
     volumes:
       - .:/app
-
   voicevox:
     container_name: voicevox
     image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
