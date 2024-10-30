@@ -19,5 +19,5 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 # RUN python -m nltk.downloader punkt
 # RUN python -m nltk.downloader stopwords
-
+COPY . .  
 WORKDIR /app
