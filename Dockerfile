@@ -18,4 +18,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app
 
-RUN download.sh
+# Copy download.sh vào container tại thư mục /app
+COPY download.sh /app/download.sh
+
+# Cấp quyền thực thi cho download.sh
+RUN chmod +x /app/download.sh
+
+# Chạy download.sh
+RUN /app/download.sh
