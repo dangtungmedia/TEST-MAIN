@@ -1,20 +1,42 @@
-services:
-  celery:
-    container_name: celery
-    restart: always
-    build:
-      context: .
-    command: celery -A celeryworker worker -l INFO --hostname=worker@%h --concurrency=1 -Q render_video_reupload,render_video_content 
-    volumes:
-      - .:/app
-    environment:  # Thêm phần này
-      - TZ=Asia/Ho_Chi_Minh  # Thiết lập múi giờ cho container
+version: '3.8'
 
-  voicevox:
-    container_name: voicevox
-    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
-    ports:
-      - "127.0.0.1:50021:50021"
-    restart: always 
+services:
+  # Dịch vụ video_screen
+  video_screen:
+    build:
+      context: .  # Xây dựng image từ thư mục hiện tại
+    container_name: video_screen  # Đặt tên container là 'video_screen'
     volumes:
-      - .:/app
+      - .:/app  # Mount thư mục hiện tại của host vào /app trong container
+    command: sh /app/init_video_screen.sh  # Chạy script init_video_screen.sh để khởi tạo video_screen
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/video_screen/ready.txt"]  # Kiểm tra xem file ready.txt đã tồn tại chưa
+      interval: 1m30s  # Thực hiện kiểm tra sức khỏe mỗi 1 phút 30 giây
+      timeout: 20s  # Thời gian chờ cho mỗi lần kiểm tra là 20 giây
+      retries: 5  # Thử lại tối đa 5 lần nếu kiểm tra không thành công
+
+  # Dịch vụ Celery
+  celery:
+    container_name: celery  # Đặt tên container là 'celery'
+    restart: always  # Tự động khởi động lại khi có lỗi
+    build:
+      context: .  # Xây dựng image từ thư mục hiện tại
+    command: celery -A celeryworker worker -l INFO --hostname=render6@%h --concurrency=3 -Q render_content
+    volumes:
+      - .:/app  # Mount thư mục hiện tại của host vào /app trong container
+    depends_on:
+      video_screen:
+        condition: service_healthy  # Đảm bảo dịch vụ video_screen đã khỏe mạnh trước khi celery chạy
+
+  # Dịch vụ Voicevox
+  voicevox:
+    container_name: voicevox  # Đặt tên container là 'voicevox'
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest  # Sử dụng image có sẵn của Voicevox
+    ports:
+      - "127.0.0.1:50021:50021"  # Liên kết cổng 50021 của host với cổng 50021 của container
+    restart: always  # Tự động khởi động lại khi có lỗi
+    volumes:
+      - .:/app  # Mount thư mục hiện tại của host vào /app trong container
+    depends_on:
+      video_screen:
+        condition: service_healthy  # Đảm bảo dịch vụ video_screen đã khỏe mạnh trước khi voicevox chạy
