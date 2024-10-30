@@ -1,20 +1,23 @@
 version: '3.8'
 
 services:
-  # Dịch vụ video_screen
   video_screen:
     build:
-      context: .  # Xây dựng image từ thư mục hiện tại
-    container_name: video_screen  # Đặt tên container là 'video_screen'
+      context: .
+    container_name: video_screen
     volumes:
-      - .:/app  # Mount thư mục hiện tại của host vào /app trong container
-    command: sh /app/init_video_screen.sh  # Chạy script init_video_screen.sh để khởi tạo video_screen
+      - .:/app
+    command: sh /app/init_video_screen.sh
     healthcheck:
-      test: ["CMD", "test", "-f", "/app/video_screen/ready.txt"]  # Kiểm tra xem file ready.txt đã tồn tại chưa
-      interval: 1m30s  # Thực hiện kiểm tra sức khỏe mỗi 1 phút 30 giây
-      timeout: 20s  # Thời gian chờ cho mỗi lần kiểm tra là 20 giây
-      retries: 5  # Thử lại tối đa 5 lần nếu kiểm tra không thành công
-
+      test: ["CMD", "test", "-f", "/app/video_screen/ready.txt"]
+      interval: 1m30s
+      timeout: 20s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"  # Tăng giới hạn log lên 10MB
+        max-file: "3"    # Lưu trữ tối đa 3 file log
   # Dịch vụ Celery
   celery:
     container_name: celery  # Đặt tên container là 'celery'
