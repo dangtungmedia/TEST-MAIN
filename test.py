@@ -1888,36 +1888,25 @@ def create_video_reup(data, task_id, worker_id):
         # Chọn các video ngắn ngẫu nhiên cho đến khi đủ độ dài
         selected_videos = []
         current_duration = 0
+        short_videos_dir = "video"
+        video_files = [os.path.join(short_videos_dir, f) for f in os.listdir(short_videos_dir) if f.endswith(".mp4")]
+
         update_status_video("Đang Render: Đang lấy video random", video_id, task_id, worker_id)
 
-        video_directory = f'media/{video_id}/video_backrought'
-        os.makedirs(video_directory, exist_ok=True)
-        while current_duration < duration:
-            data_request = {
-                'secret_key': SECRET_KEY,
-                'action': 'get-video-backrought',
-                'task_id': task_id,
-                'worker_id': worker_id,
-                'list_video': os.listdir(video_directory),
-                'duration': 0,
-            }
-            url = f'{SERVER}/api/'
-            response = requests.post(url, json=data_request)
-            filename = response.headers.get('Content-Disposition').split('filename=')[1].strip('"')
-            video_path = os.path.join(video_directory, filename)
-            # Lưu video tải về
-            with open(video_path, 'wb') as f:
-                f.write(response.content)
-            video_duration = get_video_duration(video_path)
+        while current_duration < duration and video_files:
+            random_video = random.choice(video_files)
+            video_files.remove(random_video)  # Xóa video đã chọn để tránh lặp lại
+            video_duration = get_video_duration(random_video)
+
             if video_duration > 0:
-                selected_videos.append(video_path)
+                selected_videos.append(random_video)
                 current_duration += video_duration
                 # Tính toán phần trăm tiến trình
                 progress_percentage = min((current_duration / duration) * 100, 100)
                 # Cập nhật trạng thái với phần trăm hoàn thành
                 update_status_video(f"Đang Render: đã chọn {progress_percentage:.2f}% video", video_id, task_id, worker_id)
             else:
-                print(f"Bỏ qua video {video_path} vì không thể lấy thời lượng.")
+                print(f"Bỏ qua video {random_video} vì không thể lấy thời lượng.")
 
         concat_file_path = f"media/{video_id}/concat_list.txt"
         with open(concat_file_path, 'w') as concat_file:
@@ -2079,3 +2068,25 @@ def update_status_video(status_video,video_id,task_id,worker_id):
         print("Trạng thái video đã được cập nhật thành công.")
     else:
         print(f"Lỗi cập nhật trạng thái video: {response.status_code}")
+
+@shared_task(bind=True,ignore_result=False,name='check_worker_status',queue='check_worker_status')
+def check_worker_status(self, *args, **kwargs):
+    app = Celery('core')
+    inspector = app.control.inspect()
+    # Lấy danh sách worker đang hoạt động
+    active_workers = inspector.active() or {}
+    active_worker_hostnames = set(active_workers.keys())
+
+    # Lấy tất cả các video đang render
+    videos_in_progress = VideoRender.objects.filter(
+        Q(status_video__icontains="Đang Render") | 
+        Q(status_video__icontains="Đang Chờ Render")
+    )
+    for video in videos_in_progress:
+        task_id = video.task_id
+        worker_id = video.worker_id
+        # Kiểm tra trạng thái task
+        if worker_id not in active_worker_hostnames:
+            video.status_video = f'Render Lỗi : Máy render bị mất kết nối,không hoàn thành'
+            video.save()
+            print(f"Updated status for video {video.id}: {video.status_video}")
