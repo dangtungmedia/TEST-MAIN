@@ -2045,7 +2045,7 @@ def create_video_reup(data, task_id, worker_id):
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
     ydl_opts = {
-        'cookiefile': 'youtube_cookies.txt',
+        'cookiefile': 'cookie_youtube.txt',
         'cookies_from_browser': 'chrome',
         'quiet': True,
         'skip_download': True,
