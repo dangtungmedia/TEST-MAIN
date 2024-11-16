@@ -4,7 +4,6 @@ import os, shutil, urllib
 import time
 import requests
 import json
-from pydub import AudioSegment
 from PIL import Image, ImageDraw, ImageFont
 import asyncio
 import math
@@ -21,23 +20,19 @@ from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncod
 import re
 from datetime import datetime, timedelta
 import re
-from yt_dlp import YoutubeDL
-from pytube import YouTube
+import yt_dlp
 import decimal
-from pydub import AudioSegment
 import os
 import random, subprocess
 import decimal
 from proglog import ProgressBarLogger
 from tqdm import tqdm
-from celery import Celery
 from celery.signals import task_failure,task_revoked
-from pydub.silence import detect_nonsilent
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
-SERVER='http://daphne:5505'
-# SERVER='http://157.90.208.177:8000'
+# SERVER='http://daphne:5505'
+SERVER='https://autospamnews.com'
 
 
 def delete_directory(video_id):
@@ -1672,7 +1667,7 @@ def downdload_video_reup(data, task_id, worker_id):
         'progress_hooks': [progress_hook],  # Thêm hàm xử lý tiến trình
     }
 
-    with YoutubeDL(ydl_opts) as ydl:
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         print(f"Tải âm thanh từ: {url}")
         ydl.download([url])
     return True
@@ -2033,14 +2028,32 @@ def create_video_reup(data, task_id, worker_id):
         update_status_video(f"Render Lỗi: Lỗi tổng quát khi tạo video", video_id, task_id, worker_id)
         return False
 
+
+def get_video_info(url):
+    # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
+    ydl_opts = {
+        'quiet': True,
+        'skip_download': True,
+        'force_generic_extractor': False,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Lấy thông tin video
+            info_dict = ydl.extract_info(url, download=False)
+            # Truy xuất tiêu đề và thumbnail
+            title = info_dict.get('title', 'No title found')
+            thumbnail = info_dict.get('thumbnail', 'No thumbnail found')
+            return title, thumbnail
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return None, None
+
 def update_info_video(data, task_id, worker_id):
 
     video_url  = data.get('url_video_youtube')
 
-    yt = YouTube(video_url)
-
-    title = yt.title
-    thumbnail_url = yt.thumbnail_url
+    title,thumbnail_url = get_video_info(video_url)
 
     video_id = data.get('video_id')
     url = f'{SERVER}/api/'

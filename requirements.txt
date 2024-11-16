@@ -55,7 +55,6 @@ pycryptodomex==3.20.0
 pydub==0.25.1
 python-dateutil==2.9.0.post0
 python-dotenv==0.19.2
-pytube==15.0.0
 redis==5.0.8
 regex==2024.9.11
 requests==2.32.3
