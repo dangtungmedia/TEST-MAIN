@@ -552,21 +552,32 @@ def merge_audio_video(data, task_id, worker_id):
         return False
         
 def download_youtube_audio(url, output_file):
+    # Kiểm tra file cookie
+    cookie_file = 'cookie_youtube.txt'
+    if not os.path.exists(cookie_file):
+        print(f"File cookie '{cookie_file}' không tồn tại. Hãy kiểm tra lại.")
+        return
+
+    # Cấu hình yt-dlp
     ydl_opts = {
-        'cookiefile': 'cookie_youtube.txt',
-        'format': 'bestaudio/best',
+        'cookiefile': cookie_file,  # File cookie dùng để xác thực
+        'format': 'bestaudio/best',  # Tải âm thanh tốt nhất
         'outtmpl': f"{output_file}",  # Định dạng tên file đầu ra
         'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'wav',
+            'key': 'FFmpegExtractAudio',  # Dùng FFmpeg để chuyển đổi
+            'preferredcodec': 'wav',  # Định dạng đầu ra là WAV
             'preferredquality': '192',  # Chất lượng âm thanh
         }],
-        'noplaylist': True,  # Không tải playlist, chỉ tải video đầu tiên
+        'noplaylist': True,  # Chỉ tải một video, không tải cả playlist
     }
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        print(f"Tải âm thanh từ: {url}")
-        ydl.download([url])
+    # Thực hiện tải video
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])  # Tải video từ URL
+            print(f"Đã tải xong file: {output_file}")
+    except Exception as e:
+        print(f"Đã xảy ra lỗi: {e}")
 
 def get_video_duration(video_path):
     # Lệnh ffprobe để lấy thông tin video dưới dạng JSON

@@ -5,6 +5,8 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV TZ=Asia/Ho_Chi_Minh
 
+
+
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update && apt-get install -y \
@@ -23,4 +25,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 # RUN python -m nltk.downloader punkt
 # RUN python -m nltk.downloader stopwords
 WORKDIR /app
-COPY . .

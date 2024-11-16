@@ -10,7 +10,7 @@ ydl_opts = {
 }
 
 # URL của video YouTube
-video_url = input("Nhập URL video YouTube: ")
+video_url = "https://www.youtube.com/watch?v=u0Ptw0r0Pq0"
 
 try:
     # Tải video
