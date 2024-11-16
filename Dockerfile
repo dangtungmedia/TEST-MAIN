@@ -25,4 +25,3 @@ RUN pip install --no-cache-dir -r requirements.txt
 # RUN python -m nltk.downloader punkt
 # RUN python -m nltk.downloader stopwords
 WORKDIR /app
-COPY . .

@@ -1,5 +1,4 @@
 
-
 import yt_dlp
 
 # Tùy chọn cấu hình yt-dlp với cookie
@@ -19,3 +18,8 @@ try:
     print("Tải video hoàn tất!")
 except Exception as e:
     print(f"Đã xảy ra lỗi: {e}")
+
+
+yt-dlp --cookies ~/youtube_cookies.txt https://www.youtube.com/watch?v=MDvhXLHyeg0
+
+yt-dlp --cookies ~/cookie_youtube.txt https://www.youtube.com/watch?v=MDvhXLHyeg0cd .

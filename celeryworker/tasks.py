@@ -553,7 +553,7 @@ def merge_audio_video(data, task_id, worker_id):
         
 def download_youtube_audio(url, output_file):
     # Kiểm tra file cookie
-    cookie_file = 'cookie_youtube.txt'
+    cookie_file = 'youtube_cookies.txt'
     if not os.path.exists(cookie_file):
         print(f"File cookie '{cookie_file}' không tồn tại. Hãy kiểm tra lại.")
         return
@@ -580,7 +580,7 @@ def download_youtube_audio(url, output_file):
         print(f"Đã xảy ra lỗi: {e}")
 
 def get_video_duration(video_path):
-    # Lệnh ffprobe để lấy thông tin video dưới dạng JSON
+    # Lệnh ffprobe để lấy thông tin video dưới dạng JSONls
     command = [
         "ffprobe",
         "-v", "error",
@@ -2045,7 +2045,7 @@ def create_video_reup(data, task_id, worker_id):
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
     ydl_opts = {
-        'cookiefile': 'cookie_youtube.txt',
+        'cookiefile': 'youtube_cookies.txt',
         'cookies_from_browser': 'chrome',
         'quiet': True,
         'skip_download': True,
