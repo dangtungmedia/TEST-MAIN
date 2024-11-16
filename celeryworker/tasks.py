@@ -553,7 +553,7 @@ def merge_audio_video(data, task_id, worker_id):
         
 def download_youtube_audio(url, output_file):
     ydl_opts = {
-        'cookiefile': 'youtube_cookies.txt',
+        'cookiefile': 'cookie_youtube.txt',
         'format': 'bestaudio/best',
         'outtmpl': f"{output_file}",  # Định dạng tên file đầu ra
         'postprocessors': [{
@@ -1662,7 +1662,7 @@ def downdload_video_reup(data, task_id, worker_id):
 
     # Cấu hình yt-dlp
     ydl_opts = {
-        'cookiefile': 'youtube_cookies.txt',
+        'cookiefile': 'cookie_youtube.txt',
         'format': 'bestvideo[height=720]+bestaudio/best',
         'outtmpl': f"{output_file}",
         'merge_output_format': 'mp4',  # Hợp nhất video và âm thanh thành định dạng MP4,
