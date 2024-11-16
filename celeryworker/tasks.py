@@ -2053,11 +2053,8 @@ def update_info_video(data, task_id, worker_id):
 
     video_url  = data.get('url_video_youtube')
 
-    # title,thumbnail_url = get_video_info(video_url)
-    title = yt.title
-    thumbnail_url = yt.thumbnail_url
-    
-
+    title,thumbnail_url = get_video_info(video_url)
+ 
     video_id = data.get('video_id')
     url = f'{SERVER}/api/'
     update_status_video(f"Đang Render : Đang lấy thông tin video", video_id, task_id, worker_id)
