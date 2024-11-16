@@ -24,7 +24,6 @@ import re
 from yt_dlp import YoutubeDL
 from pytube import YouTube
 import decimal
-from moviepy.editor import VideoFileClip, AudioFileClip, vfx, concatenate_videoclips, CompositeVideoClip  # Import vfx for effects
 from pydub import AudioSegment
 import os
 import random, subprocess
