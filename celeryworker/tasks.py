@@ -580,7 +580,7 @@ def download_youtube_audio(url, output_file):
         print(f"Đã xảy ra lỗi: {e}")
 
 def get_video_duration(video_path):
-    # Lệnh ffprobe để lấy thông tin video dưới dạng JSONls
+    # Lệnh ffprobe để lấy thông tin video dưới dạng JSON
     command = [
         "ffprobe",
         "-v", "error",
