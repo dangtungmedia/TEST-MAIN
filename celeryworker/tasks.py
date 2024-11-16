@@ -553,6 +553,7 @@ def merge_audio_video(data, task_id, worker_id):
         
 def download_youtube_audio(url, output_file):
     ydl_opts = {
+        'cookiefile': 'youtube_cookies.txt',
         'format': 'bestaudio/best',
         'outtmpl': f"{output_file}",  # Định dạng tên file đầu ra
         'postprocessors': [{
@@ -1108,6 +1109,7 @@ def format_timestamp(seconds):
     millis = int((seconds - int(seconds)) * 1000)
     return f"{hours:02}:{minutes:02}:{secs:02},{millis:03}"
 
+
 def get_voice_japanese(data, text, file_name):
     """Hàm chuyển văn bản thành giọng nói tiếng Nhật với VoiceVox, bao gồm chức năng thử lại khi gặp lỗi."""
     directory = os.path.dirname(file_name)
@@ -1660,6 +1662,7 @@ def downdload_video_reup(data, task_id, worker_id):
 
     # Cấu hình yt-dlp
     ydl_opts = {
+        'cookiefile': 'youtube_cookies.txt',
         'format': 'bestvideo[height=720]+bestaudio/best',
         'outtmpl': f"{output_file}",
         'merge_output_format': 'mp4',  # Hợp nhất video và âm thanh thành định dạng MP4,
@@ -2031,6 +2034,7 @@ def create_video_reup(data, task_id, worker_id):
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
     ydl_opts = {
+        'cookiefile': 'youtube_cookies.txt',
         'cookies_from_browser': 'chrome',
         'quiet': True,
         'skip_download': True,
@@ -2052,8 +2056,13 @@ def get_video_info(url):
 def update_info_video(data, task_id, worker_id):
 
     video_url  = data.get('url_video_youtube')
-
-    title,thumbnail_url = get_video_info(video_url)
+    try:
+        title,thumbnail_url = get_video_info(video_url)
+    except Exception as e:
+        print(f"Error getting video info: {e}")
+        title = "No title found"
+        thumbnail_url = "No thumbnail found"
+        update_status_video(f"Render Lỗi: lỗi lấy thông tin videos", video_id, task_id, worker_id)
  
     video_id = data.get('video_id')
     url = f'{SERVER}/api/'
