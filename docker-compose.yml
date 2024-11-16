@@ -21,11 +21,11 @@ services:
     command: celery -A celeryworker worker -l INFO --hostname=worker222@%h --concurrency=4 -Q render_video_reupload,render_video_content  
     volumes:
       - .:/app
-  voicevox:
-    container_name: voicevox
-    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
-    ports:
-      - "127.0.0.1:50021:50021"
-    restart: always 
-    volumes:
-      - .:/app
+  # voicevox:
+  #   container_name: voicevox
+  #   image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+  #   ports:
+  #     - "127.0.0.1:50021:50021"
+  #   restart: always 
+  #   volumes:
+  #     - .:/app
