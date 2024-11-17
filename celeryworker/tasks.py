@@ -30,6 +30,12 @@ from tqdm import tqdm
 from celery.signals import task_failure,task_revoked
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import os
+from dotenv import load_dotenv
+
+# Nạp biến môi trường từ file .env
+load_dotenv()
+
 SECRET_KEY="ugz6iXZ.fM8+9sS}uleGtIb,wuQN^1J%EvnMBeW5#+CYX_ej&%"
 # SERVER='http://daphne:5505'
 SERVER='https://autospamnews.com'
@@ -561,7 +567,7 @@ def download_youtube_audio(url, output_file):
 
     # Cấu hình yt-dlp
     ydl_opts = {
-        'cookiefile': cookie_file,  # File cookie dùng để xác thực
+        'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
         'format': 'bestaudio/best',  # Tải âm thanh tốt nhất
         'outtmpl': f"{output_file}",  # Định dạng tên file đầu ra
         'postprocessors': [{
@@ -1674,7 +1680,7 @@ def downdload_video_reup(data, task_id, worker_id):
 
     # Cấu hình yt-dlp
     ydl_opts = {
-        'cookiefile': 'youtube_cookies.txt',
+        'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
         'format': 'bestvideo[height=720]+bestaudio/best',
         'outtmpl': f"{output_file}",
         'merge_output_format': 'mp4',  # Hợp nhất video và âm thanh thành định dạng MP4,
@@ -2045,7 +2051,7 @@ def create_video_reup(data, task_id, worker_id):
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
     ydl_opts = {
-        'cookiefile': 'youtube_cookies.txt',
+        'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
         'quiet': True,
         'skip_download': True,
         'force_generic_extractor': False,
