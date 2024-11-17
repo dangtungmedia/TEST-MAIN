@@ -558,34 +558,6 @@ def merge_audio_video(data, task_id, worker_id):
         print(f"An error occurred: {e}")
         return False
         
-def download_youtube_audio(url, output_file):
-    # Kiểm tra file cookie
-    cookie_file = 'youtube_cookies.txt'
-    if not os.path.exists(cookie_file):
-        print(f"File cookie '{cookie_file}' không tồn tại. Hãy kiểm tra lại.")
-        return
-
-    # Cấu hình yt-dlp
-    ydl_opts = {
-        'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
-        'format': 'bestaudio/best',  # Tải âm thanh tốt nhất
-        'outtmpl': f"{output_file}",  # Định dạng tên file đầu ra
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',  # Dùng FFmpeg để chuyển đổi
-            'preferredcodec': 'wav',  # Định dạng đầu ra là WAV
-            'preferredquality': '192',  # Chất lượng âm thanh
-        }],
-        'noplaylist': True,  # Chỉ tải một video, không tải cả playlist
-    }
-
-    # Thực hiện tải video
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])  # Tải video từ URL
-            print(f"Đã tải xong file: {output_file}")
-    except Exception as e:
-        print(f"Đã xảy ra lỗi: {e}")
-
 def get_video_duration(video_path):
     # Lệnh ffprobe để lấy thông tin video dưới dạng JSON
     command = [
@@ -1886,7 +1858,7 @@ def process_video_ffmpeg(input_video, output_video, width, height, fps=24, prese
 def create_video_reup(data, task_id, worker_id):
     video_id = data.get('video_id')
     name_video = data.get('name_video')
-    video_path = f"media/{video_id}/video_adjusted.mp4"
+    video_path_audio = f"media/{video_id}/video_adjusted.mp4"
 
     output_path = f'media/{video_id}/{name_video}.mp4'
     
@@ -1898,7 +1870,7 @@ def create_video_reup(data, task_id, worker_id):
         update_status_video("Đang Render: Bắt đầu tạo video", video_id, task_id, worker_id)
 
         # Lấy thông tin video
-        duration = get_video_duration(video_path)
+        duration = get_video_duration(video_path_audio)
         # Chọn các video ngắn ngẫu nhiên cho đến khi đủ độ dài
         selected_videos = []
         current_duration = 0
@@ -2009,7 +1981,7 @@ def create_video_reup(data, task_id, worker_id):
         command = [
             "ffmpeg",
             "-i", final_video_path,   # Video nền (background)
-            "-i", video_path,  # Video đầu vào cần crop và làm mờ
+            "-i", video_path_audio,  # Video đầu vào cần crop và làm mờ
             "-filter_complex", filter_complex,
             "-c:v", "libx264",
             "-crf", "23",
@@ -2047,6 +2019,7 @@ def create_video_reup(data, task_id, worker_id):
         print(f"Lỗi tổng quát khi tạo video: {e}")
         update_status_video(f"Render Lỗi: Lỗi tổng quát khi tạo video", video_id, task_id, worker_id)
         return False
+    
 
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
