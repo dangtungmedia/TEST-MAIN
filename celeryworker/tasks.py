@@ -193,6 +193,7 @@ def render_video_reupload(self, data):
     
     success = upload_video(data, task_id, worker_id)
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
         return
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
@@ -2040,7 +2041,6 @@ def create_video_reup(data, task_id, worker_id):
         print(f"Lỗi tổng quát khi tạo video: {e}")
         update_status_video(f"Render Lỗi: Lỗi tổng quát khi tạo video", video_id, task_id, worker_id)
         return False
-
 
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
