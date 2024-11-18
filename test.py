@@ -1,23 +1,27 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-import time
+import json
+from datetime import datetime
 
-# Initialize the WebDriver (use Chrome in this example)
-driver = webdriver.Chrome()
+# Define the base JSON structure
+data = {
+    "url-sever": "https://autospamnews.com",
+    "timeupload": 0,
+    "profiles": [],
+    "ip_address": "148.251.40.198:pqFHM"
+}
 
-# Open YouTube or any website
-driver.get("https://www.youtube.com")
-time.sleep(5)  # Wait for the page to load fully
+# Generate 60 profiles
+for i in range(1, 61):
+    profile = {
+        "name": f"k{i}",
+        "path_profile": "",
+        "uploadsToday": 0,
+        "lastUploadTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "uploadLimitPerDay": 6
+    }
+    data["profiles"].append(profile)
 
-# Get cookies after login
-cookies = driver.get_cookies()
-print("Extracted Cookies:", cookies)
+# Save to JSON file
+with open("profiles_config.json", "w") as json_file:
+    json.dump(data, json_file, indent=4)
 
-# Save cookies to a file (optional)
-with open("youtube_cookies.txt", "w") as file:
-    for cookie in cookies:
-        file.write(f"{cookie['name']}={cookie['value']}; domain={cookie['domain']}; path={cookie['path']}\n")
-
-# Close the browser
-driver.quit()
+print("JSON file 'profiles_config.json' created successfully!")
