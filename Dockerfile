@@ -24,3 +24,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Set working directory
 WORKDIR /app
+
+RUN touch /opt/voicevox_engine/presets.yaml && chmod 666 /opt/voicevox_engine/presets.yaml
