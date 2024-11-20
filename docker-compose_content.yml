@@ -33,8 +33,8 @@ services:
     ports:
       - "127.0.0.1:50021:50021"
     restart: always 
-    networks:
-      - app_network
+    volumes:
+      - .:/app
 networks:
   app_network:
     driver: bridge
