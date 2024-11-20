@@ -35,6 +35,7 @@ services:
     restart: always 
     volumes:
       - .:/app
+      - ./voicevox_data:/opt/voicevox_engine
     networks:
       - app_network
 networks:
