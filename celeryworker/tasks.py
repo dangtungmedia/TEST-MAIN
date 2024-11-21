@@ -102,6 +102,85 @@ def render_video(self, data):
         shutil.rmtree(f'media/{video_id}')
         return
 
+    success = upload_video(data, task_id, worker_id)
+    if not success:
+        shutil.rmtree(f'media/{video_id}')
+        return
+
+class UploadProgress:
+    def __init__(self, data, task_id, worker_id):
+        self.last_printed_percent = 0
+        self.data = data
+        self.task_id = task_id
+        self.worker_id = worker_id
+
+    def progress_callback(self, monitor):
+        # Calculate percentage uploaded
+        percent_complete = (monitor.bytes_read / monitor.len) * 100
+        # Check if the percentage has increased by at least 1%
+        if int(percent_complete) > self.last_printed_percent:
+            self.last_printed_percent = int(percent_complete)
+            # Print the percentage of upload completed
+            print(f"Uploaded: {self.last_printed_percent}%")
+            update_status_video(f"Đang Render : Đang Upload File Lên Server {self.last_printed_percent}%", self.data.get('video_id'), self.task_id, self.worker_id)
+
+def upload_video(data, task_id, worker_id):
+    video_id = data.get('video_id')
+    name_video = data.get('name_video')
+    video_path = f'media/{video_id}/{name_video}.mp4'
+    url = f'{SERVER}/api/'
+
+    update_status_video(f"Đang Render : Đang Upload File Lên Server", video_id, task_id, worker_id)
+    
+    payload = {
+        'video_id': str(video_id),
+        'action': 'upload',
+        'secret_key': SECRET_KEY
+    }
+
+    try:
+        with open(video_path, 'rb') as video_file:
+            # Prepare the payload with the file and other fields
+            encoder = MultipartEncoder(
+                fields={
+                    'video_id': str(payload['video_id']),
+                    'action': payload['action'],
+                    'secret_key': payload['secret_key'],
+                    'file': (os.path.basename(video_path), video_file, 'application/octet-stream')
+                }
+            )
+            
+            # Create an instance of the UploadProgress class
+            progress = UploadProgress(data, task_id, worker_id)
+            
+            # Create a monitor to use with the request
+            monitor = MultipartEncoderMonitor(encoder, progress.progress_callback)
+            
+            # Make the POST request to upload the video with streaming data
+            response = requests.post(
+                url,
+                data=monitor,
+                headers={'Content-Type': monitor.content_type}
+            )
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            print("\nUpload successful!")
+            print("Response:", response.json())  # Print the response JSON for confirmation
+            shutil.rmtree(f'media/{video_id}')
+            return True
+        else:
+            print(f"\nUpload failed with status code: {response.status_code}")
+            print("Response:", response.text)
+            return False
+
+    except FileNotFoundError:
+        print(f"Error: The file {video_path} was not found.")
+        return False
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return False
+
 def get_voice_japanese(data, text, file_name):
     """Hàm chuyển văn bản thành giọng nói tiếng Nhật với VoiceVox, bao gồm chức năng thử lại khi gặp lỗi."""
     directory = os.path.dirname(file_name)
@@ -916,7 +995,7 @@ def cread_video(data, task_id, worker_id):
     start_time = timedelta(0)
 
     list_video = []
-    for iteam in text_entries:
+    for index, item in enumerate(text_entries, start=1):
         text = iteam["text"]
         path_audio  = f'media/{video_id}/voice/{iteam["id"]}.wav'
         process_voice_entry(data,text,language,path_audio, task_id,worker_id)
@@ -986,10 +1065,13 @@ def cread_video(data, task_id, worker_id):
                 image_to_video_zoom_out(image_file,path_audio,path_video, duration, 1920, 1080, 'video_screen')
         file_list_video.write(f"file 'video/{iteam['id']}.mp4'\n")
         ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+        start_time = end_time
+        progress = int((index / total_entries) * 100)
+        update_status_video(f"Đang Render: đang tạo video {index}/{total_entries}", data['video_id'], task_id, worker_id)
+
     ass_file.close()
     file_list_video.close()
 
-    
     if data.get('channel_music_active'):
         background_music_folder = "music_background"  # Thay đổi thành đường dẫn thư mục chứa nhạc của bạn
         music_files = [f for f in os.listdir(background_music_folder) if f.endswith(('.mp3', '.wav'))]
@@ -1012,11 +1094,7 @@ def cread_video(data, task_id, worker_id):
             '-y',  # Ghi đè tệp đầu ra nếu tồn tại
             f"media/{video_id}/{name_video}.mp4"
         ]
-        try:
-            result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        except subprocess.CalledProcessError as e:
-            print(f"ffmpeg failed with error: {e.stderr}")
-            return False
+        
     else:
         ffmpeg_command = [
             'ffmpeg',
@@ -1031,18 +1109,54 @@ def cread_video(data, task_id, worker_id):
             '-y',
             f"media/{video_id}/{name_video}.mp4"
         ]
+        
         try:
-            result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            # Chạy FFmpeg
+            with subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, universal_newlines=True) as process:
+                total_duration = None
+                progress_bar = None
+
+                for line in process.stderr:
+                    # Log để kiểm tra dòng stderr
+                    print(f"ffmpeg output: {line.strip()}")
+
+                    # Lấy thời lượng tổng của video
+                    if "Duration" in line and total_duration is None:
+                        try:
+                            duration_str = re.search(r"Duration: (\d+):(\d+):(\d+\.\d+)", line).groups()
+                            h, m, s = map(float, duration_str)
+                            total_duration = int(h * 3600 + m * 60 + s)
+                            progress_bar = tqdm(total=total_duration, desc="Rendering", unit="s")
+                        except Exception as e:
+                            print(f"Error parsing duration: {e}")
+                            continue
+
+                    # Lấy thời gian hiện tại đang render
+                    if "time=" in line and progress_bar:
+                        try:
+                            time_str = re.search(r"time=(\d+):(\d+):(\d+\.\d+)", line).groups()
+                            h, m, s = map(float, time_str)
+                            current_time = int(h * 3600 + m * 60 + s)
+                            progress_bar.n = current_time
+                            progress_bar.refresh()
+
+                            # Tính toán % hoàn thành
+                            percentage = int((current_time / total_duration) * 100)
+                            if percentage <= 100:
+                                update_status_video(f"Đang Render: nối video {percentage}% hoàn thành", data['video_id'], task_id, worker_id)
+                        except Exception as e:
+                            print(f"Skipping invalid time format in line: {line.strip()}, error: {e}")
+
+                process.wait()
+                if process.returncode != 0:
+                    update_status_video(f"Render Lỗi : FFmpeg lỗi với mã lỗi {process.returncode}", video_id, task_id, worker_id)
+                    return False
+                update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
+                return True
+
         except subprocess.CalledProcessError as e:
-            print(f"ffmpeg failed with error: {e.stderr}")
+            update_status_video(f"Render Lỗi : FFmpeg lỗi với mã lỗi {e.stderr}", video_id, task_id, worker_id)
             return False
-
-
-
-
-
-    print("đã tạo xong video check lại thử")
-
 
 
 def create_or_reset_directory(directory_path):
