@@ -843,6 +843,7 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
 
 def create_video(data, task_id, worker_id):
     try:
+        list_video = []
         video_id = data.get('video_id')
         text = data.get('text_content')
         create_or_reset_directory(f'media/{video_id}/video')
@@ -864,7 +865,7 @@ def create_video(data, task_id, worker_id):
         with ThreadPoolExecutor(max_workers=2) as executor:
             # Tạo các công việc xử lý video đồng thời
             futures = {
-                executor.submit(process_video_segment, data, text_entry, data_sub, i, video_id, worker_id): text_entry
+                executor.submit(process_video_segment, data, text_entry, data_sub, i, video_id,task_id, worker_id): text_entry
                 for i, text_entry in enumerate(text_entries)
             }
 
