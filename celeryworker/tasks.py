@@ -38,7 +38,7 @@ from dotenv import load_dotenv
 # Nạp biến môi trường từ file .env
 load_dotenv()
 
-SECRET_KEY=ose.environ.get('SECRET_KEY')
+SECRET_KEY=os.environ.get('SECRET_KEY')
 SERVER=os.environ.get('SERVER')
 ACCESS_TOKEN = None
 
@@ -92,7 +92,7 @@ def render_video(self, data):
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
     update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
-    success = create_or_reset_directory(f'media/{video_id}', task_id, worker_id)
+    success = create_or_reset_directory(f'media/{video_id}')
     if not success:
         shutil.rmtree(f'media/{video_id}')
         return
@@ -152,6 +152,10 @@ def get_voice_japanese(data, text, file_name):
         print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
         return False
     return True
+
+async def text_to_speech_async(text, voice, output_file):
+    communicate = edge_tts.Communicate(text=text, voice=voice)
+    await communicate.save(output_file)
 
 def get_voice_korea(data, text, file_name):
     """Hàm xử lý TTS cho tiếng Hàn Quốc, tương tự get_voice_chat_gpt."""
@@ -549,17 +553,17 @@ def process_voice_entry(data,text,language,path_audio, task_id,worker_id):
     success = False
     # Xử lý ngôn ngữ tương ứng và kiểm tra kết quả tải
     if language == 'Japanese-VoiceVox':
-        success = get_voice_japanese(data, text_entry['text'], file_name)
+        success = get_voice_japanese(data, text, path_audio)
     elif language == 'Korea-TTS':
-        success = get_voice_korea(data, text_entry['text'], file_name)
+        success = get_voice_korea(data, text, path_audio)
     elif language == 'VOICE GPT AI':
-        success = get_voice_chat_gpt(data, text_entry['text'], file_name)
+        success = get_voice_chat_gpt(data,text, path_audio)
     
     elif language == 'AI-HUMAN':
-        success = get_voice_chat_ai_human(data, text_entry['text'], file_name)
+        success = get_voice_chat_ai_human(data,text, path_audio)
         
     elif language == 'SUPER VOICE':
-        success = get_voice_super_voice(data, text_entry['text'], file_name)
+        success = get_voice_super_voice(data,text, path_audio)
 
     return success
 
@@ -793,15 +797,24 @@ def image_to_video_zoom_in(image_file, path_audio, path_video, duration, scale_w
         print(f"Error running FFmpeg: {e}")
 
 
+def find_last_punctuation_index(line):
+    punctuation = "。、！？.,"  # Các dấu câu có thể xem xét
+    last_punctuation_index = -1
+
+    for i, char in enumerate(reversed(line)):
+        if char in punctuation:
+            last_punctuation_index = len(line) - i - 1
+            break
+    return last_punctuation_index
+
+
 def get_text_lines(data, text,width=1920):
     current_line = ""
     wrapped_text = ""
     font = data['font_name']
-    font_text = find_font_file(font, r'fonts')
-
     font_size = data.get('font_size')
 
-    font = ImageFont.truetype(font_text,font_size)
+    font = ImageFont.truetype(font,font_size)
 
     img = Image.new('RGB', (1, 1), color='black')
 
@@ -844,6 +857,15 @@ def get_text_lines(data, text,width=1920):
 
     wrapped_text += current_line
     return wrapped_text
+
+def format_timedelta_ass(ms):
+    # Định dạng thời gian cho ASS
+    total_seconds = ms.total_seconds()
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    milliseconds = int((seconds - int(seconds)) * 100)
+    seconds = int(seconds)
+    return "{:01}:{:02}:{:02}.{:02}".format(int(hours), int(minutes), seconds, milliseconds)
 
 
 def cread_video(data, task_id, worker_id):
@@ -962,7 +984,7 @@ def cread_video(data, task_id, worker_id):
                 image_to_video_zoom_in(image_file,path_audio,path_video, duration, 1920, 1080, 'video_screen')
             else:
                 image_to_video_zoom_out(image_file,path_audio,path_video, duration, 1920, 1080, 'video_screen')
-        file_list_video.write(f"file 'video/{item['id']}.mp4'\n")
+        file_list_video.write(f"file 'video/{iteam['id']}.mp4'\n")
         ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
     ass_file.close()
     file_list_video.close()
@@ -1009,3 +1031,18 @@ def create_or_reset_directory(directory_path):
         return False
 
 
+def update_status_video(status_video,video_id,task_id,worker_id):
+    data = {
+        'secret_key': SECRET_KEY,
+        'action': 'update_status',
+        'video_id': video_id,
+        'status': status_video,
+        'task_id': task_id,
+        'worker_id': worker_id,
+    }
+    url = f'{SERVER}/api/'
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        print("Trạng thái video đã được cập nhật thành công.")
+    else:
+        print(f"Lỗi cập nhật trạng thái video: {response.status_code}")
