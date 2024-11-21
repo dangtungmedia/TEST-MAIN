@@ -989,26 +989,61 @@ def cread_video(data, task_id, worker_id):
     ass_file.close()
     file_list_video.close()
 
-    ffmpeg_command = [
-        'ffmpeg',
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', file_video,
-        '-vf', f"subtitles={file_sub}",
-        '-c:v', 'libx264',
-        '-c:a', 'copy',  # Giữ nguyên âm thanh từ tệp video
-        '-map', '0:v',   # Giữ video từ đầu vào
-        '-map', '0:a',   # Giữ âm thanh từ đầu vào
-        '-y',
-        f"media/{video_id}/{name_video}.mp4"
-    ]
-    try:
-        result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    except subprocess.CalledProcessError as e:
-        print(f"ffmpeg failed with error: {e.stderr}")
-        return False
+    
+    if data.get('channel_music_active'):
+        background_music_folder = "music_background"  # Thay đổi thành đường dẫn thư mục chứa nhạc của bạn
+        music_files = [f for f in os.listdir(background_music_folder) if f.endswith(('.mp3', '.wav'))]
+        background_music = os.path.join(background_music_folder, random.choice(music_files))
+        start_time = random.uniform(0, max(0, end_time - 10))  # Chọn ngẫu nhiên thời gian bắt đầu, ít nhất là 10s trước khi hết file.
+        output_audio_with_music = f"media/{video_id}/audio.wav"
+
+        ffmpeg_command = [
+            'ffmpeg',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', file_video,  # Input video list
+            '-i', background_music,  # Input nhạc nền
+            '-vf', f"subtitles={file_sub}",  # Thêm phụ đề
+            '-c:v', 'libx264',  # Codec video
+            '-filter_complex',
+            f"[1:a]volume=0.15,aloop=loop=-1:size=2G[audio];[0:a][audio]amix=inputs=2:duration=longest:dropout_transition=3",  # Giảm âm lượng nhạc và lặp nhạc nền
+            '-map', '0:v',  # Map video từ đầu vào
+            '-map', '[audio]',  # Map âm thanh đã trộn
+            '-y',  # Ghi đè tệp đầu ra nếu tồn tại
+            f"media/{video_id}/{name_video}.mp4"
+        ]
+        try:
+            result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        except subprocess.CalledProcessError as e:
+            print(f"ffmpeg failed with error: {e.stderr}")
+            return False
+    else:
+        ffmpeg_command = [
+            'ffmpeg',
+            '-f', 'concat',
+            '-safe', '0',
+            '-i', file_video,
+            '-vf', f"subtitles={file_sub}",
+            '-c:v', 'libx264',
+            '-c:a', 'copy',  # Giữ nguyên âm thanh từ tệp video
+            '-map', '0:v',   # Giữ video từ đầu vào
+            '-map', '0:a',   # Giữ âm thanh từ đầu vào
+            '-y',
+            f"media/{video_id}/{name_video}.mp4"
+        ]
+        try:
+            result = subprocess.run(ffmpeg_command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        except subprocess.CalledProcessError as e:
+            print(f"ffmpeg failed with error: {e.stderr}")
+            return False
+
+
+
+
 
     print("đã tạo xong video check lại thử")
+
+
 
 def create_or_reset_directory(directory_path):
     try:

@@ -988,6 +988,9 @@ def cread_video(data, task_id, worker_id):
 
     print("đã tạo xong video check lại thử")
 
+
+
+
 def create_or_reset_directory(directory_path):
     try:
         # Kiểm tra xem thư mục có tồn tại hay không
