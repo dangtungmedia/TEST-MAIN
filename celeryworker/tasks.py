@@ -1012,7 +1012,7 @@ def process_entry(data, index, item, total_entries, video_id, task_id, worker_id
         # Tải hoặc xử lý video
         path_video = f'media/{video_id}/video/{item["id"]}.mp4'
         file = item.get('url_video')
-        update_status_video(f"Đang Render: Đang Xử lý Video {item["id"]} ", video_id, task_id, worker_id)
+        update_status_video(f'Đang Render: Đang Xử lý Video {item["id"]}', video_id, task_id, worker_id)
         duration = get_audio_duration(path_audio)
         if file == 'no-image-available.png' or not file:
             max_retries = 10
@@ -1068,7 +1068,7 @@ def process_entry(data, index, item, total_entries, video_id, task_id, worker_id
             else:
                 image_to_video_zoom_out(image_file, path_audio, path_video,1920, 1080, 'video_screen')
         
-        update_status_video(f"Đang Render: Đã xử lý xong video {item["id"]} ", video_id, task_id, worker_id)
+        update_status_video(f'Đang Render: Đã xử lý xong video {item["id"]}', video_id, task_id, worker_id)
         return True
     except Exception as e:
         print(f"Lỗi khi xử lý mục {index}: {e}")
