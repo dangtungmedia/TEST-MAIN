@@ -1054,10 +1054,7 @@ def get_url_voice_succes(url_voice):
         if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
             print("Refreshing ACCESS_TOKEN...")
             get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-
-        if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
-            print("Unable to retrieve ACCESS_TOKEN. Exiting.")
-            return None
+   
         url = url_voice + '/cloudfront'
         headers = {
             'Authorization': f'Bearer {ACCESS_TOKEN}'
@@ -1067,8 +1064,20 @@ def get_url_voice_succes(url_voice):
             if response.status_code == 200:
                 return response.json()['result']
             elif response.status_code == 401:  # Token hết hạn
-                print("Unauthorized. Token may be expired. Refreshing token...")
-                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                try:
+                    error_message = response.json().get("message", {}).get("msg", "")
+                    error_code = response.json().get("message", {}).get("error_code", "")
+
+                    # Chỉ làm mới token nếu lỗi là do token hết hạn
+                    if error_code == "auth/expired":
+                        print("Token expired. Refreshing token...")
+                        get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                        retry_count += 1
+                    else:
+                        print(f"Unauthorized: {error_message} ({error_code}). Không làm mới token.")
+
+                except Exception as e:
+                    print(f"Lỗi khi xử lý phản hồi lỗi 401: {e}")
             else:
                 print("API call failed with status code:", response.status_code)
                 print("Response text:", response.text)
@@ -1077,7 +1086,7 @@ def get_url_voice_succes(url_voice):
         # Chờ trước khi thử lại
         time.sleep(retry_delay)
     
-    return None     
+    return False     
 
 def get_audio_url(url_voice_text):
     """Hàm lấy URL audio từ API."""
@@ -1088,9 +1097,6 @@ def get_audio_url(url_voice_text):
         # Làm mới token nếu cần
         if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
             get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-
-        if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
-            return None
 
         # Gửi yêu cầu POST đến API
         url = "https://typecast.ai/api/speak/batch/get"
@@ -1114,7 +1120,20 @@ def get_audio_url(url_voice_text):
                 except (KeyError, IndexError, TypeError) as e:
                     print("Error parsing JSON response:", e)
             elif response.status_code == 401:  # Token hết hạn
-                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                try:
+                    error_message = response.json().get("message", {}).get("msg", "")
+                    error_code = response.json().get("message", {}).get("error_code", "")
+
+                    # Chỉ làm mới token nếu lỗi là do token hết hạn
+                    if error_code == "auth/expired":
+                        print("Token expired. Refreshing token...")
+                        get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                        retry_count += 1
+                    else:
+                        print(f"Unauthorized: {error_message} ({error_code}). Không làm mới token.")
+
+                except Exception as e:
+                    print(f"Lỗi khi xử lý phản hồi lỗi 401: {e}")
             else:
                pass
         except requests.RequestException as e:
@@ -1122,7 +1141,7 @@ def get_audio_url(url_voice_text):
 
         # Chờ trước khi thử lại
         time.sleep(retry_delay)
-    return None
+    return False
 
 def get_voice_text(text, data):
     retry_count = 0
@@ -1152,13 +1171,24 @@ def get_voice_text(text, data):
 
             # Nếu gặp lỗi unauthorized, tăng số lần thử lại
             elif response.status_code == 401:
-                print("Unauthorized. Token may be expired. Refreshing token...")
-                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-                retry_count += 1
+                try:
+                    error_message = response.json().get("message", {}).get("msg", "")
+                    error_code = response.json().get("message", {}).get("error_code", "")
+
+                    # Chỉ làm mới token nếu lỗi là do token hết hạn
+                    if error_code == "auth/expired":
+                        print("Token expired. Refreshing token...")
+                        get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                        retry_count += 1
+                    else:
+                        print(f"Unauthorized: {error_message} ({error_code}). Không làm mới token.")
+
+                except Exception as e:
+                    print(f"Lỗi khi xử lý phản hồi lỗi 401: {e}")
             else:
                 print("API call failed:", response.status_code)
-                return False
-
+                retry_count += 1
+                time.sleep(3)  # Chờ 1 giây trước khi thử lại
         except Exception as e:
             retry_count += 1
             time.sleep(3)  # Chờ 1 giây trước khi thử lại
@@ -1315,7 +1345,7 @@ def download_audio(data, task_id, worker_id):
         processed_entries = 0
 
         # Khởi tạo luồng xử lý tối đa 20 luồng
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = {
                 executor.submit(process_voice_entry, data, text_entry, video_id, task_id, worker_id, language): idx
                 for idx, text_entry in enumerate(text_entries)
