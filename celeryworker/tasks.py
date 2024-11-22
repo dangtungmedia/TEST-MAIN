@@ -1117,18 +1117,19 @@ def get_voice_text(text, data):
                 'Content-Type': 'application/json'
             }
             response = requests.post(url, headers=headers, json=style_name_data)
-            print("Response status code:", response.status_code)
-            print("Response text:", response.text)
             # Nếu thành công, trả về dữ liệu
             if response.status_code == 200:
                 return response.json().get("result", {}).get("speak_urls", [])
             
             # Nếu gặp lỗi unauthorized, tăng số lần thử lại
             elif response.status_code == 401:
-                print("Unauthorized: Token expired or invalid.")
                 try:
                     error_message = response.json().get("message", {}).get("msg", "")
+                    
+                    
                     error_code = response.json().get("message", {}).get("error_code", "")
+                    
+                    print(error_code)
                     # Chỉ làm mới token nếu lỗi là do token hết hạn
                     if error_code == "auth/expired":
                         print("Token expired. Refreshing token...")
