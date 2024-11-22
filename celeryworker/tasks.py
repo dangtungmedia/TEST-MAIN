@@ -335,7 +335,6 @@ def create_video_file(data, task_id, worker_id):
         return True
           
 def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".woff2"]):
-
     print(f"Searching for font '{font_name}' in directory '{font_dir}' with extensions {extensions}")
     for root, dirs, files in os.walk(font_dir):
         print(f"Checking directory: {root}")
@@ -355,7 +354,7 @@ def get_text_lines(data, text,width=1920):
 
     font_size = data.get('font_size')
 
-    font = ImageFont.truetype(font_text,font_size)
+    font = ImageFont.truetype(font,font_size)
 
     img = Image.new('RGB', (1, 1), color='black')
 
