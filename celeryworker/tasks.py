@@ -1028,11 +1028,9 @@ def get_voice_super_voice(data, text, file_name):
                 duration = get_audio_duration(file_name)
                 if duration > 0:
                     success = True
-                    print(f"Tạo giọng nói thành công cho '{text}' tại {file_name}")
                 else:
                     if os.path.exists(file_name):
                         os.remove(file_name)
-                    print(f"Lỗi: Tệp âm thanh {file_name} không hợp lệ.")
             else:
                 print(f"Lỗi: API trả về trạng thái {response.status_code}. Thử lại...")
         except requests.RequestException as e:
@@ -1048,7 +1046,7 @@ def get_voice_super_voice(data, text, file_name):
     return success
 
 def get_url_voice_succes(url_voice):
-    max_retries = 5  # Số lần thử lại tối đa
+    max_retries = 10  # Số lần thử lại tối đa
     retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
 
     for attempt in range(max_retries):
@@ -1087,15 +1085,11 @@ def get_audio_url(url_voice_text):
     retry_delay = 3  # Thời gian chờ giữa các lần thử (giây)
 
     for attempt in range(max_retries):
-        print(f"Attempt {attempt + 1} of {max_retries}.")
-
         # Làm mới token nếu cần
         if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
-            print("Refreshing ACCESS_TOKEN...")
             get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
 
         if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
-            print("Unable to retrieve ACCESS_TOKEN. Exiting.")
             return None
 
         # Gửi yêu cầu POST đến API
@@ -1107,7 +1101,6 @@ def get_audio_url(url_voice_text):
             response = requests.post(url, headers=headers, json=url_voice_text)
 
             print("Response status code:", response.status_code)
-
             # Xử lý phản hồi từ API
             if response.status_code == 200:
                 try:
@@ -1121,25 +1114,19 @@ def get_audio_url(url_voice_text):
                 except (KeyError, IndexError, TypeError) as e:
                     print("Error parsing JSON response:", e)
             elif response.status_code == 401:  # Token hết hạn
-                print("Unauthorized. Token may be expired. Refreshing token...")
                 get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
             else:
-                print("API call failed with status code:", response.status_code)
-                print("Response text:", response.text)
-
+               pass
         except requests.RequestException as e:
             print("Error occurred during API request:", e)
 
         # Chờ trước khi thử lại
         time.sleep(retry_delay)
-
-    print("Exceeded maximum retries. Unable to get audio URL.")
     return None
 
 def get_voice_text(text, data):
     retry_count = 0
     max_retries = 20  # Giới hạn số lần thử lại
-    print("Getting voice text...")
     while retry_count < max_retries:
         try:
             style_name_data = json.loads(data.get("style"))
@@ -1165,7 +1152,7 @@ def get_voice_text(text, data):
 
             # Nếu gặp lỗi unauthorized, tăng số lần thử lại
             elif response.status_code == 401:
-                print("Token expired, refreshing token...")
+                print("Unauthorized. Token may be expired. Refreshing token...")
                 get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
                 retry_count += 1
             else:
@@ -1173,13 +1160,12 @@ def get_voice_text(text, data):
                 return False
 
         except Exception as e:
-            print("Error:", e)
             retry_count += 1
             time.sleep(3)  # Chờ 1 giây trước khi thử lại
     return False
   
 # Hàm thử lại với decorator
-def retry(retries=3, delay=2):
+def retry(retries=3, delay=5):
     """
     Decorator để tự động thử lại nếu hàm gặp lỗi.
     
@@ -1198,7 +1184,6 @@ def retry(retries=3, delay=2):
                 except Exception as e:
                     print(f"Lỗi trong {func.__name__}, lần thử {attempt}: {e}")
                     if attempt < retries:
-                        print(f"Thử lại sau {delay} giây...")
                         time.sleep(delay)
                     else:
                         print(f"{func.__name__} thất bại sau {retries} lần thử.")
@@ -1206,7 +1191,7 @@ def retry(retries=3, delay=2):
         return wrapper
     return decorator
 
-@retry(retries=3, delay=2)
+@retry(retries=3, delay=5)
 def active_token(access_token):
     """
     Lấy idToken từ access_token.
@@ -1226,7 +1211,7 @@ def active_token(access_token):
     response.raise_for_status()
     return response.json()['idToken']
 
-@retry(retries=3, delay=2)
+@retry(retries=3, delay=5)
 def get_access_token(idToken):
     """
     Lấy access_token từ idToken.
@@ -1241,7 +1226,7 @@ def get_access_token(idToken):
     response.raise_for_status()
     return response.json()["result"]['access_token']
 
-@retry(retries=3, delay=2)
+@retry(retries=3, delay=5)
 def login_data(email, password):
     """
     Lấy idToken bằng cách đăng nhập với email và password.
@@ -1285,7 +1270,6 @@ def get_cookie(email, password):
         
     except Exception as e:
         ACCESS_TOKEN = None
-        print(f"Lỗi khi lấy cookie: {e}")
 
 
 def process_voice_entry(data, text_entry, video_id, task_id, worker_id, language):
