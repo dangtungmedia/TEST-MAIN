@@ -1000,51 +1000,6 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         print(f"lỗi chạy FFMPEG {e}")
 
 
-
-
-def get_voice_super_voice(data, text, file_name):     
-    success = False
-    attempt = 0
-    while not success and attempt < 10:
-        try:
-            url_voice_text = get_voice_text(text, data)
-            if not url_voice_text:
-                return False
-            
-            url_voice = get_audio_url(url_voice_text)
-            if not url_voice:
-                return False
-
-        
-            final_url = get_url_voice_succes(url_voice)
-            if not final_url:
-                return False
-            
-            response = requests.get(final_url)
-            if response.status_code == 200:
-                with open(file_name, 'wb') as f:
-                    f.write(response.content)
-                # Kiểm tra độ dài tệp âm thanh
-                duration = get_audio_duration(file_name)
-                if duration > 0:
-                    success = True
-                else:
-                    if os.path.exists(file_name):
-                        os.remove(file_name)
-            else:
-                print(f"Lỗi: API trả về trạng thái {response.status_code}. Thử lại...")
-        except requests.RequestException as e:
-            print(f"Lỗi mạng khi gọi API: {e}. Thử lại...")
-        except Exception as e:
-            print(f"Lỗi không xác định: {e}. Thử lại...")
-            
-        attempt += 1
-        if not success:
-            time.sleep(1)
-    if not success:
-        print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
-    return success
-
 def get_url_voice_succes(url_voice):
     max_retries = 10  # Số lần thử lại tối đa
     retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
@@ -1067,7 +1022,6 @@ def get_url_voice_succes(url_voice):
                 try:
                     error_message = response.json().get("message", {}).get("msg", "")
                     error_code = response.json().get("message", {}).get("error_code", "")
-
                     # Chỉ làm mới token nếu lỗi là do token hết hạn
                     if error_code == "auth/expired":
                         print("Token expired. Refreshing token...")
@@ -1300,6 +1254,51 @@ def get_cookie(email, password):
         
     except Exception as e:
         ACCESS_TOKEN = None
+
+def get_voice_super_voice(data, text, file_name):     
+    success = False
+    attempt = 0
+    while not success and attempt < 10:
+        try:
+            url_voice_text = get_voice_text(text, data)
+            if not url_voice_text:
+                return False
+            
+            url_voice = get_audio_url(url_voice_text)
+            if not url_voice:
+                return False
+
+        
+            final_url = get_url_voice_succes(url_voice)
+            if not final_url:
+                return False
+            
+            response = requests.get(final_url)
+            if response.status_code == 200:
+                with open(file_name, 'wb') as f:
+                    f.write(response.content)
+                # Kiểm tra độ dài tệp âm thanh
+                duration = get_audio_duration(file_name)
+                if duration > 0:
+                    success = True
+                else:
+                    if os.path.exists(file_name):
+                        os.remove(file_name)
+            else:
+                print(f"Lỗi: API trả về trạng thái {response.status_code}. Thử lại...")
+        except requests.RequestException as e:
+            print(f"Lỗi mạng khi gọi API: {e}. Thử lại...")
+        except Exception as e:
+            print(f"Lỗi không xác định: {e}. Thử lại...")
+            
+        attempt += 1
+        if not success:
+            time.sleep(1)
+    if not success:
+        print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
+    return success
+
+
 
 
 def process_voice_entry(data, text_entry, video_id, task_id, worker_id, language):
