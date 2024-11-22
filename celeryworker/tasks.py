@@ -852,6 +852,7 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
 
 def create_video_lines(data, task_id, worker_id, max_retries=5):
     try:
+        update_status_video("Đang Render : Chuẩn bị tạo video", data['video_id'], task_id, worker_id)
         video_id = data.get('video_id')
         text = data.get('text_content')
         create_or_reset_directory(f'media/{video_id}/video')
@@ -1392,7 +1393,7 @@ def get_url_voice_succes(url_voice):
 def get_audio_url(url_voice_text):
     """Hàm lấy URL audio từ API."""
     max_retries = 5  # Số lần thử lại tối đa
-    retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
+    retry_delay = 3  # Thời gian chờ giữa các lần thử (giây)
 
     for attempt in range(max_retries):
         print(f"Attempt {attempt + 1} of {max_retries}.")
@@ -1425,7 +1426,7 @@ def get_audio_url(url_voice_text):
                         print("Audio URL found:", audio_url)
                         return audio_url
                     else:
-                        print("Không tìm thấy trường 'audio' trong phản hồi.")
+                        pass
                 except (KeyError, IndexError, TypeError) as e:
                     print("Error parsing JSON response:", e)
             elif response.status_code == 401:  # Token hết hạn
