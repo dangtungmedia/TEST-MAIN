@@ -998,21 +998,25 @@ def format_timedelta_ass(ms):
 def process_entry(data, index, item, total_entries, video_id, task_id, worker_id):
     try:
         language = data.get('language')
+        update_status_video(f"Đang Render: Đang tạo giọng đọc", video_id, task_id, worker_id)
+        
         # Tạo giọng nói
         text = item["text"]
         path_audio = f'media/{video_id}/voice/{item["id"]}.wav'
-        process_voice_entry(data, text, language, path_audio, task_id, worker_id)
+        succes = process_voice_entry(data, text, language, path_audio, task_id, worker_id)
+        if not succes:
+            update_status_video(f"Render Lỗi: giọng đọc thất bại", video_id, task_id, worker_id)
+            return False
         
+        update_status_video(f"Đang Render: đã tạo xong giọng đọc", video_id, task_id, worker_id)
         # Tải hoặc xử lý video
         path_video = f'media/{video_id}/video/{item["id"]}.mp4'
         file = item.get('url_video')
-        
+        update_status_video(f"Đang Render: Đang Xử lý Video {item["id"]} ", video_id, task_id, worker_id)
         duration = get_audio_duration(path_audio)
         if file == 'no-image-available.png' or not file:
             max_retries = 10
             retries = 0
-            percentage = (index / total_entries) * 100  # Tính tỉ lệ phần trăm
-            update_status_video(f"Đang Render: Đang xử lý Video {percentage}%", video_id, task_id, worker_id)
             while retries < max_retries:
                 data_request = {
                     'secret_key': SECRET_KEY,
@@ -1064,6 +1068,7 @@ def process_entry(data, index, item, total_entries, video_id, task_id, worker_id
             else:
                 image_to_video_zoom_out(image_file, path_audio, path_video,1920, 1080, 'video_screen')
         
+        update_status_video(f"Đang Render: Đã xử lý xong video {item["id"]} ", video_id, task_id, worker_id)
         return True
     except Exception as e:
         print(f"Lỗi khi xử lý mục {index}: {e}")
@@ -1094,7 +1099,7 @@ def cread_video(data, task_id, worker_id):
                 result = future.result()
                 if result:
                     percentage =(index / total_entries) * 100
-                    update_status_video(f"Đang Render: Đã xử lý thành công vidoe {percentage:.2f} ", video_id, task_id, worker_id)
+                    update_status_video(f"Đang Render: Đã xử lý thành công videos {percentage:.2f} ", video_id, task_id, worker_id)
                 else:
                     update_status_video(f"Render Lỗi:Mục {index} xử lý thất bại. dừng render", video_id, task_id, worker_id)
                     return False
@@ -1188,6 +1193,7 @@ def cread_video(data, task_id, worker_id):
         update_status_video(f"Đang Render: xuất video hoàn thành công", video_id, task_id, worker_id)
         
     if data.get('channel_music_active'):
+        update_status_video(f"Đang Render: đang chèn nhạc nền vào video ", video_id, task_id, worker_id)
         background_music_folder = "music_background"  # Thay đổi thành đường dẫn thư mục chứa nhạc của bạn
 
         music_files = [f for f in os.listdir(background_music_folder) if f.endswith(('.mp3', '.wav'))]
@@ -1228,11 +1234,11 @@ def cread_video(data, task_id, worker_id):
             print(f"Error log:\n{stderr_output}")
         else:
             print("Lồng nhạc nền thành công.")
+            update_status_video(f"Đang Render: Đã xuất video và chèn nhạc nền thành công , chuẩn bị upload lên sever", video_id, task_id, worker_id)
 
     else:
         shutil.move(f"media/{video_id}/cache_video.mp4", f'media/{video_id}/{name_video}.mp4')
-
-    update_status_video(f"Đang Render: Đã xuất video hoàn thành chuẩn bị upload lên sever", video_id, task_id, worker_id)
+        update_status_video(f"Đang Render: Đã xuất video hoàn thành chuẩn bị upload lên sever", video_id, task_id, worker_id)
     return True
         
 
