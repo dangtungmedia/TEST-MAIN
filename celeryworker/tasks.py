@@ -29,7 +29,7 @@ from proglog import ProgressBarLogger
 from tqdm import tqdm
 from celery.signals import task_failure,task_revoked
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
+from threading import Lock
 import os
 from dotenv import load_dotenv
 
@@ -39,6 +39,7 @@ load_dotenv()
 SECRET_KEY=os.environ.get('SECRET_KEY')
 SERVER=os.environ.get('SERVER')
 ACCESS_TOKEN = None
+ACCESS_TOKEN_LOCK = Lock()
 
 
 def delete_directory(video_id):
@@ -1008,7 +1009,7 @@ def get_url_voice_succes(url_voice):
          # Làm mới token nếu cần
         if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
             print("Refreshing ACCESS_TOKEN...")
-            get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+            get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
    
         url = url_voice + '/cloudfront'
         headers = {
@@ -1025,7 +1026,7 @@ def get_url_voice_succes(url_voice):
                     # Chỉ làm mới token nếu lỗi là do token hết hạn
                     if error_code == "auth/expired":
                         print("Token expired. Refreshing token...")
-                        get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                        get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
                         retry_count += 1
                     else:
                         print(f"Unauthorized: {error_message} ({error_code}). Không làm mới token.")
@@ -1050,7 +1051,7 @@ def get_audio_url(url_voice_text):
     for attempt in range(max_retries):
         # Làm mới token nếu cần
         if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
-            get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+            get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
 
         # Gửi yêu cầu POST đến API
         url = "https://typecast.ai/api/speak/batch/get"
@@ -1081,7 +1082,7 @@ def get_audio_url(url_voice_text):
                     # Chỉ làm mới token nếu lỗi là do token hết hạn
                     if error_code == "auth/expired":
                         print("Token expired. Refreshing token...")
-                        get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                        get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
                         retry_count += 1
                     else:
                         print(f"Unauthorized: {error_message} ({error_code}). Không làm mới token.")
@@ -1107,6 +1108,7 @@ def get_voice_text(text, data):
 
 
             if ACCESS_TOKEN:
+                print("Using existing ACCESS_TOKEN.")
                 get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
             
             # Gửi yêu cầu POST
@@ -1128,24 +1130,21 @@ def get_voice_text(text, data):
                 try:
                     error_message = response.json().get("message", {}).get("msg", "")
                     error_code = response.json().get("message", {}).get("error_code", "")
-
                     # Chỉ làm mới token nếu lỗi là do token hết hạn
                     if error_code == "auth/expired":
                         print("Token expired. Refreshing token...")
-                        get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-                        retry_count += 1
+                        get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
                     else:
+                        retry_count += 1
                         print(f"Unauthorized: {error_message} ({error_code}). Không làm mới token.")
-
                 except Exception as e:
                     print(f"Lỗi khi xử lý phản hồi lỗi 401: {e}")
             else:
                 print("API call failed:", response.status_code)
-                retry_count += 1
                 time.sleep(3)  # Chờ 1 giây trước khi thử lại
         except Exception as e:
-            retry_count += 1
             time.sleep(3)  # Chờ 1 giây trước khi thử lại
+        
     return False
   
 # Hàm thử lại với decorator
@@ -1244,16 +1243,16 @@ def get_cookie(email, password):
     Returns:
         str: Access token (cookie) nếu thành công, None nếu thất bại.
     """
-    global ACCESS_TOKEN  # Khai báo biến toàn cục
-    try:
-        Token_login = login_data(email, password)
-
-        idToken = get_access_token(Token_login)  # Lưu vào biến toàn cục
-        
-        ACCESS_TOKEN = active_token(idToken)
-        
-    except Exception as e:
-        ACCESS_TOKEN = None
+    global ACCESS_TOKEN
+    with ACCESS_TOKEN_LOCK:
+        try:
+            Token_login = login_data(email, password)
+            idToken = get_access_token(Token_login)
+            ACCESS_TOKEN = active_token(idToken)
+            print(f"ACCESS_TOKEN updated: {ACCESS_TOKEN}")
+        except Exception as e:
+            print(f"Error updating ACCESS_TOKEN: {e}")
+            ACCESS_TOKEN = None
 
 def get_voice_super_voice(data, text, file_name):     
     success = False
