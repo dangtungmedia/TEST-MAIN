@@ -1392,7 +1392,7 @@ def get_url_voice_succes(url_voice):
 
 def get_audio_url(url_voice_text):
     """Hàm lấy URL audio từ API."""
-    max_retries = 5  # Số lần thử lại tối đa
+    max_retries = 10  # Số lần thử lại tối đa
     retry_delay = 3  # Thời gian chờ giữa các lần thử (giây)
 
     for attempt in range(max_retries):
