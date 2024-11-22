@@ -99,13 +99,14 @@ def render_video(self, data):
 
     success = cread_video(data, task_id, worker_id)
     if not success:
-        shutil.rmtree(f'media/{video_id}')
+        # shutil.rmtree(f'media/{video_id}')
         return
 
     success = upload_video(data, task_id, worker_id)
     if not success:
-        shutil.rmtree(f'media/{video_id}')
+        # shutil.rmtree(f'media/{video_id}')
         return
+    update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
 class UploadProgress:
     def __init__(self, data, task_id, worker_id):
@@ -119,10 +120,10 @@ class UploadProgress:
         percent_complete = (monitor.bytes_read / monitor.len) * 100
         # Check if the percentage has increased by at least 1%
         if int(percent_complete) > self.last_printed_percent:
-            self.last_printed_percent = int(percent_complete)
+            self.last_printed_percent = percent_complete
             # Print the percentage of upload completed
             print(f"Uploaded: {self.last_printed_percent}%")
-            update_status_video(f"Đang Render : Đang Upload File Lên Server {self.last_printed_percent}%", self.data.get('video_id'), self.task_id, self.worker_id)
+            update_status_video(f"Đang Render : Đang Upload File Lên Server {self.last_printed_percent:.2f}%", self.data.get('video_id'), self.task_id, self.worker_id)
 
 def upload_video(data, task_id, worker_id):
     video_id = data.get('video_id')
@@ -180,6 +181,10 @@ def upload_video(data, task_id, worker_id):
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         return False
+
+
+
+
 
 def get_voice_japanese(data, text, file_name):
     """Hàm chuyển văn bản thành giọng nói tiếng Nhật với VoiceVox, bao gồm chức năng thử lại khi gặp lỗi."""
@@ -693,9 +698,10 @@ def get_random_video_from_directory(directory_path):
     video_files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
     return os.path.join(directory_path, random.choice(video_files))
 
-def cut_and_scale_video_random(video_path,path_audio,path_video, duration,scale_width, scale_height, overlay_video_dir):
+def cut_and_scale_video_random(video_path,path_audio,path_video,scale_width, scale_height, overlay_video_dir):
     """Cắt video, thay đổi kích thước, thêm audio và chồng video trong một lệnh FFmpeg."""
     video_length = get_video_duration(video_path)
+    duration = get_audio_duration(path_audio)
     start_time = random.uniform(0, video_length - duration)
     start_time_str = format_time(start_time)
 
@@ -711,6 +717,8 @@ def cut_and_scale_video_random(video_path,path_audio,path_video, duration,scale_
                 "-ss", start_time_str,               # Thời gian bắt đầu cắt
                 "-t", str(duration),                 # Thời lượng video
                 "-i", video_path,                    # Video gốc
+                "-ss", start_time_str,               # Thời gian bắt đầu cắt
+                "-t", str(duration),                 # Thời lượng video
                 "-i", base_video,                    # Video chồng
                 "-i", path_audio,                    # Audio mới
                 "-filter_complex",
@@ -722,10 +730,11 @@ def cut_and_scale_video_random(video_path,path_audio,path_video, duration,scale_
                 "-c:v", "libx264",                   # Codec video
                 "-c:a", "aac",                       # Codec audio
                 "-b:a", "192k",                      # Bitrate audio
+                '-r', '24', 
                 "-pix_fmt", "yuv420p",               # Đảm bảo tương thích
                 "-shortest",                         # Đảm bảo audio không dài hơn video
                 "-y",                                # Ghi đè file đầu ra
-                output_video
+                path_video
             ]
         else:
             # Lệnh không overlay
@@ -741,15 +750,16 @@ def cut_and_scale_video_random(video_path,path_audio,path_video, duration,scale_
                 "-c:v", "libx264",                   # Codec video
                 "-c:a", "aac",                       # Codec audio
                 "-b:a", "192k",                      # Bitrate audio
+                '-r', '24', 
                 "-pix_fmt", "yuv420p",               # Đảm bảo tương thích
                 "-shortest",                         # Đảm bảo audio không dài hơn video
                 "-y",                                # Ghi đè file đầu ra
-                output_video
+                path_video
             ]
 
         # Chạy lệnh FFmpeg
         subprocess.run(cmd, check=True)
-        print(f"Video saved to: {output_video}")
+        print(f"Video saved to: {path_video}")
 
     except subprocess.CalledProcessError as e:
         print(f"An error occurred: {e}")
@@ -760,9 +770,10 @@ def get_filename_from_url(url):
     filename = path.split('/')[-1]
     return filename
 
-def image_to_video_zoom_out(image_file, path_audio, path_video, duration, scale_width, scale_height, overlay_video):
+def image_to_video_zoom_out(image_file, path_audio, path_video,scale_width, scale_height, overlay_video):
     """Tạo video từ hình ảnh với hiệu ứng zoom-out và thêm âm thanh."""
     is_overlay_video = random.choice([True, False])
+    duration = get_audio_duration(path_audio)
     base_video = get_random_video_from_directory(overlay_video)
     time_video = format_time(duration)
 
@@ -818,10 +829,11 @@ def image_to_video_zoom_out(image_file, path_audio, path_video, duration, scale_
         print(f"Error running FFmpeg: {e}")
 
 
-def image_to_video_zoom_in(image_file, path_audio, path_video, duration, scale_width, scale_height, overlay_video):
+def image_to_video_zoom_in(image_file, path_audio, path_video, scale_width, scale_height, overlay_video):
     """Tạo video từ hình ảnh với hiệu ứng zoom-in và thêm âm thanh."""
     is_overlay_video = random.choice([True, False])
     base_video = get_random_video_from_directory(overlay_video)
+    duration = get_audio_duration(path_audio)
     time_video = format_time(duration)
 
     if is_overlay_video and base_video:
@@ -947,15 +959,119 @@ def format_timedelta_ass(ms):
     return "{:01}:{:02}:{:02}.{:02}".format(int(hours), int(minutes), seconds, milliseconds)
 
 
+def process_entry(data, index, item, total_entries, video_id, task_id, worker_id):
+    try:
+        language = data.get('language')
+        # Tạo giọng nói
+        text = item["text"]
+        path_audio = f'media/{video_id}/voice/{item["id"]}.wav'
+        process_voice_entry(data, text, language, path_audio, task_id, worker_id)
+        
+        # Tải hoặc xử lý video
+        path_video = f'media/{video_id}/video/{item["id"]}.mp4'
+        file = item.get('url_video')
+        
+        duration = get_audio_duration(path_audio)
+        if file == 'no-image-available.png' or not file:
+            max_retries = 10
+            retries = 0
+            percentage = (index / total_entries) * 100  # Tính tỉ lệ phần trăm
+            update_status_video(f"Đang Render: Đang xử lý Video {percentage}%", video_id, task_id, worker_id)
+            while retries < max_retries:
+                data_request = {
+                    'secret_key': SECRET_KEY,
+                    'action': 'get-video-backrought',
+                    'task_id': task_id,
+                    'worker_id': worker_id,
+                    'list_video': os.listdir(f'media/{video_id}/video_backrought'),
+                    'duration': duration,
+                }
+                url = f'{SERVER}/api/'
+                response = requests.post(url, json=data_request)
+
+                if response.status_code == 200:
+                    filename = response.headers.get('Content-Disposition').split('filename=')[1].strip('"')
+                    video_path = os.path.join(f'media/{video_id}/video_backrought', filename)
+                    
+                    # Lưu video tải về
+                    with open(video_path, 'wb') as f:
+                        f.write(response.content)
+
+                    # Kiểm tra và thoát khỏi vòng lặp nếu tải thành công
+                    if os.path.exists(video_path) and get_video_duration(video_path) >= duration:
+                        cut_and_scale_video_random(video_path,path_audio, path_video,1920, 1080, 'video_screen')
+                        break
+                    else:
+                        print("Video tải về không đạt độ dài yêu cầu.")
+                else:
+                    print(f"Lỗi {response.status_code}: Không thể tải xuống tệp từ API.")
+                
+                retries += 1
+                print(f"Thử lại {retries}/{max_retries}")
+
+            if retries == max_retries:
+                print("Không thể tải video phù hợp sau nhiều lần thử.")
+                return False  # Dừng lại nếu không thành công sau max_retries lần thử
+        
+        else:
+            response = requests.get(file, stream=True, timeout=10)
+            image_file = os.path.join(f'media/{video_id}/image', get_filename_from_url(file))
+
+            if not os.path.exists(image_file):
+                response = requests.get(file, stream=True, timeout=10)
+                with open(image_file, 'wb') as f:
+                    f.write(response.content)
+
+            random_choice = random.choice([True, False])
+            if random_choice:
+                image_to_video_zoom_in(image_file, path_audio, path_video,1920, 1080, 'video_screen')
+            else:
+                image_to_video_zoom_out(image_file, path_audio, path_video,1920, 1080, 'video_screen')
+        
+        return True
+    except Exception as e:
+        print(f"Lỗi khi xử lý mục {index}: {e}")
+        return False
+
+
 def cread_video(data, task_id, worker_id):
-    language = data.get('language')
     video_id = data.get('video_id')
     text = data.get('text_content')
-
     name_video = data.get('name_video')
-
+    os.makedirs(f'media/{video_id}', exist_ok=True)
+    os.makedirs(f'media/{video_id}/voice', exist_ok=True)
+    os.makedirs(f'media/{video_id}/video', exist_ok=True)
+    os.makedirs(f'media/{video_id}/video_backrought', exist_ok=True)
+    os.makedirs(f'media/{video_id}/image', exist_ok=True)
+    
+    text_entries = json.loads(text)
+    total_entries = len(text_entries)
+    
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = {
+            executor.submit(process_entry, data, index, item, total_entries, video_id, task_id, worker_id): index
+            for index, item in enumerate(text_entries, start=1)
+        }
+        for future in as_completed(futures):
+            index = futures[future]
+            try:
+                result = future.result()
+                if result:
+                    percentage =(index / total_entries) * 100
+                    update_status_video(f"Đang Render: Đã xử lý thành công vidoe {percentage:.2f} ", video_id, task_id, worker_id)
+                else:
+                    update_status_video(f"Render Lỗi:Mục {index} xử lý thất bại. dừng render", video_id, task_id, worker_id)
+                    return False
+                    
+            except Exception as e:
+                update_status_video(f"Render Lỗi:Mục {index} xử lý thất bại. dừng render", video_id, task_id, worker_id)
+                return False
+            
+            
+    update_status_video(f"Đang Render: đang tạo file phụ đề ", video_id, task_id, worker_id)
     file_sub = f'media/{video_id}/subtitles.ass'
-    file_video = f'media/{video_id}/input_files_video.txt'
+    file_video = f'media/{video_id}/input_files_video.txt'    
+    
     color = data.get('font_color')
     color_backrought = data.get('color_backrought')
     color_border = data.get('stroke')
@@ -983,182 +1099,108 @@ def cread_video(data, task_id, worker_id):
     ass_file.write("[Events]\n")
     ass_file.write("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect,WrapStyle,Text\n")
 
-    # Tải các đoạn văn bản từ `text_content`
-    text_entries = json.loads(text)
-    total_entries = len(text_entries)
-
-    os.makedirs(f'media/{video_id}/voice', exist_ok=True)
-    os.makedirs(f'media/{video_id}/video', exist_ok=True)
-    os.makedirs(f'media/{video_id}/video_backrought', exist_ok=True)
-    os.makedirs(f'media/{video_id}/image', exist_ok=True)
-
     start_time = timedelta(0)
-
-    list_video = []
-    for index, item in enumerate(text_entries, start=1):
-        text = iteam["text"]
-        path_audio  = f'media/{video_id}/voice/{iteam["id"]}.wav'
-        process_voice_entry(data,text,language,path_audio, task_id,worker_id)
-
-        path_video = f'media/{video_id}/video/{iteam["id"]}.mp4'
-
-        file = iteam.get('url_video')
-
+    for item in text_entries:
+        path_audio  = f'media/{video_id}/voice/{item["id"]}.wav'
+        file_list_video.write(f"file 'video/{item['id']}.mp4'\n")
+        
+        
         duration = get_audio_duration(path_audio)
         duration_milliseconds = duration * 1000
         end_time = start_time + timedelta(milliseconds=duration_milliseconds)
-
-        if file == 'no-image-available.png' or not file:
-            max_retries = 10  # Giới hạn số lần thử tải video
-            retries = 0
-
-            while retries < max_retries:
-                data_request = {
-                    'secret_key': SECRET_KEY,
-                    'action': 'get-video-backrought',
-                    'task_id': task_id,
-                    'worker_id': worker_id,
-                    'list_video': list_video,
-                    'duration': duration,
-                }
-                url = f'{SERVER}/api/'
-                response = requests.post(url, json=data_request)
-
-                if response.status_code == 200:
-                    filename = response.headers.get('Content-Disposition').split('filename=')[1].strip('"')
-                    video_path = os.path.join(f'media/{video_id}/video_backrought', filename)
-                    
-                    # Lưu video tải về
-                    with open(video_path, 'wb') as f:
-                        f.write(response.content)
-
-                    # Kiểm tra và thoát khỏi vòng lặp nếu tải thành công
-                    if os.path.exists(video_path) and get_video_duration(video_path) >= duration:
-                        cut_and_scale_video_random(video_path,path_audio,path_video, duration, 1920, 1080, 'video_screen')
-                        break
-                    else:
-                        print("Video tải về không đạt độ dài yêu cầu.")
-                else:
-                    print(f"Lỗi {response.status_code}: Không thể tải xuống tệp từ API.")
-                
-                retries += 1
-                print(f"Thử lại {retries}/{max_retries}")
-
-            # Kiểm tra nếu vòng lặp kết thúc mà không tải được video
-            if retries == max_retries:
-                print("Không thể tải video phù hợp sau nhiều lần thử.")
-                return False  # Dừng lại nếu không thành công sau max_retries lần thử
-
-        else:
-            response = requests.get(file, stream=True, timeout=10)
-            image_file = os.path.join(f'media/{video_id}/image', get_filename_from_url(file))
-
-            if not os.path.exists(image_file):
-                response = requests.get(file, stream=True, timeout=10)
-                with open(image_file, 'wb') as f:
-                    f.write(response.content)
-
-            random_choice = random.choice([True, False])
-            if random_choice:
-                image_to_video_zoom_in(image_file,path_audio,path_video, duration, 1920, 1080, 'video_screen')
-            else:
-                image_to_video_zoom_out(image_file,path_audio,path_video, duration, 1920, 1080, 'video_screen')
-        file_list_video.write(f"file 'video/{iteam['id']}.mp4'\n")
-        ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,iteam['text'])}\n")
+        
+        ass_file.write(f"Dialogue: 0,{format_timedelta_ass(start_time)},{format_timedelta_ass(end_time)},Default,,0,0,0,,2,{get_text_lines(data,item['text'])}\n")
         start_time = end_time
-        progress = int((index / total_entries) * 100)
-        update_status_video(f"Đang Render: đang tạo video {index}/{total_entries}", data['video_id'], task_id, worker_id)
-
+    
     ass_file.close()
     file_list_video.close()
-
+    update_status_video(f"Đang Render: đã tạo thành công file phụ đề", video_id, task_id, worker_id)
+    
+    total_duration = end_time.total_seconds()
+    
+    ffmpeg_command = [
+        'ffmpeg',
+        '-f', 'concat',
+        '-safe', '0',
+        '-i', file_video,
+        '-vf', f"subtitles={file_sub}",
+        '-c:v', 'libx264',
+        '-c:a', 'copy',  # Giữ nguyên âm thanh từ tệp video
+        '-map', '0:v',   # Giữ video từ đầu vào
+        '-map', '0:a',   # Giữ âm thanh từ đầu vào
+        '-y',
+        f"media/{video_id}/cache_video.mp4"
+    ]
+    
+    with subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) as process:
+        for line in process.stderr:
+            if "time=" in line:
+                # Lấy giá trị thời gian từ log
+                time_str = line.split("time=")[1].split(" ")[0].strip()
+                h, m, s = map(float, time_str.split(":"))
+                current_time = int(h * 3600 + m * 60 + s)
+                # Hiển thị tỉ lệ hoàn thành
+                percentage = (current_time / total_duration) * 100
+                print(f"Tỉ lệ hoàn thành: {percentage:.2f}%")
+                update_status_video(f"Đang Render: xuất video hoàn thành {percentage:.2f}%", video_id, task_id, worker_id)
+        process.wait()
+        
+    # Kiểm tra lỗi từ FFmpeg
+    if process.returncode != 0:
+        print(f"FFmpeg error:\n{process.stderr.read()}")
+    else:
+        update_status_video(f"Đang Render: xuất video hoàn thành công", video_id, task_id, worker_id)
+        
     if data.get('channel_music_active'):
         background_music_folder = "music_background"  # Thay đổi thành đường dẫn thư mục chứa nhạc của bạn
+
         music_files = [f for f in os.listdir(background_music_folder) if f.endswith(('.mp3', '.wav'))]
+
         background_music = os.path.join(background_music_folder, random.choice(music_files))
-        start_time = random.uniform(0, max(0, end_time - 10))  # Chọn ngẫu nhiên thời gian bắt đầu, ít nhất là 10s trước khi hết file.
-        output_audio_with_music = f"media/{video_id}/audio.wav"
 
-        ffmpeg_command = [
+        start_time = random.uniform(0, max(0, total_duration - 10))  # Chọn ngẫu nhiên thời gian bắt đầu, ít nhất là 10s trước khi hết file.
+
+        ffmpeg_bgm_command = [
             'ffmpeg',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', file_video,  # Input video list
-            '-i', background_music,  # Input nhạc nền
-            '-vf', f"subtitles={file_sub}",  # Thêm phụ đề
-            '-c:v', 'libx264',  # Codec video
-            '-filter_complex',
-            f"[1:a]volume=0.15,aloop=loop=-1:size=2G[audio];[0:a][audio]amix=inputs=2:duration=longest:dropout_transition=3",  # Giảm âm lượng nhạc và lặp nhạc nền
-            '-map', '0:v',  # Map video từ đầu vào
-            '-map', '[audio]',  # Map âm thanh đã trộn
-            '-y',  # Ghi đè tệp đầu ra nếu tồn tại
-            f"media/{video_id}/{name_video}.mp4"
+            '-i', f"media/{video_id}/cache_video.mp4",  # Tệp video
+            '-i', background_music,  # Tệp nhạc nền
+            '-filter_complex', f"[1]atrim=start={start_time}:duration={total_duration},volume=0.15[bgm];[0][bgm]amix=inputs=2:duration=longest",
+            '-y', f"media/{video_id}/{name_video}.mp4"  # Đầu ra video
         ]
-        
+
+        print(f"Running FFmpeg command:\n{' '.join(ffmpeg_bgm_command)}")
+
+        with subprocess.Popen(ffmpeg_bgm_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) as process:
+            for line in process.stderr:
+                if "time=" in line:
+                    try:
+                        time_str = line.split("time=")[1].split(" ")[0].strip()
+                        if time_str == "N/A":
+                            continue  # Bỏ qua nếu không có thông tin thời gian
+                        h, m, s = map(float, time_str.split(":"))
+                        current_time = int(h * 3600 + m * 60 + s)
+                        percentage = (current_time / total_duration) * 100
+                        print(f"Tỉ lệ hoàn thành video backrought: {percentage:.2f}%")
+                    except Exception as e:
+                        print(f"Error parsing time: {e}")
+            process.wait()
+
+        # Kiểm tra lỗi sau khi kết thúc
+        if process.returncode != 0:
+            print("FFmpeg encountered an error.")
+            stderr_output = ''.join(process.stderr)
+            print(f"Error log:\n{stderr_output}")
+        else:
+            print("Lồng nhạc nền thành công.")
+
     else:
-        ffmpeg_command = [
-            'ffmpeg',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', file_video,
-            '-vf', f"subtitles={file_sub}",
-            '-c:v', 'libx264',
-            '-c:a', 'copy',  # Giữ nguyên âm thanh từ tệp video
-            '-map', '0:v',   # Giữ video từ đầu vào
-            '-map', '0:a',   # Giữ âm thanh từ đầu vào
-            '-y',
-            f"media/{video_id}/{name_video}.mp4"
-        ]
+        shutil.move(f"media/{video_id}/cache_video.mp4", f'media/{video_id}/{name_video}.mp4')
+
+    update_status_video(f"Đang Render: Đã xuất video hoàn thành chuẩn bị upload lên sever", video_id, task_id, worker_id)
+    return True
         
-        try:
-            # Chạy FFmpeg
-            with subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, universal_newlines=True) as process:
-                total_duration = None
-                progress_bar = None
 
-                for line in process.stderr:
-                    # Log để kiểm tra dòng stderr
-                    print(f"ffmpeg output: {line.strip()}")
-
-                    # Lấy thời lượng tổng của video
-                    if "Duration" in line and total_duration is None:
-                        try:
-                            duration_str = re.search(r"Duration: (\d+):(\d+):(\d+\.\d+)", line).groups()
-                            h, m, s = map(float, duration_str)
-                            total_duration = int(h * 3600 + m * 60 + s)
-                            progress_bar = tqdm(total=total_duration, desc="Rendering", unit="s")
-                        except Exception as e:
-                            print(f"Error parsing duration: {e}")
-                            continue
-
-                    # Lấy thời gian hiện tại đang render
-                    if "time=" in line and progress_bar:
-                        try:
-                            time_str = re.search(r"time=(\d+):(\d+):(\d+\.\d+)", line).groups()
-                            h, m, s = map(float, time_str)
-                            current_time = int(h * 3600 + m * 60 + s)
-                            progress_bar.n = current_time
-                            progress_bar.refresh()
-
-                            # Tính toán % hoàn thành
-                            percentage = int((current_time / total_duration) * 100)
-                            if percentage <= 100:
-                                update_status_video(f"Đang Render: nối video {percentage}% hoàn thành", data['video_id'], task_id, worker_id)
-                        except Exception as e:
-                            print(f"Skipping invalid time format in line: {line.strip()}, error: {e}")
-
-                process.wait()
-                if process.returncode != 0:
-                    update_status_video(f"Render Lỗi : FFmpeg lỗi với mã lỗi {process.returncode}", video_id, task_id, worker_id)
-                    return False
-                update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
-                return True
-
-        except subprocess.CalledProcessError as e:
-            update_status_video(f"Render Lỗi : FFmpeg lỗi với mã lỗi {e.stderr}", video_id, task_id, worker_id)
-            return False
-
-
+    
 def create_or_reset_directory(directory_path):
     try:
         # Kiểm tra xem thư mục có tồn tại hay không

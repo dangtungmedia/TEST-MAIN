@@ -2019,7 +2019,6 @@ def create_video_reup(data, task_id, worker_id):
         update_status_video(f"Render Lỗi: Lỗi tổng quát khi tạo video", video_id, task_id, worker_id)
         return False
     
-
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
     ydl_opts = {
