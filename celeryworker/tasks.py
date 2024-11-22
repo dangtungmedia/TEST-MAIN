@@ -999,6 +999,295 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
     except subprocess.CalledProcessError as e:
         print(f"lỗi chạy FFMPEG {e}")
 
+
+
+
+def get_voice_super_voice(data, text, file_name):     
+    success = False
+    attempt = 0
+    while not success and attempt < 10:
+        try:
+            url_voice_text = get_voice_text(text, data)
+            if not url_voice_text:
+                return False
+            
+            url_voice = get_audio_url(url_voice_text)
+            if not url_voice:
+                return False
+
+        
+            final_url = get_url_voice_succes(url_voice)
+            if not final_url:
+                return False
+            
+            response = requests.get(final_url)
+            if response.status_code == 200:
+                with open(file_name, 'wb') as f:
+                    f.write(response.content)
+                # Kiểm tra độ dài tệp âm thanh
+                duration = get_audio_duration(file_name)
+                if duration > 0:
+                    success = True
+                    print(f"Tạo giọng nói thành công cho '{text}' tại {file_name}")
+                else:
+                    if os.path.exists(file_name):
+                        os.remove(file_name)
+                    print(f"Lỗi: Tệp âm thanh {file_name} không hợp lệ.")
+            else:
+                print(f"Lỗi: API trả về trạng thái {response.status_code}. Thử lại...")
+        except requests.RequestException as e:
+            print(f"Lỗi mạng khi gọi API: {e}. Thử lại...")
+        except Exception as e:
+            print(f"Lỗi không xác định: {e}. Thử lại...")
+            
+        attempt += 1
+        if not success:
+            time.sleep(1)
+    if not success:
+        print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
+    return success
+
+def get_url_voice_succes(url_voice):
+    max_retries = 5  # Số lần thử lại tối đa
+    retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
+
+    for attempt in range(max_retries):
+         # Làm mới token nếu cần
+        if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
+            print("Refreshing ACCESS_TOKEN...")
+            get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+
+        if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
+            print("Unable to retrieve ACCESS_TOKEN. Exiting.")
+            return None
+        url = url_voice + '/cloudfront'
+        headers = {
+            'Authorization': f'Bearer {ACCESS_TOKEN}'
+        }
+        try:
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                return response.json()['result']
+            elif response.status_code == 401:  # Token hết hạn
+                print("Unauthorized. Token may be expired. Refreshing token...")
+                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+            else:
+                print("API call failed with status code:", response.status_code)
+                print("Response text:", response.text)
+        except requests.RequestException as e:
+            print("Error occurred during API request:", e)
+        # Chờ trước khi thử lại
+        time.sleep(retry_delay)
+    
+    return None     
+
+def get_audio_url(url_voice_text):
+    """Hàm lấy URL audio từ API."""
+    max_retries = 10  # Số lần thử lại tối đa
+    retry_delay = 3  # Thời gian chờ giữa các lần thử (giây)
+
+    for attempt in range(max_retries):
+        print(f"Attempt {attempt + 1} of {max_retries}.")
+
+        # Làm mới token nếu cần
+        if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
+            print("Refreshing ACCESS_TOKEN...")
+            get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+
+        if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
+            print("Unable to retrieve ACCESS_TOKEN. Exiting.")
+            return None
+
+        # Gửi yêu cầu POST đến API
+        url = "https://typecast.ai/api/speak/batch/get"
+        headers = {
+            "Authorization": f"Bearer {ACCESS_TOKEN}"
+        }
+        try:
+            response = requests.post(url, headers=headers, json=url_voice_text)
+
+            print("Response status code:", response.status_code)
+
+            # Xử lý phản hồi từ API
+            if response.status_code == 200:
+                try:
+                    result = response.json().get("result", [])[0]
+                    audio_url = result.get("audio", {}).get("url")
+                    if audio_url:
+                        print("Audio URL found:", audio_url)
+                        return audio_url
+                    else:
+                        pass
+                except (KeyError, IndexError, TypeError) as e:
+                    print("Error parsing JSON response:", e)
+            elif response.status_code == 401:  # Token hết hạn
+                print("Unauthorized. Token may be expired. Refreshing token...")
+                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+            else:
+                print("API call failed with status code:", response.status_code)
+                print("Response text:", response.text)
+
+        except requests.RequestException as e:
+            print("Error occurred during API request:", e)
+
+        # Chờ trước khi thử lại
+        time.sleep(retry_delay)
+
+    print("Exceeded maximum retries. Unable to get audio URL.")
+    return None
+
+def get_voice_text(text, data):
+    retry_count = 0
+    max_retries = 20  # Giới hạn số lần thử lại
+    print("Getting voice text...")
+    while retry_count < max_retries:
+        try:
+            style_name_data = json.loads(data.get("style"))
+            style_name_data[0]["text"] = text
+
+
+            if ACCESS_TOKEN:
+                get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
+            
+            # Gửi yêu cầu POST
+            url = 'https://typecast.ai/api/speak/batch/post'
+            headers = {
+                'Authorization': f'Bearer {ACCESS_TOKEN}',
+                'Content-Type': 'application/json'
+            }
+            response = requests.post(url, headers=headers, json=style_name_data)
+            print("Response status code:", response.status_code)
+            print("Response text:", response.text)
+            # Nếu thành công, trả về dữ liệu
+            if response.status_code == 200:
+                return response.json().get("result", {}).get("speak_urls", [])
+            
+
+            # Nếu gặp lỗi unauthorized, tăng số lần thử lại
+            elif response.status_code == 401:
+                print("Token expired, refreshing token...")
+                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+                retry_count += 1
+            else:
+                print("API call failed:", response.status_code)
+                return False
+
+        except Exception as e:
+            print("Error:", e)
+            retry_count += 1
+            time.sleep(3)  # Chờ 1 giây trước khi thử lại
+    return False
+  
+# Hàm thử lại với decorator
+def retry(retries=3, delay=2):
+    """
+    Decorator để tự động thử lại nếu hàm gặp lỗi.
+    
+    Args:
+        retries (int): Số lần thử lại tối đa.
+        delay (int): Thời gian chờ giữa các lần thử (giây).
+
+    Returns:
+        Kết quả trả về từ hàm nếu thành công, None nếu thất bại.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for attempt in range(1, retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    print(f"Lỗi trong {func.__name__}, lần thử {attempt}: {e}")
+                    if attempt < retries:
+                        print(f"Thử lại sau {delay} giây...")
+                        time.sleep(delay)
+                    else:
+                        print(f"{func.__name__} thất bại sau {retries} lần thử.")
+                        return None
+        return wrapper
+    return decorator
+
+@retry(retries=3, delay=2)
+def active_token(access_token):
+    """
+    Lấy idToken từ access_token.
+    """
+    Params = {
+        "key": "AIzaSyBJN3ZYdzTmjyQJ-9TdpikbsZDT9JUAYFk"
+    }
+    data = {
+        "token": access_token,
+        "returnSecureToken": True
+    }
+    response = requests.post(
+        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken',
+        params=Params,
+        json=data
+    )
+    response.raise_for_status()
+    return response.json()['idToken']
+
+@retry(retries=3, delay=2)
+def get_access_token(idToken):
+    """
+    Lấy access_token từ idToken.
+    """
+    data = {
+        "token": idToken
+    }
+    response = requests.post(
+        'https://typecast.ai/api/auth-fb/custom-token',
+        json=data
+    )
+    response.raise_for_status()
+    return response.json()["result"]['access_token']
+
+@retry(retries=3, delay=2)
+def login_data(email, password):
+    """
+    Lấy idToken bằng cách đăng nhập với email và password.
+    """
+    data = {
+        "returnSecureToken": True,
+        "email": email,
+        "password": password,
+        "clientType": "CLIENT_TYPE_WEB"
+    }
+    Params = {
+        "key": "AIzaSyBJN3ZYdzTmjyQJ-9TdpikbsZDT9JUAYFk"
+    }
+    url = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword'
+    response = requests.post(url, params=Params, json=data)
+    response.raise_for_status()
+    return response.json()['idToken']
+
+def get_cookie(email, password):
+    """
+    Kết hợp các bước:
+    1. Đăng nhập để lấy idToken nếu access_token không được cung cấp.
+    2. Lấy idToken từ active_token nếu access_token có sẵn.
+    3. Lấy access_token từ idToken và lưu vào biến toàn cục.
+
+    Args:
+        email (str): Email đăng nhập.
+        password (str): Mật khẩu đăng nhập.
+        access_token (str, optional): Access token nếu đã có sẵn.
+
+    Returns:
+        str: Access token (cookie) nếu thành công, None nếu thất bại.
+    """
+    global ACCESS_TOKEN  # Khai báo biến toàn cục
+    try:
+        Token_login = login_data(email, password)
+
+        idToken = get_access_token(Token_login)  # Lưu vào biến toàn cục
+        
+        ACCESS_TOKEN = active_token(idToken)
+        
+    except Exception as e:
+        ACCESS_TOKEN = None
+        print(f"Lỗi khi lấy cookie: {e}")
+
+
 def process_voice_entry(data, text_entry, video_id, task_id, worker_id, language):
     """Hàm xử lý giọng nói cho từng trường hợp ngôn ngữ."""
     file_name = f'media/{video_id}/voice/{text_entry["id"]}.wav'
@@ -1310,290 +1599,6 @@ def get_voice_chat_ai_human(data, text, file_name):
         return False
     return True
       
-def get_voice_super_voice(data, text, file_name):     
-    success = False
-    attempt = 0
-    while not success and attempt < 10:
-        try:
-            url_voice_text = get_voice_text(text, data)
-            if not url_voice_text:
-                return False
-
-            url_voice = get_audio_url(url_voice_text)
-            if not url_voice:
-                return False
-
-            final_url = get_url_voice_succes(url_voice)
-            if not final_url:
-                return False
-            
-            response = requests.get(final_url)
-            if response.status_code == 200:
-                with open(file_name, 'wb') as f:
-                    f.write(response.content)
-                # Kiểm tra độ dài tệp âm thanh
-                duration = get_audio_duration(file_name)
-                if duration > 0:
-                    success = True
-                    print(f"Tạo giọng nói thành công cho '{text}' tại {file_name}")
-                else:
-                    if os.path.exists(file_name):
-                        os.remove(file_name)
-                    print(f"Lỗi: Tệp âm thanh {file_name} không hợp lệ.")
-            else:
-                print(f"Lỗi: API trả về trạng thái {response.status_code}. Thử lại...")
-        except requests.RequestException as e:
-            print(f"Lỗi mạng khi gọi API: {e}. Thử lại...")
-        except Exception as e:
-            print(f"Lỗi không xác định: {e}. Thử lại...")
-            
-        attempt += 1
-        if not success:
-            time.sleep(1)
-    if not success:
-        print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
-    return success
-
-def get_url_voice_succes(url_voice):
-    max_retries = 5  # Số lần thử lại tối đa
-    retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
-
-    for attempt in range(max_retries):
-         # Làm mới token nếu cần
-        if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
-            print("Refreshing ACCESS_TOKEN...")
-            get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-
-        if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
-            print("Unable to retrieve ACCESS_TOKEN. Exiting.")
-            return None
-        url = url_voice + '/cloudfront'
-        headers = {
-            'Authorization': f'Bearer {ACCESS_TOKEN}'
-        }
-        try:
-            response = requests.get(url, headers=headers)
-            if response.status_code == 200:
-                return response.json()['result']
-            elif response.status_code == 401:  # Token hết hạn
-                print("Unauthorized. Token may be expired. Refreshing token...")
-                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-            else:
-                print("API call failed with status code:", response.status_code)
-                print("Response text:", response.text)
-        except requests.RequestException as e:
-            print("Error occurred during API request:", e)
-        # Chờ trước khi thử lại
-        time.sleep(retry_delay)
-    
-    return None     
-
-def get_audio_url(url_voice_text):
-    """Hàm lấy URL audio từ API."""
-    max_retries = 10  # Số lần thử lại tối đa
-    retry_delay = 3  # Thời gian chờ giữa các lần thử (giây)
-
-    for attempt in range(max_retries):
-        print(f"Attempt {attempt + 1} of {max_retries}.")
-
-        # Làm mới token nếu cần
-        if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
-            print("Refreshing ACCESS_TOKEN...")
-            get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-
-        if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
-            print("Unable to retrieve ACCESS_TOKEN. Exiting.")
-            return None
-
-        # Gửi yêu cầu POST đến API
-        url = "https://typecast.ai/api/speak/batch/get"
-        headers = {
-            "Authorization": f"Bearer {ACCESS_TOKEN}"
-        }
-        try:
-            response = requests.post(url, headers=headers, json=url_voice_text)
-
-            print("Response status code:", response.status_code)
-
-            # Xử lý phản hồi từ API
-            if response.status_code == 200:
-                try:
-                    result = response.json().get("result", [])[0]
-                    audio_url = result.get("audio", {}).get("url")
-                    if audio_url:
-                        print("Audio URL found:", audio_url)
-                        return audio_url
-                    else:
-                        pass
-                except (KeyError, IndexError, TypeError) as e:
-                    print("Error parsing JSON response:", e)
-            elif response.status_code == 401:  # Token hết hạn
-                print("Unauthorized. Token may be expired. Refreshing token...")
-                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-            else:
-                print("API call failed with status code:", response.status_code)
-                print("Response text:", response.text)
-
-        except requests.RequestException as e:
-            print("Error occurred during API request:", e)
-
-        # Chờ trước khi thử lại
-        time.sleep(retry_delay)
-
-    print("Exceeded maximum retries. Unable to get audio URL.")
-    return None
-
-def get_voice_text(text, data):
-    retry_count = 0
-    max_retries = 20  # Giới hạn số lần thử lại
-    print("Getting voice text...")
-    while retry_count < max_retries:
-        try:
-            style_name_data = json.loads(data.get("style"))
-            style_name_data[0]["text"] = text
-
-
-            if ACCESS_TOKEN:
-                get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
-            
-            # Gửi yêu cầu POST
-            url = 'https://typecast.ai/api/speak/batch/post'
-            headers = {
-                'Authorization': f'Bearer {ACCESS_TOKEN}',
-                'Content-Type': 'application/json'
-            }
-            response = requests.post(url, headers=headers, json=style_name_data)
-            print("Response status code:", response.status_code)
-            print("Response text:", response.text)
-            # Nếu thành công, trả về dữ liệu
-            if response.status_code == 200:
-                return response.json().get("result", {}).get("speak_urls", [])
-            
-
-            # Nếu gặp lỗi unauthorized, tăng số lần thử lại
-            elif response.status_code == 401:
-                print("Token expired, refreshing token...")
-                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
-                retry_count += 1
-            else:
-                print("API call failed:", response.status_code)
-                return False
-
-        except Exception as e:
-            print("Error:", e)
-            retry_count += 1
-            time.sleep(3)  # Chờ 1 giây trước khi thử lại
-    return False
-  
-# Hàm thử lại với decorator
-def retry(retries=3, delay=2):
-    """
-    Decorator để tự động thử lại nếu hàm gặp lỗi.
-    
-    Args:
-        retries (int): Số lần thử lại tối đa.
-        delay (int): Thời gian chờ giữa các lần thử (giây).
-
-    Returns:
-        Kết quả trả về từ hàm nếu thành công, None nếu thất bại.
-    """
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            for attempt in range(1, retries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    print(f"Lỗi trong {func.__name__}, lần thử {attempt}: {e}")
-                    if attempt < retries:
-                        print(f"Thử lại sau {delay} giây...")
-                        time.sleep(delay)
-                    else:
-                        print(f"{func.__name__} thất bại sau {retries} lần thử.")
-                        return None
-        return wrapper
-    return decorator
-
-@retry(retries=3, delay=2)
-def active_token(access_token):
-    """
-    Lấy idToken từ access_token.
-    """
-    Params = {
-        "key": "AIzaSyBJN3ZYdzTmjyQJ-9TdpikbsZDT9JUAYFk"
-    }
-    data = {
-        "token": access_token,
-        "returnSecureToken": True
-    }
-    response = requests.post(
-        'https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken',
-        params=Params,
-        json=data
-    )
-    response.raise_for_status()
-    return response.json()['idToken']
-
-@retry(retries=3, delay=2)
-def get_access_token(idToken):
-    """
-    Lấy access_token từ idToken.
-    """
-    data = {
-        "token": idToken
-    }
-    response = requests.post(
-        'https://typecast.ai/api/auth-fb/custom-token',
-        json=data
-    )
-    response.raise_for_status()
-    return response.json()["result"]['access_token']
-
-@retry(retries=3, delay=2)
-def login_data(email, password):
-    """
-    Lấy idToken bằng cách đăng nhập với email và password.
-    """
-    data = {
-        "returnSecureToken": True,
-        "email": email,
-        "password": password,
-        "clientType": "CLIENT_TYPE_WEB"
-    }
-    Params = {
-        "key": "AIzaSyBJN3ZYdzTmjyQJ-9TdpikbsZDT9JUAYFk"
-    }
-    url = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword'
-    response = requests.post(url, params=Params, json=data)
-    response.raise_for_status()
-    return response.json()['idToken']
-
-def get_cookie(email, password):
-    """
-    Kết hợp các bước:
-    1. Đăng nhập để lấy idToken nếu access_token không được cung cấp.
-    2. Lấy idToken từ active_token nếu access_token có sẵn.
-    3. Lấy access_token từ idToken và lưu vào biến toàn cục.
-
-    Args:
-        email (str): Email đăng nhập.
-        password (str): Mật khẩu đăng nhập.
-        access_token (str, optional): Access token nếu đã có sẵn.
-
-    Returns:
-        str: Access token (cookie) nếu thành công, None nếu thất bại.
-    """
-    global ACCESS_TOKEN  # Khai báo biến toàn cục
-    try:
-        Token_login = login_data(email, password)
-
-        idToken = get_access_token(Token_login)  # Lưu vào biến toàn cục
-        
-        ACCESS_TOKEN = active_token(idToken)
-        
-    except Exception as e:
-        ACCESS_TOKEN = None
-        print(f"Lỗi khi lấy cookie: {e}")
-
     
 def get_filename_from_url(url):
     parsed_url = urllib.parse.urlparse(url)
