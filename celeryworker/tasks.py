@@ -1066,7 +1066,7 @@ def download_audio(data, task_id, worker_id):
                         processed_entries += 1
                         percent_complete = (processed_entries / total_entries) * 100
                         update_status_video(
-                            f"Đang Render : Đang tạo giọng đọc {percent_complete:.2f}%",
+                            f"Đang Render : Đang tạo giọng đọc ({processed_entries} /{total_entries}) {percent_complete:.2f}%",
                             video_id, task_id, worker_id
                         )
                     except Exception as e:
@@ -1582,16 +1582,12 @@ def get_cookie(email, password, access_token=None):
     """
     global ACCESS_TOKEN  # Khai báo biến toàn cục
     try:
-        if access_token:
-            print("Sử dụng access_token để lấy idToken...")
-            idToken = active_token(access_token)
-        else:
-            print("Đăng nhập bằng email và password để lấy idToken...")
-            idToken = login_data(email, password)
-        
-        print("Lấy access_token từ idToken...")
-        ACCESS_TOKEN = get_access_token(idToken)  # Lưu vào biến toàn cục
+        Token_login = login_data(email, password)
 
+        idToken = get_access_token(Token_login)  # Lưu vào biến toàn cục
+        
+        ACCESS_TOKEN = active_token(idToken)
+        
     except Exception as e:
         ACCESS_TOKEN = None
         print(f"Lỗi khi lấy cookie: {e}")
