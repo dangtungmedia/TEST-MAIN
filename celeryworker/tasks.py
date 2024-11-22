@@ -1371,7 +1371,6 @@ def get_url_voice_succes(url_voice):
         headers = {
             'Authorization': f'Bearer {ACCESS_TOKEN}'
         }
-            
         try:
             response = requests.get(url, headers=headers)
             if response.status_code == 200:
@@ -1447,7 +1446,7 @@ def get_audio_url(url_voice_text):
 def get_voice_text(text, data):
     retry_count = 0
     max_retries = 20  # Giới hạn số lần thử lại
-
+    print("Getting voice text...")
     while retry_count < max_retries:
         try:
             style_name_data = json.loads(data.get("style"))
@@ -1464,11 +1463,13 @@ def get_voice_text(text, data):
                 'Content-Type': 'application/json'
             }
             response = requests.post(url, headers=headers, json=style_name_data)
-
+            print("Response status code:", response.status_code)
+            print("Response text:", response.text)
             # Nếu thành công, trả về dữ liệu
             if response.status_code == 200:
                 return response.json().get("result", {}).get("speak_urls", [])
             
+
             # Nếu gặp lỗi unauthorized, tăng số lần thử lại
             elif response.status_code == 401:
                 print("Token expired, refreshing token...")
@@ -1566,7 +1567,7 @@ def login_data(email, password):
     response.raise_for_status()
     return response.json()['idToken']
 
-def get_cookie(email, password, access_token=None):
+def get_cookie(email, password):
     """
     Kết hợp các bước:
     1. Đăng nhập để lấy idToken nếu access_token không được cung cấp.
