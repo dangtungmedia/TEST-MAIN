@@ -124,7 +124,6 @@ def render_video(self, data):
         return
     update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
 
-
     # Tạo video
     success = create_video_lines(data, task_id, worker_id)
     if not success:
