@@ -421,10 +421,45 @@ def get_voice_super_voice(data, text, file_name):
         print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
     return success
 
+
+def get_url_voice_succes(url_voice):
+
+    max_retries = 5  # Số lần thử lại tối đa
+    retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
+
+    for attempt in range(max_retries):
+         # Làm mới token nếu cần
+        if ACCESS_TOKEN is None:  # Nếu token chưa có, làm mới
+            print("Refreshing ACCESS_TOKEN...")
+            get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+
+        if ACCESS_TOKEN is None:  # Nếu không lấy được token, dừng thử lại
+            print("Unable to retrieve ACCESS_TOKEN. Exiting.")
+            return None
+        url = "url_voice" + '/cloudfront'
+        headers = {
+            'Authorization': f'Bearer {ACCESS_TOKEN}'
+        }
+            
+        try:
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                return response.json()['result']
+            elif response.status_code == 401:  # Token hết hạn
+                print("Unauthorized. Token may be expired. Refreshing token...")
+                get_cookie("dangtungmedia@gmail.com", "@@Hien17987")
+            else:
+                print("API call failed with status code:", response.status_code)
+                print("Response text:", response.text)
+        except requests.RequestException as e:
+            print("Error occurred during API request:", e)
+        # Chờ trước khi thử lại
+        time.sleep(retry_delay)
+    
+    return None     
+
 def get_audio_url(url_voice_text):
     """Hàm lấy URL audio từ API."""
-    global ACCESS_TOKEN
-
     max_retries = 5  # Số lần thử lại tối đa
     retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
 
@@ -477,6 +512,7 @@ def get_audio_url(url_voice_text):
 
     print("Exceeded maximum retries. Unable to get audio URL.")
     return None
+
 
 def get_voice_text(text, data):
     retry_count = 0
