@@ -1106,7 +1106,6 @@ def get_voice_text(text, data):
             style_name_data = json.loads(data.get("style"))
             style_name_data[0]["text"] = text
 
-
             if ACCESS_TOKEN:
                 print("Using existing ACCESS_TOKEN.")
                 get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
@@ -1124,7 +1123,6 @@ def get_voice_text(text, data):
             if response.status_code == 200:
                 return response.json().get("result", {}).get("speak_urls", [])
             
-
             # Nếu gặp lỗi unauthorized, tăng số lần thử lại
             elif response.status_code == 401:
                 try:
@@ -1263,28 +1261,28 @@ def get_voice_super_voice(data, text, file_name):
             if not url_voice_text:
                 return False
             
-            url_voice = get_audio_url(url_voice_text)
-            if not url_voice:
-                return False
+            # url_voice = get_audio_url(url_voice_text)
+            # if not url_voice:
+            #     return False
 
         
-            final_url = get_url_voice_succes(url_voice)
-            if not final_url:
-                return False
+            # final_url = get_url_voice_succes(url_voice)
+            # if not final_url:
+            #     return False
             
-            response = requests.get(final_url)
-            if response.status_code == 200:
-                with open(file_name, 'wb') as f:
-                    f.write(response.content)
-                # Kiểm tra độ dài tệp âm thanh
-                duration = get_audio_duration(file_name)
-                if duration > 0:
-                    success = True
-                else:
-                    if os.path.exists(file_name):
-                        os.remove(file_name)
-            else:
-                print(f"Lỗi: API trả về trạng thái {response.status_code}. Thử lại...")
+            # response = requests.get(final_url)
+            # if response.status_code == 200:
+            #     with open(file_name, 'wb') as f:
+            #         f.write(response.content)
+            #     # Kiểm tra độ dài tệp âm thanh
+            #     duration = get_audio_duration(file_name)
+            #     if duration > 0:
+            #         success = True
+            #     else:
+            #         if os.path.exists(file_name):
+            #             os.remove(file_name)
+            # else:
+            #     print(f"Lỗi: API trả về trạng thái {response.status_code}. Thử lại...")
         except requests.RequestException as e:
             print(f"Lỗi mạng khi gọi API: {e}. Thử lại...")
         except Exception as e:
