@@ -1136,13 +1136,16 @@ def get_voice_text(text, data):
                     else:
                         retry_count += 1
                         print(f"Unauthorized: {error_message} ({error_code}). Không làm mới token.")
+                        time.sleep(1000)  # Chờ 1 giây trước khi thử lại
+                        
                 except Exception as e:
                     print(f"Lỗi khi xử lý phản hồi lỗi 401: {e}")
+                    time.sleep(1000)  # Chờ 1 giây trước khi thử lại
             else:
                 print("API call failed:", response.status_code)
-                time.sleep(3)  # Chờ 1 giây trước khi thử lại
+                time.sleep(1000)  # Chờ 1 giây trước khi thử lại
         except Exception as e:
-            time.sleep(3)  # Chờ 1 giây trước khi thử lại
+            time.sleep(1000)  # Chờ 1 giây trước khi thử lại
         
     return False
   
