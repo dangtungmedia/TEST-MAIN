@@ -1446,7 +1446,7 @@ def get_audio_url(url_voice_text):
 
 def get_voice_text(text, data):
     retry_count = 0
-    max_retries = 3  # Giới hạn số lần thử lại
+    max_retries = 20  # Giới hạn số lần thử lại
 
     while retry_count < max_retries:
         try:
@@ -1481,6 +1481,7 @@ def get_voice_text(text, data):
         except Exception as e:
             print("Error:", e)
             retry_count += 1
+            time.sleep(3)  # Chờ 1 giây trước khi thử lại
     return False
   
 # Hàm thử lại với decorator
