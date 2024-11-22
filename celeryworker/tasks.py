@@ -1125,6 +1125,7 @@ def get_voice_text(text, data):
             
             # Nếu gặp lỗi unauthorized, tăng số lần thử lại
             elif response.status_code == 401:
+                print("Unauthorized: Token expired or invalid.")
                 try:
                     error_message = response.json().get("message", {}).get("msg", "")
                     error_code = response.json().get("message", {}).get("error_code", "")
