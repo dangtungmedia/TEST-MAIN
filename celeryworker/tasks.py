@@ -182,10 +182,6 @@ def upload_video(data, task_id, worker_id):
         print(f"An error occurred: {str(e)}")
         return False
 
-
-
-
-
 def get_voice_japanese(data, text, file_name):
     """Hàm chuyển văn bản thành giọng nói tiếng Nhật với VoiceVox, bao gồm chức năng thử lại khi gặp lỗi."""
     directory = os.path.dirname(file_name)
@@ -366,6 +362,8 @@ def get_voice_chat_ai_human(data, text, file_name):
         except requests.RequestException as e:
             print(f"Lỗi mạng khi gọi API AI Human Studio: {e}. Thử lại...")
         except Exception as e:
+            if os.path.exists(file_name):
+                os.remove(file_name)  # Xóa tệp nếu không hợp lệ
             print(f"Lỗi không xác định: {e}. Thử lại...")
 
         attempt += 1
