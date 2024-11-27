@@ -604,12 +604,18 @@ def format_time(seconds):
     secs = seconds % 60
     return f"{hours:02}:{minutes:02}:{secs:06.3f}"
 
-def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video_dir):
+def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video_dir, input_audio):
     video_length = get_video_duration(input_video)
-    start_time = random.uniform(0, video_length - duration)
+    audio_length = get_audio_duration(input_audio)  # Lấy độ dài của audio
     
+    start_time = random.uniform(0, video_length - duration)
     start_time_str = format_time(start_time)
-    end_time = format_time(duration)
+    
+    # Kiểm tra xem video có ngắn hơn audio không và tính tỷ lệ tốc độ video cần thay đổi
+    if video_length < audio_length:
+        scale_factor = audio_length / video_length
+    else:
+        scale_factor = 1  # Giữ nguyên tốc độ video nếu video dài hơn hoặc bằng audio
     
     base_video = get_random_video_from_directory(overlay_video_dir)
     is_overlay_video = random.choice([True, False])
@@ -619,42 +625,41 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "ffmpeg",
             "-i", input_video,
             "-ss", start_time_str,  # Thời gian bắt đầu cắt của video đầu vào
-            "-t", str(duration),    # Thời lượng video cần cắt
+            "-t", str(duration),     # Thời gian video cần cắt
             "-i", base_video,
-            "-ss", start_time_str,  # Thời gian bắt đầu cắt của video chồng
-            "-t", str(duration),    # Thời lượng video cần cắt
-            "-filter_complex", f"[0:v]scale={scale_width}:{scale_height}[bg];"
-                            f"[1:v]scale={scale_width}:{scale_height}[overlay_scaled];"
-                            f"[bg][overlay_scaled]overlay=format=auto,format=yuv420p[outv]",  # format=auto tự động xử lý alpha
+            "-ss", start_time_str,  # Thời gian bắt đầu cắt của video overlay
+            "-t", str(duration),    # Thời gian video cần cắt
+            "-filter_complex", f"[0:v]scale={scale_width}:{scale_height},setpts={scale_factor}*PTS[bg];"
+                            f"[1:v]scale={scale_width}:{scale_height},setpts={scale_factor}*PTS[overlay_scaled];"
+                            f"[bg][overlay_scaled]overlay=format=auto,format=yuv420p[outv]",  # overlay video
             "-map", "[outv]",
-            "-r", "24",            # Tốc độ khung hình đầu ra
-            "-c:v", "libx264",     # Codec video
-            "-crf", "18",          # Chất lượng video
-            "-preset", "medium",   # Tốc độ mã hóa
-            "-pix_fmt", "yuv420p", # Đảm bảo tương thích với đầu ra
-            "-vsync", "2",         # Đồng bộ hóa video
-            "-loglevel", "debug",  # Đặt mức log level để ghi chi tiết
-            "-y",                  # Ghi đè file đầu ra nếu đã tồn tại
+            "-r", "24",             # Tốc độ khung hình đầu ra
+            "-c:v", "libx264",      # Codec video
+            "-crf", "18",           # Chất lượng video
+            "-preset", "medium",    # Tốc độ mã hóa
+            "-pix_fmt", "yuv420p",  # Đảm bảo tương thích với đầu ra
+            "-vsync", "2",          # Đồng bộ hóa video
+            "-loglevel", "debug",   # Đặt mức log level để ghi chi tiết
+            "-y",                   # Ghi đè file đầu ra nếu đã tồn tại
             output_video
         ]
     else:
         cmd = [
             "ffmpeg",
             "-i", input_video,
-            "-ss", start_time_str,      # Thời gian bắt đầu cắt của video
-            "-t", str(duration),        # Thời lượng video cần cắt
-            "-vf", f"scale={scale_width}:{scale_height}",  # Thay đổi độ phân giải
-            "-r", "24",                 # Tốc độ khung hình đầu ra
-            "-c:v", "libx264",          # Codec video
-            "-crf", "18",               # Chất lượng video
-            "-preset", "medium",        # Tốc độ mã hóa
-            "-pix_fmt", "yuv420p",      # Đảm bảo tương thích với đầu ra
-            "-vsync", "2",              # Đồng bộ hóa video
-            "-loglevel", "debug",       # Đặt mức log level để ghi chi tiết
-            "-y",                       # Ghi đè file đầu ra nếu đã tồn tại
+            "-ss", start_time_str,   # Thời gian bắt đầu cắt của video
+            "-t", str(duration),     # Thời gian video cần cắt
+            "-vf", f"scale={scale_width}:{scale_height},setpts={scale_factor}*PTS",  # Thay đổi độ phân giải và tốc độ video
+            "-r", "24",              # Tốc độ khung hình đầu ra
+            "-c:v", "libx264",       # Codec video
+            "-crf", "18",            # Chất lượng video
+            "-preset", "medium",     # Tốc độ mã hóa
+            "-pix_fmt", "yuv420p",   # Đảm bảo tương thích với đầu ra
+            "-vsync", "2",           # Đồng bộ hóa video
+            "-loglevel", "debug",    # Đặt mức log level để ghi chi tiết
+            "-y",                    # Ghi đè file đầu ra nếu đã tồn tại
             output_video
         ]
-
     
     try:
         # Chạy lệnh FFmpeg
@@ -777,77 +782,68 @@ def convert_to_seconds(time_str):
     delta = timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second, microseconds=dt.microsecond)
     return delta.total_seconds()
 
+def check_file_type(file_name):
+    video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm']
+    image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+    
+    # Lấy phần mở rộng của file
+    file_extension = os.path.splitext(file_name)[1].lower()
+    
+    # Kiểm tra loại file dựa trên phần mở rộng
+    if file_extension in video_extensions:
+        return "video"
+    elif file_extension in image_extensions:
+        return "image"
+    else:
+        return "other"
+
 def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, worker_id):
     """Hàm tạo video cho một đoạn văn bản."""
-    # Tính thời lượng của đoạn video
-    if data.get('file-srt'):
-        start_time, end_time = data_sub[i]
-        duration = convert_to_seconds(end_time) - convert_to_seconds(start_time)
-    else:
-        duration = get_audio_duration(f'media/{video_id}/voice/{text_entry["id"]}.wav')
+    try:
+        # Tính thời lượng của đoạn video
+        if data.get('file-srt'):
+            start_time, end_time = data_sub[i]
+            duration = convert_to_seconds(end_time) - convert_to_seconds(start_time)
+        else:
+            duration = get_audio_duration(f'media/{video_id}/voice/{text_entry["id"]}.wav')
 
-    out_file = f'media/{video_id}/video/{text_entry["id"]}.mp4'
-    file = get_filename_from_url(text_entry.get('url_video', ''))
-    
-    if file == 'no-image-available.png' or not text_entry.get('url_video'):
-        # Chọn video ngẫu nhiên có độ dài phù hợp từ API
-        video_directory = f'media/{video_id}/video_backrought'
-        os.makedirs(video_directory, exist_ok=True)
+        # Kiểm tra nếu thời lượng âm thanh không hợp lệ
+        if duration <= 0:
+            raise ValueError(f"Invalid duration calculated: {duration} for text entry {text_entry['id']}")
 
-        max_retries = 10  # Giới hạn số lần thử tải video
-        retries = 0
+        out_file = f'media/{video_id}/video/{text_entry["id"]}.mp4'
+        file = get_filename_from_url(text_entry.get('url_video', ''))
+        
+        # Kiểm tra đường dẫn file
+        if not file:
+            raise FileNotFoundError(f"File not found for URL: {text_entry.get('url_video')}")
+        
+        path_file = f'media/{video_id}/image/{file}'
 
-        while retries < max_retries:
-            list_video = os.listdir(video_directory)
-            data_request = {
-                'secret_key': SECRET_KEY,
-                'action': 'get-video-backrought',
-                'task_id': task_id,
-                'worker_id': worker_id,
-                'list_video': list_video,
-                'duration': duration,
-            }
-            url = f'{SERVER}/api/'
-            response = requests.post(url, json=data_request)
+        # Kiểm tra loại file
+        file_type = check_file_type(path_file)
+        if file_type not in ["video", "image"]:
+            raise ValueError(f"Unsupported file type: {file_type} for {path_file}")
 
-            if response.status_code == 200:
-                filename = response.headers.get('Content-Disposition').split('filename=')[1].strip('"')
-                video_path = os.path.join(video_directory, filename)
-                
-                # Lưu video tải về
-                with open(video_path, 'wb') as f:
-                    f.write(response.content)
-                
-                # Kiểm tra và thoát khỏi vòng lặp nếu tải thành công
-                if os.path.exists(video_path) and get_video_duration(video_path) >= duration:
-                    cut_and_scale_video_random(video_path, out_file, duration, 1920, 1080, 'video_screen')
-                    break
-                else:
-                    print("Video tải về không đạt độ dài yêu cầu.")
-            else:
-                print(f"Lỗi {response.status_code}: Không thể tải xuống tệp từ API.")
-            
-            retries += 1
-            print(f"Thử lại {retries}/{max_retries}")
-
-        # Kiểm tra nếu vòng lặp kết thúc mà không tải được video
-        if retries == max_retries:
-            print("Không thể tải video phù hợp sau nhiều lần thử.")
-            return False  # Dừng lại nếu không thành công sau max_retries lần thử
-
-    else:
-        # Tạo video từ hình ảnh nếu có URL hình ảnh
-        image_file = f'media/{video_id}/image/{file}'
-        if os.path.exists(image_file):
+        # Xử lý video hoặc ảnh
+        if file_type == "video":
+            cut_and_scale_video_random(path_file, out_file, duration, 1920, 1080, 'video_screen')
+        elif file_type == "image":
             random_choice = random.choice([True, False])
             if random_choice:
-                image_to_video_zoom_in(image_file, out_file, duration, 1920, 1080, 'video_screen')
+                image_to_video_zoom_in(path_file, out_file, duration, 1920, 1080, 'video_screen')
             else:
-                image_to_video_zoom_out(image_file, out_file, duration, 1920, 1080, 'video_screen')
-        else:
-            print(f"Hình ảnh không tồn tại: {image_file}")
-            return False
-    return True
+                image_to_video_zoom_out(path_file, out_file, duration, 1920, 1080, 'video_screen')
+        return True
+    except FileNotFoundError as e:
+        print(f"File error: {e}")
+        return False
+    except ValueError as e:
+        print(f"Value error: {e}")
+        return False
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return False
 
 def create_video_lines(data, task_id, worker_id, max_retries=5):
     try:
@@ -998,9 +994,6 @@ def image_to_video_zoom_in(input_image, output_video, duration, scale_width, sca
         subprocess.run(ffmpeg_command, check=True)
     except subprocess.CalledProcessError as e:
         print(f"lỗi chạy FFMPEG {e}")
-
-
-
 
 def get_voice_super_voice(data, text, file_name):     
     success = False
