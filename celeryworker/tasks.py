@@ -838,12 +838,15 @@ def create_video_lines(data, task_id, worker_id):
                         update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", video_id, task_id, worker_id)
                     else:
                         update_status_video("Render Lỗi: Lỗi trong quá trình tạo video cho một đoạn.", video_id, task_id, worker_id)
+                        for pending in futures:
+                            pending.cancel()  # Hủy tất cả các tác vụ chưa hoàn thành
                         return False  # Dừng quá trình nếu có lỗi trong việc tạo video cho một đoạn
                 except Exception as e:
                     print(f"Lỗi khi tạo video: {e}")
                     update_status_video(f"Render Lỗi: Lỗi khi tạo video - {e}", video_id, task_id, worker_id)
-                    return False  # Dừng quá trình nếu có lỗi trong việc tạo video
-
+                    for pending in futures:
+                        pending.cancel()  # Hủy tất cả các tác vụ chưa hoàn thành
+                        return False  # Dừng quá trình nếu có lỗi trong việc tạo video cho một đoạn
         update_status_video("Đang Render : Tạo video thành công", video_id, task_id, worker_id)
         return True
     except Exception as e:
@@ -1211,7 +1214,6 @@ def get_cookie(email, password):
         
     except Exception as e:
         ACCESS_TOKEN = None
-
 
 def process_voice_entry(data, text_entry, video_id, task_id, worker_id, language):
     """Hàm xử lý giọng nói cho từng trường hợp ngôn ngữ."""
@@ -1596,7 +1598,7 @@ def download_image(data, task_id, worker_id):
                 else:
                     # Hủy tất cả các tác vụ còn lại khi gặp lỗi tải xuống
                     update_status_video(
-                        f"Render Lỗi : Không thể tải xuống hình ảnh - {url}",
+                        f"Render Lỗi : Không thể tải xuống hình ảnh -{url}",
                         video_id, task_id, worker_id
                     )
                     for pending in future_to_url:
