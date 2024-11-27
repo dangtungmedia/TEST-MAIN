@@ -123,8 +123,9 @@ def render_video(self, data):
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
         return
+    
     update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
-
+    
     # Tạo video
     success = create_video_lines(data, task_id, worker_id)
     if not success:
@@ -604,16 +605,18 @@ def format_time(seconds):
     secs = seconds % 60
     return f"{hours:02}:{minutes:02}:{secs:06.3f}"
 
-def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video_dir, input_audio):
+def cut_and_scale_video_random(input_video, output_video, duration, scale_width, scale_height, overlay_video_dir):
+    print(f"Đang cắt video {input_video} và thay đổi tốc độ.")
     video_length = get_video_duration(input_video)
-    audio_length = get_audio_duration(input_audio)  # Lấy độ dài của audio
-    
+
     start_time = random.uniform(0, video_length - duration)
     start_time_str = format_time(start_time)
-    
+    print(f"Thời gian bắt đầu: {start_time_str}")
+    print(f"Thời lượng video: {duration}")
+    print(f"Độ dài video: {video_length}")
     # Kiểm tra xem video có ngắn hơn audio không và tính tỷ lệ tốc độ video cần thay đổi
-    if video_length < audio_length:
-        scale_factor = audio_length / video_length
+    if video_length < duration:
+        scale_factor = duration / video_length
     else:
         scale_factor = 1  # Giữ nguyên tốc độ video nếu video dài hơn hoặc bằng audio
     
@@ -672,62 +675,7 @@ def translate_text(text, src_lang='auto', dest_lang='en'):
     translation = translator.translate(text, src=src_lang, dest=dest_lang)
     return translation.text
 
-def find_keywords(text, num_keywords=5):
-    # Tokenize the text
-    tokens = word_tokenize(text)
-    # Remove stopwords
-    stop_words = set(stopwords.words('english'))
-    filtered_tokens = [word for word in tokens if word.lower() not in stop_words]
-    # Compute the frequency distribution
-    freq_dist = FreqDist(filtered_tokens)
-    # Get the most common keywords
-    keywords = [word for word, freq in freq_dist.most_common(num_keywords)]
-    return keywords
 
-def search_pixabay_videos(api_key, query, min_duration):
-    filtered_videos = []
-    for page in range(1,2):
-        url = f"https://pixabay.com/api/videos/?key={api_key}&q={query}&per_page=200&page={page}"
-        print(url)
-        response = requests.get(url)
-        
-        if response.status_code == 200:
-            data = response.json()
-            for item in data['hits']:
-                for video in item['videos'].values():
-                    if video['height'] == 1080 and item['duration'] >= min_duration:
-                        filtered_videos.append(video['url'])
-    return filtered_videos
-
-def get_video_random(data,duration,input_text,file_name):
-    translated_text = translate_text(input_text)
-    # Find the main keywords in the translated sentence
-    keywords = find_keywords(translated_text)
-    # Tìm video từ Pixabay
-    api_key = "38396855-7183824f50d61fd232c569758" 
-
-    list_url = []
-    for keyword in keywords:
-        result = search_pixabay_videos(api_key, keyword, duration)
-        list_url.extend(result)
-    list_url.extend(result)
-
-    video_id = data.get('video_id')
-    choice = random.choice(list_url)
-
-
-    path = f'media/{video_id}/videodownload'
-    # Tạo thư mục nếu chưa tồn tại
-    if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
-    
-    response = requests.get(choice, stream=True)
-    if response.status_code == 200:
-        video_path = f'media/{video_id}/videodownload/{file_name}.mp4'
-        with open(video_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=1024):
-                f.write(chunk)
-        return video_path
 # lấy thời gian của các file srt
 def extract_frame_times(srt_content):
     time_pattern = re.compile(r'(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})')
@@ -784,7 +732,6 @@ def convert_to_seconds(time_str):
 
 def check_file_type(file_name):
     video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm']
-    image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
     
     # Lấy phần mở rộng của file
     file_extension = os.path.splitext(file_name)[1].lower()
@@ -792,10 +739,8 @@ def check_file_type(file_name):
     # Kiểm tra loại file dựa trên phần mở rộng
     if file_extension in video_extensions:
         return "video"
-    elif file_extension in image_extensions:
-        return "image"
     else:
-        return "other"
+        return "image"
 
 def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, worker_id):
     """Hàm tạo video cho một đoạn văn bản."""
@@ -809,21 +754,39 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
 
         # Kiểm tra nếu thời lượng âm thanh không hợp lệ
         if duration <= 0:
+            update_status_video(
+                        f"Render Lỗi : Thời lượng âm thanh không hợp lệ",
+                        video_id, task_id, worker_id
+                    )
+            
             raise ValueError(f"Invalid duration calculated: {duration} for text entry {text_entry['id']}")
+        
 
         out_file = f'media/{video_id}/video/{text_entry["id"]}.mp4'
         file = get_filename_from_url(text_entry.get('url_video', ''))
         
         # Kiểm tra đường dẫn file
         if not file:
+            update_status_video(
+                        f"Render Lỗi : Đường dẫn url không hợp lệ",
+                        video_id, task_id, worker_id
+                    )
             raise FileNotFoundError(f"File not found for URL: {text_entry.get('url_video')}")
         
         path_file = f'media/{video_id}/image/{file}'
 
+        print(f"Processing video segment {i + 1} with duration {duration} seconds")
+        print(f"Input file: {path_file}")
         # Kiểm tra loại file
         file_type = check_file_type(path_file)
         if file_type not in ["video", "image"]:
+            update_status_video(
+                        f"Render Lỗi : Loại file không hợp lệ",
+                        video_id, task_id, worker_id
+                    )
             raise ValueError(f"Unsupported file type: {file_type} for {path_file}")
+
+        print(f"File type: {file_type}")
 
         # Xử lý video hoặc ảnh
         if file_type == "video":
@@ -835,17 +798,11 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
             else:
                 image_to_video_zoom_out(path_file, out_file, duration, 1920, 1080, 'video_screen')
         return True
-    except FileNotFoundError as e:
-        print(f"File error: {e}")
-        return False
-    except ValueError as e:
-        print(f"Value error: {e}")
-        return False
-    except Exception as e:
+    except :
         print(f"An unexpected error occurred: {e}")
         return False
 
-def create_video_lines(data, task_id, worker_id, max_retries=5):
+def create_video_lines(data, task_id, worker_id):
     try:
         update_status_video("Đang Render : Chuẩn bị tạo video", data['video_id'], task_id, worker_id)
         video_id = data.get('video_id')
@@ -863,39 +820,35 @@ def create_video_lines(data, task_id, worker_id, max_retries=5):
             data_sub = download_and_read_srt(data, video_id)
             if not data_sub or len(data_sub) != total_entries:
                 print("Phụ đề không khớp hoặc bị thiếu.")
-                return False
+                update_status_video("Lỗi: Phụ đề không khớp", video_id, task_id, worker_id)
+                return False  # Dừng quá trình nếu phụ đề không khớp
 
-        # Sử dụng ThreadPoolExecutor với tối đa 4 luồng
         with ThreadPoolExecutor(max_workers=2) as executor:
-            # Tạo các công việc xử lý video đồng thời
             futures = {
-                executor.submit(process_video_segment, data, text_entry, data_sub, i, video_id,task_id, worker_id): text_entry
+                executor.submit(process_video_segment, data, text_entry, data_sub, i, video_id, task_id, worker_id): text_entry
                 for i, text_entry in enumerate(text_entries)
             }
-
-            # Theo dõi tiến trình của từng công việc đã hoàn thành
             for future in as_completed(futures):
+                print(f"Processing entry {processed_entries + 1}/{total_entries}")
                 try:
-                    result = future.result()  # Lấy kết quả từ mỗi công việc đã hoàn thành
+                    result = future.result()
                     if result:
                         processed_entries += 1
                         percent_complete = (processed_entries / total_entries) * 100
                         update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", video_id, task_id, worker_id)
                     else:
-                        print("Lỗi trong quá trình tạo video cho một đoạn.")
-                        return False
+                        update_status_video("Render Lỗi: Lỗi trong quá trình tạo video cho một đoạn.", video_id, task_id, worker_id)
+                        return False  # Dừng quá trình nếu có lỗi trong việc tạo video cho một đoạn
                 except Exception as e:
                     print(f"Lỗi khi tạo video: {e}")
-                    update_status_video(
-                        f"Render Lỗi : Lỗi khi tạo video - {e}",
-                        video_id, task_id, worker_id
-                    )
-                    return False  # Dừng tiến trình khi có lỗi
-        update_status_video("Đang Render : Tạo video thành công", data['video_id'], task_id, worker_id)
+                    update_status_video(f"Render Lỗi: Lỗi khi tạo video - {e}", video_id, task_id, worker_id)
+                    return False  # Dừng quá trình nếu có lỗi trong việc tạo video
+
+        update_status_video("Đang Render : Tạo video thành công", video_id, task_id, worker_id)
         return True
     except Exception as e:
-        update_status_video(f"Đang Render : lỗi xử Lý tổng quát video {e}", video_id, task_id, worker_id)
-        return False
+        update_status_video(f"Đang Render : lỗi xử lý tổng quát video {e}", video_id, task_id, worker_id)
+        return False  # Dừng quá trình nếu có lỗi tổng quát
 
 def get_random_video_from_directory(directory_path):
     video_files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
@@ -1571,7 +1524,6 @@ def get_voice_chat_ai_human(data, text, file_name):
         return False
     return True
       
-    
 def get_filename_from_url(url):
     parsed_url = urllib.parse.urlparse(url)
     path = parsed_url.path
@@ -1611,15 +1563,16 @@ def download_image(data, task_id, worker_id):
     images_str = data.get('images')
     if not images_str:
         return True
-
-    images = json.loads(images_str)
-    total_images = len(images)
-    if total_images == 0:
-        update_status_video(
-            f"Đang Render : Không có hình ảnh nào để tải xuống bỏ qua",
-            video_id, task_id, worker_id
-        )
-        return True
+    
+    images = []
+    text = data.get('text_content')
+    # Tải và kiểm tra nội dung văn bản
+    text_entries = json.loads(text)
+    for iteam in text_entries:
+        images.append(iteam.get('url_video'))
+            
+    print(f"Số lượng hình ảnh cần tải: {len(images)}")
+    total_images = len(images)  # Tổng số hình ảnh cần tải
 
     downloaded_images = 0  # Số hình ảnh đã tải xuống thành công
 
@@ -1637,7 +1590,7 @@ def download_image(data, task_id, worker_id):
                     downloaded_images += 1
                     percent_complete = (downloaded_images / total_images) * 100
                     update_status_video(
-                        f"Đang Render : Tải xuống hình ảnh thành công ({downloaded_images}/{total_images}) - {percent_complete:.2f}%",
+                        f"Đang Render : Tải xuống  file thành công ({downloaded_images}/{total_images}) - {percent_complete:.2f}%",
                         video_id, task_id, worker_id
                     )
                 else:
@@ -1659,7 +1612,6 @@ def download_image(data, task_id, worker_id):
                 for pending in future_to_url:
                     pending.cancel()
                 return False
-                
     return True
 
 def create_or_reset_directory(directory_path):
