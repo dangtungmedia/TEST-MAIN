@@ -240,7 +240,7 @@ def convert_video_backrought_reup(data, task_id, worker_id, success):
         output_paths.append(output_path)
 
     # Sử dụng ThreadPoolExecutor với 4 luồng để chuyển đổi video
-    with ThreadPoolExecutor(max_workers=3) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         futures = []
 
         # Gửi mỗi video vào các luồng xử lý
