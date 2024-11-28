@@ -260,11 +260,15 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                     )
                 else:
                     update_status_video("Render Lỗi: Lỗi trong quá trình chuyển đổi video.", video_id, task_id, worker_id)
+                    for f in futures.keys():
+                        f.cancel()
                     return False  # Nếu lỗi xảy ra, trả về False và dừng quá trình
 
             except Exception as e:
                 print(f"Lỗi khi chuyển đổi video: {e}")
                 update_status_video(f"Render Lỗi: Lỗi khi chuyển đổi video - {e}", video_id, task_id, worker_id)
+                for f in futures.keys():
+                    f.cancel()
                 return False  # Nếu có lỗi trong quá trình, trả về False
         
         
