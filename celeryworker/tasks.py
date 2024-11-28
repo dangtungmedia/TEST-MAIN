@@ -208,8 +208,10 @@ def convert_video(input_path, output_path, target_resolution="1280x720", target_
     try:
         subprocess.run(ffmpeg_command, check=True)
         print(f"Video đã được chuyển đổi và lưu tại {output_path}")
+        return True
     except subprocess.CalledProcessError as e:
         print(f"Lỗi khi chuyển đổi video: {e}")
+        return False
 
 def convert_video_backrought_reup(data,task_id, worker_id, success):
     video_id = data.get('video_id')
