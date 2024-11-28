@@ -211,7 +211,7 @@ def convert_video(input_path, output_path, target_resolution="1280x720", target_
     except subprocess.CalledProcessError as e:
         print(f"Lỗi khi chuyển đổi video: {e}")
 
-def convert_video_backrought_reup(data,task_id, worker_id, success):
+def convert_video_backrought_reup(data, task_id, worker_id, success):
     video_id = data.get('video_id')
     update_status_video("Đang Render: đang chuyển đổi định dạng video", video_id, task_id, worker_id)
     
@@ -260,19 +260,21 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                     )
                 else:
                     update_status_video("Render Lỗi: Lỗi trong quá trình chuyển đổi video.", video_id, task_id, worker_id)
-                    for f in futures.keys():
-                        f.cancel()
-                    return False  # Nếu lỗi xảy ra, trả về False và dừng quá trình
+                    # Hủy tất cả các tác vụ còn lại khi có lỗi
+                    for f in futures:
+                        if not f.done():  # Kiểm tra nếu task chưa hoàn thành
+                            f.cancel()
+                    return False  # Nếu lỗi xảy ra, dừng quá trình
 
             except Exception as e:
                 print(f"Lỗi khi chuyển đổi video: {e}")
                 update_status_video(f"Render Lỗi: Lỗi khi chuyển đổi video - {e}", video_id, task_id, worker_id)
-                for f in futures.keys():
-                    f.cancel()
-                return False  # Nếu có lỗi trong quá trình, trả về False
-        
-        
-
+                # Hủy tất cả các tác vụ còn lại khi có lỗi
+                for f in futures:
+                    if not f.done():  # Kiểm tra nếu task chưa hoàn thành
+                        f.cancel()
+                return False  # Nếu có lỗi trong quá trình, dừng quá trình
+          
     # Nếu tất cả video được chuyển đổi thành công
     update_status_video("Đang Render: Đang xuất video hoàn thành", video_id, task_id, worker_id)
     
