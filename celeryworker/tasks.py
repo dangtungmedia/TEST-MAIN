@@ -1584,7 +1584,7 @@ def get_voice_japanese(data, text, file_name):
     while not success and attempt < 10:
         try:
             # Tạo audio query với VoiceVox
-            url_query = f"http://voicevox:50021/audio_query?speaker={voice_id}"
+            url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
             response_query = requests.post(url_query, params={'text': text})
             response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
             
@@ -1593,7 +1593,7 @@ def get_voice_japanese(data, text, file_name):
             query_json["speedScale"] = 1.0  # Điều chỉnh tốc độ
 
             # Yêu cầu tạo âm thanh
-            url_synthesis = f"http://voicevox:50021/synthesis?speaker={voice_id}"
+            url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
             headers = {"Content-Type": "application/json"}
             response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
             response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
