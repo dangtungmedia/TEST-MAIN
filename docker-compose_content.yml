@@ -31,9 +31,9 @@ services:
     ports:
       - "127.0.0.1:50021:50021"
     restart: always 
-    # volumes:
-    #   - .:/app
-      # - ./presets.yaml:/opt/voicevox_engine/presets.yaml
+    volumes:
+      - .:/app
+      - ./presets.yaml:/opt/voicevox_engine/presets.yaml
 networks:
   app_network:
     driver: bridge
