@@ -1820,7 +1820,7 @@ def download_single_image(url, local_directory):
         except Exception as e:
             print(f"Lỗi không xác định khi tải xuống {url}: {e}")
         
-        time.sleep(1)  # Đợi 1 giây trước khi thử lại
+        time.sleep(4)  # Đợi 1 giây trước khi thử lại
     return False  # Trả về False nếu không thể tải xuống
 
 def download_image(data, task_id, worker_id):
@@ -1852,7 +1852,7 @@ def download_image(data, task_id, worker_id):
 
     downloaded_images = 0  # Số hình ảnh đã tải xuống thành công
 
-    with ThreadPoolExecutor(max_workers=25) as executor:
+    with ThreadPoolExecutor(max_workers=15) as executor:
         future_to_url = {
             executor.submit(download_single_image, image, local_directory): image
             for image in images
