@@ -32,6 +32,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from dotenv import load_dotenv
 
+from .random_video_effect  import random_video_effect_cython
+
 # Nạp biến môi trường từ file .env
 load_dotenv()
 
@@ -111,7 +113,6 @@ def render_video(self, data):
         # Tải xuống âm thanh oki
         success = download_audio(data, task_id, worker_id)
         if not success:
-            
             shutil.rmtree(f'media/{video_id}')
             return
         update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
@@ -128,25 +129,27 @@ def render_video(self, data):
     # Tạo video
     success = create_video_lines(data, task_id, worker_id)
     if not success:
-        shutil.rmtree(f'media/{video_id}')
+        # shutil.rmtree(f'media/{video_id}')
         return
    
     # Tạo phụ đề cho video
     success = create_subtitles(data, task_id, worker_id)
     if not success:
-        shutil.rmtree(f'media/{video_id}')
+        # shutil.rmtree(f'media/{video_id}')
         return
     
     # Tạo file
     success = create_video_file(data, task_id, worker_id)
     if not success:
-        shutil.rmtree(f'media/{video_id}')
+        # shutil.rmtree(f'media/{video_id}')
         return
 
     success = upload_video(data, task_id, worker_id)
     if not success:
         update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
         return
+    
+    # shutil.rmtree(f'media/{video_id}')
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
 @shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=140000,queue='render_video_reupload')
@@ -452,7 +455,6 @@ def select_videos_by_total_duration(file_path, min_duration):
     
     return selected_urls
 
-
 class UploadProgress:
     def __init__(self, data, task_id, worker_id):
         self.last_printed_percent = 0
@@ -513,7 +515,6 @@ def upload_video(data, task_id, worker_id):
         if response.status_code == 200:
             print("\nUpload successful!")
             print("Response:", response.json())  # Print the response JSON for confirmation
-            shutil.rmtree(f'media/{video_id}')
             return True
         else:
             print(f"\nUpload failed with status code: {response.status_code}")
@@ -552,19 +553,20 @@ def create_video_file(data, task_id, worker_id):
         print(f"Audio file not found: {audio_file}")
         return False
     ffmpeg_command = [
-            'ffmpeg',
-            '-f', 'concat',
-            '-safe', '0',
-            '-i', input_files_video_path,
-            '-i', audio_file,
-            '-vf', f"subtitles={ass_file_path}",
-            '-c:v', 'libx264',
-            '-map', '0:v',
-            '-map', '1:a',
-            '-y',
-            f"media/{video_id}/{name_video}.mp4"
-        ]
-    
+                'ffmpeg',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', input_files_video_path,  # Đọc danh sách video từ file text
+                '-i', audio_file,  # Đưa vào file âm thanh
+                '-vf', f"subtitles={ass_file_path}",  # Thêm phụ đề
+                '-c:v', 'libx264',  # Sử dụng codec video x264
+                '-c:a', 'aac',  # Sử dụng codec âm thanh AAC
+                '-strict', 'experimental',  # Cung cấp tính năng âm thanh nâng cao nếu cần
+                '-map', '0:v',  # Chỉ định luồng video từ các video đầu vào
+                '-map', '1:a',  # Chỉ định luồng âm thanh từ file âm thanh
+                '-y', f"media/{video_id}/{name_video}.mp4"  # Đặt tên file đầu ra
+            ]
+                
     with subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True) as process:
         for line in process.stderr:
             if "time=" in line:
@@ -878,32 +880,33 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
     else:
         scale_factor = 1  # Giữ nguyên tốc độ video nếu video dài hơn hoặc bằng audio
     
-    base_video = get_random_video_from_directory(overlay_video_dir)
-    is_overlay_video = random.choice([True, False])
+    # base_video = get_random_video_from_directory(overlay_video_dir)
+    is_overlay_video = random.choice([False])
     
     if is_overlay_video:
         cmd = [
-            "ffmpeg",
-            "-i", input_video,
-            "-ss", start_time_str,  # Thời gian bắt đầu cắt của video đầu vào
-            "-t", str(duration),     # Thời gian video cần cắt
-            "-i", base_video,
-            "-ss", start_time_str,  # Thời gian bắt đầu cắt của video overlay
-            "-t", str(duration),    # Thời gian video cần cắt
-            "-filter_complex", f"[0:v]scale={scale_width}:{scale_height},setpts={scale_factor}*PTS[bg];"
-                            f"[1:v]scale={scale_width}:{scale_height},setpts={scale_factor}*PTS[overlay_scaled];"
-                            f"[bg][overlay_scaled]overlay=format=auto,format=yuv420p[outv]",  # overlay video
-            "-map", "[outv]",
-            "-r", "24",             # Tốc độ khung hình đầu ra
-            "-c:v", "libx264",      # Codec video
-            "-crf", "18",           # Chất lượng video
-            "-preset", "medium",    # Tốc độ mã hóa
-            "-pix_fmt", "yuv420p",  # Đảm bảo tương thích với đầu ra
-            "-vsync", "2",          # Đồng bộ hóa video
-            "-loglevel", "debug",   # Đặt mức log level để ghi chi tiết
-            "-y",                   # Ghi đè file đầu ra nếu đã tồn tại
-            output_video
-        ]
+                "ffmpeg",
+                "-i", input_video,  # Video nền
+                "-ss", start_time_str,
+                "-t", str(duration),
+                "-i", base_video,  # Video overlay
+                "-ss", start_time_str,
+                "-t", str(duration),
+                "-filter_complex", 
+                "[0:v]fps=24,scale={scale_width}:{scale_height},minterpolate=fps=24[bg];"
+                "[1:v]fps=24,scale={scale_width}:{scale_height},minterpolate=fps=24[overlay_scaled];"
+                "[bg][overlay_scaled]overlay=format=auto,format=yuv420p[outv]",  # overlay video
+                "-map", "[outv]",
+                "-r", "24",             # Tốc độ khung hình đầu ra
+                "-c:v", "libx264",      # Codec video
+                "-crf", "18",           # Chất lượng video
+                "-preset", "medium",    # Tốc độ mã hóa
+                "-pix_fmt", "yuv420p",  # Đảm bảo tương thích với đầu ra
+                "-vsync", "1",          # Đồng bộ hóa video
+                "-loglevel", "debug",   # Đặt mức log level để ghi chi tiết
+                "-y",                   # Ghi đè file đầu ra nếu đã tồn tại
+                output_video
+            ]
     else:
         cmd = [
             "ffmpeg",
@@ -916,7 +919,7 @@ def cut_and_scale_video_random(input_video, output_video, duration, scale_width,
             "-crf", "18",            # Chất lượng video
             "-preset", "medium",     # Tốc độ mã hóa
             "-pix_fmt", "yuv420p",   # Đảm bảo tương thích với đầu ra
-            "-vsync", "2",           # Đồng bộ hóa video
+            "-vsync", "1",           # Đồng bộ hóa video
             "-loglevel", "debug",    # Đặt mức log level để ghi chi tiết
             "-y",                    # Ghi đè file đầu ra nếu đã tồn tại
             output_video
@@ -1049,13 +1052,58 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
         if file_type == "video":
             cut_and_scale_video_random(path_file, out_file, duration, 1920, 1080, 'video_screen')
         elif file_type == "image":
-            random_choice = random.choice([True, False])
-            if random_choice:
-                image_to_video_zoom_in(path_file, out_file, duration, 1920, 1080, 'video_screen')
+            
+            cache_file = f'media/{video_id}/video/chace_{text_entry["id"]}.mp4'
+            success = random_video_effect_cython(path_file, cache_file, duration,24,1920, 1080)
+            if not success:
+                update_status_video(
+                        f"Render Lỗi : Không thể xử lý video render {text_entry['id']}", video_id, task_id, worker_id)
+                return False
             else:
-                image_to_video_zoom_out(path_file, out_file, duration, 1920, 1080, 'video_screen')
+                random_choice = random.choice([False])
+                # base_video = get_random_video_from_directory('video_screen')
+                if random_choice:
+                    cmd = [  
+                            "ffmpeg",  
+                            "-i", cache_file,  
+                            "-i", base_video,  
+                            "-filter_complex", "[0:v]fps=24,scale=1280:720,minterpolate=fps=24[bg];"  
+                                            "[1:v]fps=24,scale=1280:720,minterpolate=fps=24[overlay_scaled];"  
+                                            "[bg][overlay_scaled]overlay=format=auto,format=yuv420p[outv]",  
+                            "-map", "[outv]",  
+                            "-r", "24",  
+                            "-c:v", "libx264",  
+                            "-crf", "18",  
+                            "-preset", "medium",  
+                            "-pix_fmt", "yuv420p",  
+                            "-vsync", "1",  
+                            "-loglevel", "debug",  
+                            "-y", out_file  
+                        ]  
+                    subprocess.run(cmd, check=True)    
+
+                else:
+                    cmd = [
+                        "ffmpeg",
+                        "-i", cache_file,
+                        "-t", str(duration),     # Thời gian video cần cắt
+                        "-r", "24",              # Tốc độ khung hình đầu ra
+                        "-c:v", "libx264",       # Codec video
+                        "-crf", "18",            # Chất lượng video
+                        "-preset", "medium",     # Tốc độ mã hóa
+                        "-pix_fmt", "yuv420p",   # Đảm bảo tương thích với đầu ra
+                        "-vsync", "1",           # Đồng bộ hóa video
+                        "-loglevel", "debug",    # Đặt mức log level để ghi chi tiết
+                        "-y",                    # Ghi đè file đầu ra nếu đã tồn tại
+                        out_file
+                    ]
+                try:
+                    # Chạy lệnh FFmpeg
+                    subprocess.run(cmd, check=True)
+                except subprocess.CalledProcessError as e:
+                    return False
         return True
-    except :
+    except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return False
 
@@ -1113,100 +1161,6 @@ def create_video_lines(data, task_id, worker_id):
 def get_random_video_from_directory(directory_path):
     video_files = [f for f in os.listdir(directory_path) if os.path.isfile(os.path.join(directory_path, f))]
     return os.path.join(directory_path, random.choice(video_files))
-
-def image_to_video_zoom_out(input_image, output_video, duration, scale_width, scale_height, overlay_video):
-    is_overlay_video = random.choice([True, False])
-    base_video = get_random_video_from_directory(overlay_video)
-    time_video = format_time(duration)
-    if is_overlay_video:
-        ffmpeg_command = [
-            'ffmpeg',
-            '-loop', '1',
-            '-framerate','24',
-            '-i', input_image,
-            '-i', base_video,
-            '-filter_complex',
-            f"[0:v]format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*24:s={scale_width}x{scale_height}:fps=24[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay=format=auto,format=yuv420p[outv]",
-            '-map', '[outv]',
-            '-t', time_video,
-            "-r", "24",
-            "-c:v", "libx264",
-            "-crf", "18",
-            "-preset", "medium",
-            "-loglevel", "debug",  # Thêm tùy chọn loglevel
-            "-y",
-            output_video
-        ]
-
-    else:
-        ffmpeg_command = [
-        'ffmpeg',
-        '-loop', '1',
-        '-framerate','24',
-        '-i', input_image,
-        '-vf',
-        f"format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*24:s={scale_width}x{scale_height}:fps=24",
-        '-t', time_video,
-        "-r", "24",
-        "-c:v", "libx264",
-        "-crf", "18",
-        "-preset", "medium",
-        "-loglevel", "debug",  # Thêm tùy chọn loglevel
-        "-y",
-        output_video
-    ]
-    try:
-        # Chạy lệnh FFmpeg
-        subprocess.run(ffmpeg_command, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"lỗi chạy FFMPEG {e}")
-
-def image_to_video_zoom_in(input_image, output_video, duration, scale_width, scale_height, overlay_video):
-    is_overlay_video = random.choice([True, False])
-    base_video = get_random_video_from_directory(overlay_video)
-    time_video = format_time(duration)
-    if is_overlay_video:
-        ffmpeg_command = [
-            'ffmpeg',
-            '-loop', '1',
-            '-framerate','24',
-            '-i', input_image,
-            '-i', base_video,
-            '-filter_complex',
-            f"[0:v]format=yuv420p,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*24:s={scale_width}x{scale_height}:fps=24[bg];[1:v]scale={scale_width}:{scale_height}[overlay_scaled];[bg][overlay_scaled]overlay=format=auto,format=yuv420p[outv]",
-            '-map', '[outv]',
-            '-t', time_video,
-            "-r", "24",
-            "-c:v", "libx264",
-            "-crf", "18",
-            "-preset", "medium",
-            "-loglevel", "debug",  # Thêm tùy chọn loglevel
-            "-y",
-            output_video
-        ]
-
-    else:
-        ffmpeg_command = [
-        'ffmpeg',
-        '-loop', '1',
-        '-framerate','24',
-        '-i', input_image,
-        '-vf',
-        f"format=yuv420p,scale=8000:-1,scale=8000:-1,zoompan=z='zoom+0.001':x=iw/2-(iw/zoom/2):y=ih/2-(ih/zoom/2):d={duration}*24:s={scale_width}x{scale_height}:fps=24",
-        '-t', time_video,
-        "-r", "24",
-        "-c:v", "libx264",
-        "-crf", "18",
-        "-preset", "medium",
-        "-loglevel", "debug",  # Thêm tùy chọn loglevel
-        "-y",
-        output_video
-    ]
-    try:
-        # Chạy lệnh FFmpeg
-        subprocess.run(ffmpeg_command, check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"lỗi chạy FFMPEG {e}")
 
 def get_voice_super_voice(data, text, file_name):     
     success = False
@@ -1490,6 +1444,9 @@ def process_voice_entry(data, text_entry, video_id, task_id, worker_id, language
         
     elif language == 'SUPER VOICE':
         success = get_voice_super_voice(data, text_entry['text'], file_name)
+        
+    elif language == 'Japanese ondoku3':
+        success = get_voice_ondoku3(data, text_entry['text'], file_name)
     
     # Trả về False nếu tải không thành công, dừng toàn bộ
     if not success:
@@ -1515,12 +1472,11 @@ def download_audio(data, task_id, worker_id):
         processed_entries = 0
 
         # Khởi tạo luồng xử lý tối đa 20 luồng
-        with ThreadPoolExecutor(max_workers=10) as executor:
+        with ThreadPoolExecutor(max_workers=15) as executor:
             futures = {
                 executor.submit(process_voice_entry, data, text_entry, video_id, task_id, worker_id, language): idx
                 for idx, text_entry in enumerate(text_entries)
             }
-
             # Mở file để ghi các đường dẫn tệp âm thanh theo thứ tự
             with open(f'media/{video_id}/input_files.txt', 'w') as file:
                 for future in as_completed(futures):
@@ -1553,7 +1509,6 @@ def download_audio(data, task_id, worker_id):
                             f.cancel()
                         update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
                         return False  # Dừng toàn bộ nếu gặp lỗi
-
                 # Ghi vào input_files.txt theo đúng thứ tự ban đầu của text_entries
                 for file_name in result_files:
                     if file_name:
@@ -1584,24 +1539,16 @@ def get_voice_japanese(data, text, file_name):
     while not success and attempt < 10:
         try:
             # Tạo audio query với VoiceVox
-            url_query = f"http://127.0.0.1:50021/audio_query?speaker={voice_id}"
-            response_query = requests.post(url_query, params={'text': text})
-            response_query.raise_for_status()  # Kiểm tra mã trạng thái HTTP
-            
-            # Lấy JSON từ phản hồi và điều chỉnh tốc độ
-            query_json = response_query.json()
-            query_json["speedScale"] = 1.0  # Điều chỉnh tốc độ
-
+            response_query = requests.post(
+                            f'http://voicevox:50021/audio_query?speaker={voice_id}',  # API để tạo audio_query
+                            params={'text': text}  # Gửi văn bản cần chuyển thành giọng nói
+                        )
             # Yêu cầu tạo âm thanh
-            url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
-            headers = {"Content-Type": "application/json"}
-            response_synthesis = requests.post(url_synthesis, headers=headers, json=query_json)
-            response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
-
+            url_synthesis = f"http://voicevox:50021/synthesis?speaker={voice_id}"
+            response_synthesis = requests.post(url_synthesis,data=json.dumps(response_query.json()))
             # Ghi nội dung phản hồi vào tệp
             with open(file_name, 'wb') as f:
                 f.write(response_synthesis.content)
-
             # Kiểm tra độ dài tệp âm thanh
             duration = get_audio_duration(file_name)
             if duration > 0:  # Đảm bảo rằng âm thanh có độ dài hợp lý
@@ -1782,6 +1729,70 @@ def get_voice_chat_ai_human(data, text, file_name):
         print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
         return False
     return True
+
+
+def get_voice_ondoku3(data, text, file_name):
+    directory = os.path.dirname(file_name)
+    if not os.path.exists(directory):
+        os.makedirs(directory, exist_ok=True)
+    url = f"https://ondoku3.com/en/text_to_speech/"
+    data = json.loads(data.get("style"))
+    headers = {  
+            "referer": "https://ondoku3.com/en/text_to_speech/",
+            "x-csrftoken": "PE5podrc4l812OtM9HlfsxAONQudZOLkGD7MABvA2LWtSw4y2iw6HFh83NVJBACs",
+            "cookie": "_gid=GA1.2.1148716843.1732981575; user=4528422; csrftoken=19cxmyey8AYC0SLW3Ll1piRuq7BGMW1i; sessionid=obz5r6tbjtjwswh6b5x4lzc2iiihcgi4; django_language=en; _gat_gtag_UA_111769414_6=1; _ga=GA1.1.31832820.1732272096; _ga_0MMKHHJ235=GS1.1.1733029892.5.1.1733036426.0.0.0"
+            
+        }
+    data['text'] = text
+    
+    success = False
+    attempt = 0
+    while not success and attempt < 10:
+        try:
+            # Gửi yêu cầu đến API để lấy URL tệp âm thanh
+            response = requests.post(url, data=data, headers=headers)
+            response.raise_for_status()  # Kiểm tra mã trạng thái HTTP
+            
+            response_json = response.json()
+            tts_path = response_json.get('url')
+            print(tts_path)
+            print(response_json)
+            print("=========================================")
+            if not tts_path:
+                raise ValueError("Không nhận được đường dẫn tệp âm thanh từ API.")
+
+            # Tải xuống tệp âm thanh từ URL trả về
+            response_synthesis = requests.get(tts_path)
+            response_synthesis.raise_for_status()  # Kiểm tra mã trạng thái HTTP
+
+            # Lưu tệp âm thanh
+            with open(file_name, 'wb') as f:
+                f.write(response_synthesis.content)
+            
+            # Kiểm tra độ dài tệp âm thanh
+            duration = get_audio_duration(file_name)
+            if duration > 0:
+                success = True
+                print(f"Tạo giọng nói thành công cho '{text}' tại {file_name}")
+            else:
+                if os.path.exists(file_name):
+                    os.remove(file_name)  # Xóa tệp nếu không hợp lệ
+                print(f"Lỗi: Tệp âm thanh {file_name} không hợp lệ.")
+        
+        except requests.RequestException as e:
+            print(f"Lỗi mạng khi gọi API AI Human Studio: {e}. Thử lại...")
+        except Exception as e:
+            print(f"Lỗi không xác định: {e}. Thử lại...")
+
+        attempt += 1
+        if not success:
+            time.sleep(1)  # Đợi 1 giây trước khi thử lại
+
+    if not success:
+        print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
+        return False
+    return True
+
       
 def get_filename_from_url(url):
     parsed_url = urllib.parse.urlparse(url)
@@ -1841,7 +1852,7 @@ def download_image(data, task_id, worker_id):
 
     downloaded_images = 0  # Số hình ảnh đã tải xuống thành công
 
-    with ThreadPoolExecutor(max_workers=15) as executor:
+    with ThreadPoolExecutor(max_workers=25) as executor:
         future_to_url = {
             executor.submit(download_single_image, image, local_directory): image
             for image in images

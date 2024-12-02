@@ -79,3 +79,5 @@ whisper==1.1.10
 yarl==1.11.1
 yt-dlp==2024.8.6
 proglog==0.1.9
+psutil==6.1.0
+opencv-python==4.10.0.84
