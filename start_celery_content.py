@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
         # Tính số worker (chia đều số lõi CPU cho số worker và cộng thêm 1 nếu số lõi không chia hết)
         # Ví dụ: chia số lõi CPU cho số worker cần thiết, nếu có dư thì cộng thêm 1.
-        worker_count = (physical_cores // 2) + (1 if physical_cores % 2 != 0 else 0)
+        worker_count = physical_cores // 2
 
         # Chạy Celery worker với số lượng worker tính được
         os.system(f"celery -A celeryworker worker -l INFO --hostname={ip_address}-Content --concurrency={worker_count} -Q render_video_content")
