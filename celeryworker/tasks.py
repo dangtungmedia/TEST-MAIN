@@ -1805,7 +1805,7 @@ def download_single_image(url, local_directory):
     print(f"Đang tải xuống hình ảnh từ: {url}")
     for attempt in range(30):  # Thử tải lại 30 lần nếu thất bại
         try:
-            response = requests.get(url, stream=True, timeout=30)
+            response = requests.get(url, stream=True, timeout=200)
             if response.status_code == 200:
                 file_path = os.path.join(local_directory, get_filename_from_url(url))
                 with open(file_path, 'wb') as file:
