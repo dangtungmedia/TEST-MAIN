@@ -1165,7 +1165,7 @@ def get_random_video_from_directory(directory_path):
 def get_voice_super_voice(data, text, file_name):     
     success = False
     attempt = 0
-    while not success and attempt < 10:
+    while not success and attempt < 20:
         try:
             url_voice_text = get_voice_text(text, data)
             if not url_voice_text:
@@ -1200,7 +1200,7 @@ def get_voice_super_voice(data, text, file_name):
             
         attempt += 1
         if not success:
-            time.sleep(1)
+            time.sleep(4)
     if not success:
         print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
     return success
@@ -1472,7 +1472,7 @@ def download_audio(data, task_id, worker_id):
         processed_entries = 0
 
         # Khởi tạo luồng xử lý tối đa 20 luồng
-        with ThreadPoolExecutor(max_workers=15) as executor:
+        with ThreadPoolExecutor(max_workers=8) as executor:
             futures = {
                 executor.submit(process_voice_entry, data, text_entry, video_id, task_id, worker_id, language): idx
                 for idx, text_entry in enumerate(text_entries)
