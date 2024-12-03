@@ -1805,7 +1805,7 @@ def download_single_image(url, local_directory):
     print(f"Đang tải xuống hình ảnh từ: {url}")
     for attempt in range(30):  # Thử tải lại 30 lần nếu thất bại
         try:
-            response = requests.get(url, stream=True, timeout=10)
+            response = requests.get(url, stream=True, timeout=30)
             if response.status_code == 200:
                 file_path = os.path.join(local_directory, get_filename_from_url(url))
                 with open(file_path, 'wb') as file:
@@ -1852,7 +1852,7 @@ def download_image(data, task_id, worker_id):
 
     downloaded_images = 0  # Số hình ảnh đã tải xuống thành công
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         future_to_url = {
             executor.submit(download_single_image, image, local_directory): image
             for image in images
