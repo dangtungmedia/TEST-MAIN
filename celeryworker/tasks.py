@@ -1180,7 +1180,7 @@ def get_voice_super_voice(data, text, file_name):
             if not final_url:
                 return False
             
-            response = requests.get(final_url)
+            response = requests.get(final_url, stream=True, timeout=200)
             if response.status_code == 200:
                 with open(file_name, 'wb') as f:
                     f.write(response.content)
