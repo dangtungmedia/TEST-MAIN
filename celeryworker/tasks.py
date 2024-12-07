@@ -202,7 +202,7 @@ def convert_video(input_path, output_path, target_resolution="1280x720", target_
         "-vf", f"scale={target_resolution}",  # Đặt kích thước video
         "-r", str(target_fps),  # Đặt frame rate
         "-c:v", "libx264",  # Đặt codec video là libx264
-        "-preset", "fast",  # Tùy chọn tốc độ mã hóa
+        "-preset", "ultrafast",  # Tùy chọn tốc độ mã hóa
         output_path  # Đường dẫn lưu video đã xử lý
     ]
     
@@ -313,7 +313,7 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
         "-map", "[a]",
         "-c:v", "libx264",
         "-c:a", "aac",
-        "-preset", "fast",
+        "-preset", "ultrafast",
         output_path
     ]
     try:
