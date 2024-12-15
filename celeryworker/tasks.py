@@ -28,12 +28,12 @@ from proglog import ProgressBarLogger
 from tqdm import tqdm
 from celery.signals import task_failure,task_revoked
 from concurrent.futures import ThreadPoolExecutor, as_completed
-
 import os
 from dotenv import load_dotenv
 
 from .random_video_effect  import random_video_effect_cython
-
+import boto3
+import threading
 # Nạp biến môi trường từ file .env
 load_dotenv()
 
@@ -474,59 +474,52 @@ def upload_video(data, task_id, worker_id):
     video_id = data.get('video_id')
     name_video = data.get('name_video')
     video_path = f'media/{video_id}/{name_video}.mp4'
-    url = f'{SERVER}/api/'
-
     update_status_video(f"Đang Render : Đang Upload File Lên Server", video_id, task_id, worker_id)
     
-    payload = {
-        'video_id': str(video_id),
-        'action': 'upload',
-        'secret_key': SECRET_KEY
-    }
+    class ProgressPercentage(object):
+        def __init__(self, filename):
+            self._filename = filename
+            self._size = float(os.path.getsize(filename))
+            self._seen_so_far = 0
+            self._lock = threading.Lock()
 
+        def __call__(self, bytes_amount):
+            with self._lock:
+                self._seen_so_far += bytes_amount
+                percentage = (self._seen_so_far / self._size) * 100
+                update_status_video(f"Đang Render : Đang Upload File Lên Server ({percentage:.1f}%)", video_id, task_id, worker_id)
+    
+    s3 = boto3.client(
+        's3',
+        endpoint_url=os.environ.get('S3_ENDPOINT_URL'),
+        aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+        aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
+    )
+
+    bucket_name = os.environ.get('S3_BUCKET_NAME')
     try:
-        with open(video_path, 'rb') as video_file:
-            # Prepare the payload with the file and other fields
-            encoder = MultipartEncoder(
-                fields={
-                    'video_id': str(payload['video_id']),
-                    'action': payload['action'],
-                    'secret_key': payload['secret_key'],
-                    'file': (os.path.basename(video_path), video_file, 'application/octet-stream')
-                }
-            )
-            
-            # Create an instance of the UploadProgress class
-            progress = UploadProgress(data, task_id, worker_id)
-            
-            # Create a monitor to use with the request
-            monitor = MultipartEncoderMonitor(encoder, progress.progress_callback)
-            
-            # Make the POST request to upload the video with streaming data
-            response = requests.post(
-                url,
-                data=monitor,
-                headers={'Content-Type': monitor.content_type}
-            )
+        if not os.path.exists(video_path):
+            raise FileNotFoundError(f"Không tìm thấy file {video_path}")
+
+        s3.upload_file(video_path, bucket_name, video_path, Callback=ProgressPercentage(video_path))
+        print(f"\nUpload file {video_path} thành công!")
         
-        # Check if the request was successful
-        if response.status_code == 200:
-            print("\nUpload successful!")
-            print("Response:", response.json())  # Print the response JSON for confirmation
-            shutil.rmtree(f'media/{video_id}')
-            return True
-        else:
-            print(f"\nUpload failed with status code: {response.status_code}")
-            print("Response:", response.text)
-            return False
-
-    except FileNotFoundError:
-        print(f"Error: The file {video_path} was not found.")
-        return False
+        expiration = 365 * 24 * 60 * 60  # 1 năm tính bằng giây
+        url = s3.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': video_path
+            },
+            ExpiresIn=expiration
+        )
+        update_status_video(f"Đang Render : Upload file File Lên Server thành công !", video_id, task_id, worker_id,url_video=url)
+        return True 
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        error_msg = str(e)
+        print(f"\nUpload file {video_path} thất bại: {error_msg}")
+        update_status_video(f"Lỗi khi upload: {error_msg}", video_id, task_id, worker_id)
         return False
-
 
 def create_video_file(data, task_id, worker_id):
     video_id = data.get('video_id')
@@ -1164,7 +1157,7 @@ def get_random_video_from_directory(directory_path):
 def get_voice_super_voice(data, text, file_name):     
     success = False
     attempt = 0
-    while not success and attempt < 20:
+    while not success and attempt < 200:
         try:
             url_voice_text = get_voice_text(text, data)
             if not url_voice_text:
@@ -1199,13 +1192,13 @@ def get_voice_super_voice(data, text, file_name):
             
         attempt += 1
         if not success:
-            time.sleep(4)
+            time.sleep(25)
     if not success:
         print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
     return success
 
 def get_url_voice_succes(url_voice):
-    max_retries = 10  # Số lần thử lại tối đa
+    max_retries = 40  # Số lần thử lại tối đa
     retry_delay = 2  # Thời gian chờ giữa các lần thử (giây)
 
     for attempt in range(max_retries):
@@ -1237,7 +1230,7 @@ def get_url_voice_succes(url_voice):
 
 def get_audio_url(url_voice_text):
     """Hàm lấy URL audio từ API."""
-    max_retries = 10  # Số lần thử lại tối đa
+    max_retries = 40  # Số lần thử lại tối đa
     retry_delay = 3  # Thời gian chờ giữa các lần thử (giây)
 
     for attempt in range(max_retries):
@@ -1279,7 +1272,7 @@ def get_audio_url(url_voice_text):
 
 def get_voice_text(text, data):
     retry_count = 0
-    max_retries = 20  # Giới hạn số lần thử lại
+    max_retries = 50 # Giới hạn số lần thử lại
     while retry_count < max_retries:
         try:
             style_name_data = json.loads(data.get("style"))
@@ -1308,18 +1301,18 @@ def get_voice_text(text, data):
                 print("Unauthorized. Token may be expired. Refreshing token...")
                 get_cookie(os.environ.get('EMAIL'), os.environ.get('PASSWORD'))
                 retry_count += 1
-                time.sleep(3)  # Chờ 1 giây trước khi thử lại
+                time.sleep(10)  # Chờ 1 giây trước khi thử lại
             else:
                 print("API call failed:", response.status_code)
                 retry_count += 1
-                time.sleep(3)  # Chờ 1 giây trước khi thử lại
+                time.sleep(10)  # Chờ 1 giây trước khi thử lại
         except Exception as e:
             retry_count += 1
-            time.sleep(3)  # Chờ 1 giây trước khi thử lại
+            time.sleep(10)  # Chờ 1 giây trước khi thử lại
     return False
   
 # Hàm thử lại với decorator
-def retry(retries=3, delay=5):
+def retry(retries=30, delay=5):
     """
     Decorator để tự động thử lại nếu hàm gặp lỗi.
     
@@ -1345,7 +1338,7 @@ def retry(retries=3, delay=5):
         return wrapper
     return decorator
 
-@retry(retries=3, delay=5)
+@retry(retries=20, delay=5)
 def active_token(access_token):
     """
     Lấy idToken từ access_token.
@@ -1365,7 +1358,7 @@ def active_token(access_token):
     response.raise_for_status()
     return response.json()['idToken']
 
-@retry(retries=3, delay=5)
+@retry(retries=20, delay=5)
 def get_access_token(idToken):
     """
     Lấy access_token từ idToken.
@@ -1380,7 +1373,7 @@ def get_access_token(idToken):
     response.raise_for_status()
     return response.json()["result"]['access_token']
 
-@retry(retries=3, delay=5)
+@retry(retries=20, delay=5)
 def login_data(email, password):
     """
     Lấy idToken bằng cách đăng nhập với email và password.
@@ -1449,6 +1442,7 @@ def process_voice_entry(data, text_entry, video_id, task_id, worker_id, language
     
     # Trả về False nếu tải không thành công, dừng toàn bộ
     if not success:
+        print(language)
         print(f"Lỗi: Không thể tạo giọng nói cho đoạn văn bản ID {text_entry['id']}")
         return False, None  # Trả về False để đánh dấu lỗi
     return text_entry['id'], file_name  # Trả về ID và đường dẫn tệp đã tạo
@@ -1734,7 +1728,6 @@ def get_voice_chat_ai_human(data, text, file_name):
         return False
     return True
 
-
 def get_voice_ondoku3(data, text, file_name):
     directory = os.path.dirname(file_name)
     if not os.path.exists(directory):
@@ -1797,7 +1790,6 @@ def get_voice_ondoku3(data, text, file_name):
         print(f"Không thể tạo giọng nói sau {attempt} lần thử.")
         return False
     return True
-
       
 def get_filename_from_url(url):
     parsed_url = urllib.parse.urlparse(url)
@@ -2037,7 +2029,6 @@ def parse_crop_data(crop_data_str):
         crop_data[key] = int(value)
     
     return crop_data
-# Tính toán vị trí và kích thước mới của video crop
 
 def calculate_new_position(crop_data, original_resolution=(640, 360), target_resolution=(1920, 1080)):
     original_top = crop_data.get('top')
@@ -2169,7 +2160,7 @@ def update_info_video(data, task_id, worker_id):
         print(f"Lỗi cập nhật thông tin video: {response.status_code}")
         return False
 
-def update_status_video(status_video,video_id,task_id,worker_id):
+def update_status_video(status_video,video_id,task_id,worker_id,url_video=None):
     data = {
         'secret_key': SECRET_KEY,
         'action': 'update_status',
@@ -2177,6 +2168,7 @@ def update_status_video(status_video,video_id,task_id,worker_id):
         'status': status_video,
         'task_id': task_id,
         'worker_id': worker_id,
+        'url_video': url_video,
     }
     url = f'{SERVER}/api/'
     response = requests.post(url, json=data)
