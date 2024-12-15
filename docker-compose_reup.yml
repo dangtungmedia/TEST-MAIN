@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  celery:
+  celery_render_reup:
     container_name: celery
     restart: always
     build:

@@ -95,7 +95,7 @@ def render_video(self, data):
     success = create_or_reset_directory(f'media/{video_id}')
 
     if not success:
-        # shutil.rmtree(f'media/{video_id}')
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Tạo thư mục thành công", data['video_id'], task_id, worker_id)
@@ -103,7 +103,7 @@ def render_video(self, data):
     # Tải xuống hình ảnh
     success = download_image(data, task_id, worker_id)
     if not success:
-        # shutil.rmtree(f'media/{video_id}')
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tải xuống hình ảnh", data['video_id'], task_id, worker_id)
         return
     update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
@@ -112,14 +112,14 @@ def render_video(self, data):
         # Tải xuống âm thanh oki
         success = download_audio(data, task_id, worker_id)
         if not success:
-            # shutil.rmtree(f'media/{video_id}')
+            shutil.rmtree(f'media/{video_id}')
             return
         update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
 
     #nối giọng đọc và chèn nhạc nền
     success = merge_audio_video(data, task_id, worker_id)
     if not success:
-        # shutil.rmtree(f'media/{video_id}')
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
         return
     
@@ -128,27 +128,26 @@ def render_video(self, data):
     # Tạo video
     success = create_video_lines(data, task_id, worker_id)
     if not success:
-        # shutil.rmtree(f'media/{video_id}')
+        shutil.rmtree(f'media/{video_id}')
         return
    
     # Tạo phụ đề cho video
     success = create_subtitles(data, task_id, worker_id)
     if not success:
-        # shutil.rmtree(f'media/{video_id}')
+        shutil.rmtree(f'media/{video_id}')
         return
     
     # Tạo file
     success = create_video_file(data, task_id, worker_id)
     if not success:
-        # shutil.rmtree(f'media/{video_id}')
+        shutil.rmtree(f'media/{video_id}')
         return
 
     success = upload_video(data, task_id, worker_id)
     if not success:
         update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
         return
-    
-    # shutil.rmtree(f'media/{video_id}')
+    shutil.rmtree(f'media/{video_id}')
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
 @shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=140000,queue='render_video_reupload')

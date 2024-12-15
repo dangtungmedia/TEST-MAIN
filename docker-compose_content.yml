@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  celery:
+  celery_render:
     container_name: celery
     restart: always
     build:
@@ -10,7 +10,7 @@ services:
       - .:/app
     networks:
       - app_network
-  voicevox:
+  voicevox_render:
     container_name: voicevox
     image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
     ports:
