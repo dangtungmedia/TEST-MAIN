@@ -508,6 +508,8 @@ def upload_video(data, task_id, worker_id):
             'get_object',
             Params={
                 'Bucket': bucket_name,
+                'ResponseContentDisposition': 'inline',  # Thêm dòng này
+                'ResponseContentType': 'video/mp4',       # Và dòng này
                 'Key': video_path
             },
             ExpiresIn=expiration
