@@ -20,20 +20,19 @@ class ProgressPercentage(object):
 # Khởi tạo client
 s3 = boto3.client(
     's3',
-    endpoint_url='http://157.90.208.177:9000',
+    endpoint_url='https://apis3.clouds3stonger.com',
     aws_access_key_id='G4N6S01MHz180UGALp9f',
     aws_secret_access_key='RdTLoLOSQgI7EoqHemoddMFGS2ZxzH5hFIh0puO9'
 )
-
 try:
     # Kiểm tra kết nối
     response = s3.list_buckets()
     print("Kết nối thành công!")
     
     # Thông tin upload
-    bucket_name = 'data'
-    file_path = 'Fs2mPBC.mp4'
-    object_name = f'media/videos/{file_path}'  # Đường dẫn trên S3
+    bucket_name = 'tung-media'
+    file_path = 'addxx.mp4'
+    object_name = f'data/14327/{file_path}'
     
     # Upload file với progress callback
     print(f"\nBắt đầu upload file {file_path}...")

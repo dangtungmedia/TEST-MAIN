@@ -193,7 +193,6 @@ def render_video_reupload(self, data):
         return
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
-
 def convert_video(input_path, output_path, target_resolution="1280x720", target_fps=24):
     ffmpeg_command = [
         "ffmpeg",
@@ -361,7 +360,6 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
     update_status_video("Đang Render: Xuất video xong ! chuẩn bị upload lên sever", data['video_id'], task_id, worker_id)
     return True
     
-    
 def cread_test_reup(data, task_id, worker_id):
     # Lấy ID video và đường dẫn tới video
     video_id = data.get('video_id')
@@ -425,7 +423,6 @@ def cread_test_reup(data, task_id, worker_id):
     
     # Nếu tất cả các video được tải xuống thành công, trả về result_urls
     return result_urls
-    
     
 def select_videos_by_total_duration(file_path, min_duration):
     # Đọc dữ liệu từ tệp JSON
@@ -511,11 +508,12 @@ def upload_video(data, task_id, worker_id):
             update_status_video(f"Render Lỗi : {error_msg}", video_id, task_id, worker_id)
             return False
 
+        object_name = f'data/{video_id}/{name_video}.mp4'
         # Upload file với content type và extra args
         s3.upload_file(
             video_path, 
             bucket_name, 
-            video_path,
+            object_name,
             Callback=ProgressPercentage(video_path),
             ExtraArgs={
                 'ContentType': 'video/mp4',
@@ -529,15 +527,15 @@ def upload_video(data, task_id, worker_id):
             'get_object',
             Params={
                 'Bucket': bucket_name,
-                'Key': video_path,
+                'Key': object_name,
                 'ResponseContentType': 'video/mp4',
                 'ResponseContentDisposition': 'inline'
             },
             ExpiresIn=expiration
         )
-        
+        print(f"Uploaded video to {url}")
         update_status_video(
-            f"Đang Render : Upload file File Lên Server thành công!", 
+            "Đang Render : Upload file File Lên Server thành công!", 
             video_id, 
             task_id, 
             worker_id,

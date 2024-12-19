@@ -1,19 +1,29 @@
+import boto3
 
-import requests
+# Khởi tạo client
+s3 = boto3.client(
+    's3',
+    endpoint_url='https://s3.autospamnews.com',
+    aws_access_key_id='G4N6S01MHz180UGALp9f',
+    aws_secret_access_key='RdTLoLOSQgI7EoqHemoddMFGS2ZxzH5hFIh0puO9'
+)
 
-url = "https://cdn.pixabay.com/video/2023/08/02/174358-851138337_small.mp4"
-file_name = "video.mp4"
+# Kiểm tra kết nối
+try:
+    response = s3.list_buckets()
+    print("Kết nối thành công!")
+    print("Buckets:", response['Buckets'])
+    
+    # Upload file
+    bucket_name = 'data'
+    file_path = 'requirements.txt'  # Thay đổi đường dẫn file
+    object_name = 'tung-media/file_của_bạn.txt'     # Tên file trên S3/MinIO
+    
+    # Cách 1: Sử dụng upload_file
+    s3.upload_file(file_path, bucket_name, object_name)
+    print(f"Upload thành công file {file_path} lên {bucket_name}/{object_name}")
+    
 
-# Gửi yêu cầu GET để tải video
-response = requests.get(url, stream=True)
-
-# Kiểm tra trạng thái của yêu cầu
-if response.status_code == 200:
-    # Mở file và ghi dữ liệu video vào
-    with open(file_name, "wb") as file:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                file.write(chunk)
-    print(f"Video đã được tải về thành công với tên {file_name}")
-else:
-    print("Có lỗi xảy ra khi tải video.")
+except Exception as e:
+    print("Lỗi:", str(e))
+    
