@@ -2137,7 +2137,7 @@ def process_video_ffmpeg(input_video, output_video, width, height, fps=24, prese
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
     ydl_opts = {
-        'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
+        # 'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
         'quiet': True,
         'skip_download': True,
         'force_generic_extractor': False,
