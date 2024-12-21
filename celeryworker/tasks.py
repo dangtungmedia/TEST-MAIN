@@ -2143,23 +2143,13 @@ def get_video_info(video_url):
         
         if "api" not in data or "mediaItems" not in data["api"]:
             raise ValueError("Invalid API response format")
-            
-        media_items = data["api"]["mediaItems"]
         title = data["api"]["title"]
-        
-        # Tìm video 720p
-        target_item = next(
-            (item for item in media_items if item.get("mediaRes") == "1280x720"),
-            None
-        )
-        
-        if not target_item:
-            raise ValueError("No 720p version found")
-            
+        mediaPreviewUrl = data["api"]["previewUrl"]
+        mediaThumbnail = data["api"]["imagePreviewUrl"]
         return {
             "title": title,
-            "preview_url": target_item.get("mediaPreviewUrl"),
-            "thumbnail_url": target_item.get("mediaThumbnail")
+            "preview_url": mediaPreviewUrl,
+            "thumbnail_url": mediaThumbnail
         }
             
     except requests.RequestException as e:
