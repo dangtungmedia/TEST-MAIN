@@ -2083,34 +2083,30 @@ def calculate_new_position(crop_data, original_resolution=(640, 360), target_res
     return round(new_left), round(new_top), round(new_width), round(new_height)
 
 def get_video_info(video_url):
-    api_url = "https://iloveyt.net/proxy.php"
-    form_data = {"url": video_url}
-
+    
+    proxy_url = os.environ.get('PROXY_URL')  # Thay đổi proxy ở đây nếu cần
+    ydl_opts = {
+        'proxy': proxy_url,  # Thêm proxy nếu cần
+        'format': "best",  # Chọn định dạng tốt nhất hoặc định dạng cụ thể
+        'quiet': True,  # Tắt log không cần thiết
+        'noplaylist': True  # Chỉ xử lý video đơn lẻ, không lấy playlist
+    }
     try:
-        response = requests.post(api_url, data=form_data, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        
-        if "api" not in data or "mediaItems" not in data["api"]:
-            raise ValueError("Invalid API response format")
-        title = data["api"]["title"]
-        mediaPreviewUrl = data["api"]["previewUrl"]
-        mediaThumbnail = data["api"]["imagePreviewUrl"]
-        return {
-            "title": title,
-            "preview_url": mediaPreviewUrl,
-            "thumbnail_url": mediaThumbnail
-        }
-            
-    except requests.RequestException as e:
-        print(f"Network error: {e}")
-        return None
-    except ValueError as e:
-        print(f"Data error: {e}")
-        return None
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Lấy metadata video
+            info_dict = ydl.extract_info(video_url, download=False)
+            return {
+                    "title": info_dict.get('title', 'N/A'),
+                    "preview_url":info_dict.get('url', 'N/A'),
+                    "thumbnail_url": info_dict.get('thumbnail', 'N/A'),
+                }
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print("Error:", str(e))
         return None
+    
+    
+    
+    
 
 def update_info_video(data, task_id, worker_id):
     try:
