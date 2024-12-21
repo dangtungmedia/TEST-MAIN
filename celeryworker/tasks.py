@@ -157,25 +157,23 @@ def render_video_reupload(self, data):
     video_id = data.get('video_id')
     update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
     
-    success = update_info_video(data, task_id, worker_id)
-    if not success:
-        update_status_video("Render Lỗi : Không thể cập nhật thông tin video", data['video_id'], task_id, worker_id)
-        return
-    update_status_video("Đang Render : Cập nhật thông tin video thành công", data['video_id'], task_id, worker_id)
-    
-    
     success = create_or_reset_directory(f'media/{video_id}')
     if not success:
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
         return
-
-    if data.get('url_reupload'):
-        success = downdload_video_reup(data, task_id, worker_id)
-        if not success:
-            shutil.rmtree(f'media/{video_id}')
-            return
-    update_status_video("Đang Render : Tải xuống video thành công", data['video_id'], task_id, worker_id)
+    
+    
+    success = update_info_video(data, task_id, worker_id)
+    if not success:
+        update_status_video("Render Lỗi : Không thể xử lý url video liên hệ admin", data['video_id'], task_id, worker_id)
+        return
+    # if data.get('url_reupload'):
+    #     success = downdload_video_reup(data, task_id, worker_id)
+    #     if not success:
+    #         shutil.rmtree(f'media/{video_id}')
+    #         return
+    # update_status_video("Đang Render : Tải xuống video thành công", data['video_id'], task_id, worker_id)
     
     success = cread_test_reup(data, task_id, worker_id)
     if not success:
@@ -2134,64 +2132,126 @@ def process_video_ffmpeg(input_video, output_video, width, height, fps=24, prese
         print(f"Lỗi khi chạy lệnh FFmpeg: {e}")
         return False
  
-def get_video_info(url):
-    # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
-    ydl_opts = {
-        'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
-        'quiet': True,
-        'skip_download': True,
-        'force_generic_extractor': False,
-    }
+def get_video_info(video_url):
+    api_url = "https://iloveyt.net/proxy.php"
+    form_data = {"url": video_url}
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Lấy thông tin video
-            info_dict = ydl.extract_info(url, download=False)
-            # Truy xuất tiêu đề và thumbnail
-            title = info_dict.get('title', 'No title found')
-            thumbnail = info_dict.get('thumbnail', 'No thumbnail found')
-            return title, thumbnail
+        response = requests.post(api_url, data=form_data, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if "api" not in data or "mediaItems" not in data["api"]:
+            raise ValueError("Invalid API response format")
+            
+        media_items = data["api"]["mediaItems"]
+        title = data["api"]["title"]
+        
+        # Tìm video 720p
+        target_item = next(
+            (item for item in media_items if item.get("mediaRes") == "1280x720"),
+            None
+        )
+        
+        if not target_item:
+            raise ValueError("No 720p version found")
+            
+        return {
+            "title": title,
+            "preview_url": target_item.get("mediaPreviewUrl"),
+            "thumbnail_url": target_item.get("mediaThumbnail")
+        }
+            
+    except requests.RequestException as e:
+        print(f"Network error: {e}")
+        return None
+    except ValueError as e:
+        print(f"Data error: {e}")
+        return None
     except Exception as e:
-        print(f"Error occurred: {e}")
-        return None, None
+        print(f"Unexpected error: {e}")
+        return None
 
 def update_info_video(data, task_id, worker_id):
-
-    video_url  = data.get('url_video_youtube')
     try:
-        title, thumbnail_url = get_video_info(video_url)
+        video_url = data.get('url_video_youtube')
+        video_id = data.get('video_id')
         
-        # Kiểm tra nếu không lấy được thông tin
-        if title is None or thumbnail_url is None:
-            update_status_video(f"Render Lỗi: không thể lấy thông tin video từ {video_url}", data.get('video_id'), task_id, worker_id)
-            return False
+        if not video_url or not video_id:
+            raise ValueError("Missing video URL or video ID")
 
-    except Exception as e:
-        print(f"Error getting video info: {e}")
-        update_status_video(f"Render Lỗi: lỗi lấy thông tin video", data.get('video_id'), task_id, worker_id)
-        return False
- 
-    video_id = data.get('video_id')
-    url = f'{SERVER}/api/'
-    update_status_video(f"Đang Render : Đang lấy thông tin video", video_id, task_id, worker_id)
-    
-    payload = {
-        'video_id': str(video_id),
-        'action': 'update-info-video',
-        'secret_key': SECRET_KEY,
-        'title': title,
-        'thumbnail_url': thumbnail_url,  # Tên trường khác
-    }
+        result = get_video_info(video_url)
+        if not result:
+            raise ValueError(f"Failed to get video info from {video_url}")
 
-    response = requests.post(url, json=payload)
+        update_status_video("Đang Render : Đã lấy thành công thông tin video reup", 
+                          video_id, task_id, worker_id)
 
-    if response.status_code == 200:
-        print("Thông tin video đã được cập nhật thành công.")
+        # Cập nhật thông tin video lên server
+        url = f'{SERVER}/api/'
+        payload = {
+            'video_id': str(video_id),
+            'action': 'update-info-video',
+            'secret_key': SECRET_KEY,
+            'title': result["title"],
+            'thumbnail_url': result["thumbnail_url"],
+        }
+
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+
+        update_status_video("Đang Render : Đã cập nhập thành công video youtube chuẩn bị tải video youtube", 
+                          video_id, task_id, worker_id)
+
+        # Tải video
+        download_url = result["preview_url"]
+        response = requests.get(download_url, stream=True)
+        response.raise_for_status()
+
+        total_size = int(response.headers.get('content-length', 0))
+        output_file = f'media/{video_id}/cache.mp4'
+        
+        with open(output_file, 'wb') as file:
+            start_time = time.time()
+            wrote = 0
+            
+            for chunk in response.iter_content(chunk_size=10024):
+                if not chunk:
+                    continue
+                    
+                wrote += len(chunk)
+                file.write(chunk)
+                
+                elapsed_time = time.time() - start_time
+                speed = wrote / 1024 / elapsed_time if elapsed_time > 0 else 0
+                percentage = (wrote / total_size) * 100 if total_size else 0
+                
+                update_status_video(
+                    f"Đang Render : đang tải video youtube {percentage:.2f}% ({speed:.2f} KB/s)", 
+                    video_id, task_id, worker_id
+                )
+        update_status_video("Đang Render : Đã tải xong video youtube", 
+                          video_id, task_id, worker_id)
         return True
-    else:
-        print(f"Lỗi cập nhật thông tin video: {response.status_code}")
-        return False
 
+    except requests.RequestException as e:
+        print(f"Network error: {e}")
+        update_status_video(f"Render Lỗi: Lỗi kết nối - {str(e)}", 
+                          data.get('video_id'), task_id, worker_id)
+        return False
+        
+    except ValueError as e:
+        print(f"Value error: {e}")
+        update_status_video(f"Render Lỗi: {str(e)}", 
+                          data.get('video_id'), task_id, worker_id)
+        return False
+        
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        update_status_video(f"Render Lỗi: Lỗi không xác định - {str(e)}", 
+                          data.get('video_id'), task_id, worker_id)
+        return False
+    
 def update_status_video(status_video,video_id,task_id,worker_id,url_video=None):
     data = {
         'secret_key': SECRET_KEY,
