@@ -343,7 +343,8 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                             progress_bar.refresh()
                             percentage = int((current_time / total_duration) * 100)
                             if percentage <= 100:
-                                update_status_video(f"Đang Render: xuất video thành công {percentage}%", data['video_id'], task_id, worker_id)
+                                pass
+                                # update_status_video(f"Đang Render: xuất video thành công {percentage}%", data['video_id'], task_id, worker_id)
                         except ValueError as e:
                             print(f"Skipping invalid time format: {time_str}, error: {e}")
             process.wait()
