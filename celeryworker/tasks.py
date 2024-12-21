@@ -1987,7 +1987,7 @@ def downdload_video_reup(data, task_id, worker_id):
 
     # Cấu hình yt-dlp
     ydl_opts = {
-        # 'proxy': proxy_url,  # Cấu hình proxy
+        'proxy': proxy_url,  # Cấu hình proxy
         'format': 'bestvideo[height=720]+bestaudio/best',
         'outtmpl': f"{output_file}",
         'merge_output_format': 'mp4',  # Hợp nhất video và âm thanh thành định dạng MP4
@@ -2137,7 +2137,7 @@ def process_video_ffmpeg(input_video, output_video, width, height, fps=24, prese
 def get_video_info(url):
     # Thiết lập các tùy chọn yt_dlp để chỉ tải thông tin metadata
     ydl_opts = {
-        # 'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
+        'proxy': os.environ.get('PROXY_URL'), # Thêm proxy
         'quiet': True,
         'skip_download': True,
         'force_generic_extractor': False,
