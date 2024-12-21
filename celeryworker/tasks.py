@@ -70,7 +70,7 @@ def delete_directory(video_id):
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
     video_id = args[0].get('video_id')
     worker_id = "None"
-    update_status_video("Render Lỗi : Xử Lý Video Không Thành Công!", video_id, task_id, worker_id)
+    async_update_status_video("Render Lỗi : Xử Lý Video Không Thành Công!", video_id, task_id, worker_id)
     delete_directory(video_id)
     
 # Xử lý khi task bị hủy
@@ -91,22 +91,22 @@ def render_video(self, data):
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
     print(data)
-    update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
+    async_update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
     success = create_or_reset_directory(f'media/{video_id}')
 
     if not success:
         shutil.rmtree(f'media/{video_id}')
-        update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
         return
-    update_status_video("Đang Render : Tạo thư mục thành công", data['video_id'], task_id, worker_id)
+    async_update_status_video("Đang Render : Tạo thư mục thành công", data['video_id'], task_id, worker_id)
 
     # Tải xuống hình ảnh
     success = download_image(data, task_id, worker_id)
     if not success:
         shutil.rmtree(f'media/{video_id}')
-        update_status_video("Render Lỗi : Không thể tải xuống hình ảnh", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể tải xuống hình ảnh", data['video_id'], task_id, worker_id)
         return
-    update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
+    async_update_status_video("Đang Render : Tải xuống hình ảnh thành công", data['video_id'], task_id, worker_id)
     #THử
     if not data.get('url_audio'):
         # Tải xuống âm thanh oki
@@ -114,16 +114,16 @@ def render_video(self, data):
         if not success:
             shutil.rmtree(f'media/{video_id}')
             return
-        update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
+        async_update_status_video("Đang Render : Tải xuống âm thanh thành công", data['video_id'], task_id, worker_id)
 
     #nối giọng đọc và chèn nhạc nền
     success = merge_audio_video(data, task_id, worker_id)
     if not success:
         shutil.rmtree(f'media/{video_id}')
-        update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể nối giọng đọc và chèn nhạc nền", data['video_id'], task_id, worker_id)
         return
     
-    update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
+    async_update_status_video("Đang Render : Nối giọng đọc và chèn nhạc nền thành công", data['video_id'], task_id, worker_id)
     
     # Tạo video
     success = create_video_lines(data, task_id, worker_id)
@@ -145,35 +145,35 @@ def render_video(self, data):
 
     success = upload_video(data, task_id, worker_id)
     if not success:
-        update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
         return
     shutil.rmtree(f'media/{video_id}')
-    update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
+    async_update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
 @shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=140000,queue='render_video_reupload')
 def render_video_reupload(self, data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname 
     video_id = data.get('video_id')
-    update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
+    async_update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
     
     success = create_or_reset_directory(f'media/{video_id}')
     if not success:
         shutil.rmtree(f'media/{video_id}')
-        update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
         return
     
     
     success = update_info_video(data, task_id, worker_id)
     if not success:
-        update_status_video("Render Lỗi : Không thể xử lý url video liên hệ admin", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể xử lý url video liên hệ admin", data['video_id'], task_id, worker_id)
         return
     # if data.get('url_reupload'):
     #     success = downdload_video_reup(data, task_id, worker_id)
     #     if not success:
     #         shutil.rmtree(f'media/{video_id}')
     #         return
-    # update_status_video("Đang Render : Tải xuống video thành công", data['video_id'], task_id, worker_id)
+    # async_update_status_video("Đang Render : Tải xuống video thành công", data['video_id'], task_id, worker_id)
     
     success = cread_test_reup(data, task_id, worker_id)
     if not success:
@@ -187,9 +187,9 @@ def render_video_reupload(self, data):
         
     success = upload_video(data, task_id, worker_id)
     if not success:
-        update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
         return
-    update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
+    async_update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
 def convert_video(input_path, output_path, target_resolution="1280x720", target_fps=24):
     ffmpeg_command = [
@@ -212,7 +212,7 @@ def convert_video(input_path, output_path, target_resolution="1280x720", target_
 
 def convert_video_backrought_reup(data,task_id, worker_id, success):
     video_id = data.get('video_id')
-    update_status_video("Đang Render: đang chuyển đổi định dạng video", video_id, task_id, worker_id)
+    async_update_status_video("Đang Render: đang chuyển đổi định dạng video", video_id, task_id, worker_id)
     
     video_directory = f'media/{video_id}/video'
     os.makedirs(video_directory, exist_ok=True)
@@ -240,13 +240,13 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                 if future.result():
                     conver_count += 1
                     percent_complete = (conver_count / total_videos) * 100  # Sửa lại tính phần trăm từ total_videos
-                    update_status_video(
+                    async_update_status_video(
                         f"Đang Render: Chuyển đổi video thành công ({conver_count}/{total_videos}) - {percent_complete:.2f}%",
                         video_id, task_id, worker_id
                     )
                 else:
                     # Hủy tất cả các tác vụ còn lại khi gặp lỗi chuyển đổi
-                    update_status_video(
+                    async_update_status_video(
                         f"Render Lỗi: Không thể chuyển đổi video - {video}",
                         video_id, task_id, worker_id
                     )
@@ -255,7 +255,7 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                     return False  # Trả về False nếu có lỗi chuyển đổi
             except Exception as e:
                 print(f"Lỗi khi chuyển đổi video {video}: {e}")
-                update_status_video(
+                async_update_status_video(
                     f"Render Lỗi: Lỗi không xác định - {e} - {video}",
                     video_id, task_id, worker_id
                 )
@@ -266,7 +266,7 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
           
           
     # Nếu tất cả video được chuyển đổi thành công
-    update_status_video("Đang Render: Đang xuất video hoàn thành", video_id, task_id, worker_id)
+    async_update_status_video("Đang Render: Đang xuất video hoàn thành", video_id, task_id, worker_id)
     
     # Tạo tệp danh sách video để nối
     output_file_list = f'media/{video_id}/output_files.txt'
@@ -276,7 +276,7 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                 if video.endswith('.mp4'):
                     f.write(f"file 'video/{video}'\n")
     except Exception as e:
-        update_status_video(f"Render Lỗi: Không thể tạo danh sách tệp video {str(e)}", video_id, task_id, worker_id)
+        async_update_status_video(f"Render Lỗi: Không thể tạo danh sách tệp video {str(e)}", video_id, task_id, worker_id)
         print(f"Lỗi khi tạo danh sách tệp video: {str(e)}")
         return False  # Dừng nếu không thể tạo danh sách video
 
@@ -343,7 +343,7 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                             progress_bar.refresh()
                             percentage = int((current_time / total_duration) * 100)
                             if percentage <= 100:
-                                update_status_video(f"Đang Render: xuất video thành công {percentage}%", data['video_id'], task_id, worker_id)
+                                async_update_status_video(f"Đang Render: xuất video thành công {percentage}%", data['video_id'], task_id, worker_id)
                         except ValueError as e:
                             print(f"Skipping invalid time format: {time_str}, error: {e}")
             process.wait()
@@ -351,11 +351,11 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
     except Exception as e:
         # Xử lý lỗi ngoại lệ nếu có
         print(f"Lỗi khi chạy lệnh ffmpeg: {str(e)}")
-        update_status_video(f"Render Lỗi: Lỗi khi thực hiện lệnh ffmpeg - {str(e)}", video_id, task_id, worker_id)
+        async_update_status_video(f"Render Lỗi: Lỗi khi thực hiện lệnh ffmpeg - {str(e)}", video_id, task_id, worker_id)
         return False
 
 
-    update_status_video("Đang Render: Xuất video xong ! chuẩn bị upload lên sever", data['video_id'], task_id, worker_id)
+    async_update_status_video("Đang Render: Xuất video xong ! chuẩn bị upload lên sever", data['video_id'], task_id, worker_id)
     return True
     
 def cread_test_reup(data, task_id, worker_id):
@@ -395,13 +395,13 @@ def cread_test_reup(data, task_id, worker_id):
                 if future.result():
                     downloaded_images += 1
                     percent_complete = (downloaded_images / len(result_urls)) * 100  # Sửa lại tính phần trăm từ result_urls
-                    update_status_video(
+                    async_update_status_video(
                         f"Đang Render : Tải xuống file thành công ({downloaded_images}/{len(result_urls)}) - {percent_complete:.2f}%",
                         video_id, task_id, worker_id
                     )
                 else:
                     # Hủy tất cả các tác vụ còn lại khi gặp lỗi tải xuống
-                    update_status_video(
+                    async_update_status_video(
                         f"Render Lỗi : Không thể tải xuống hình ảnh - {url}",
                         video_id, task_id, worker_id
                     )
@@ -410,7 +410,7 @@ def cread_test_reup(data, task_id, worker_id):
                     return []  # Trả về danh sách rỗng nếu có lỗi tải xuống
             except Exception as e:
                 print(f"Lỗi khi tải xuống {url}: {e}")
-                update_status_video(
+                async_update_status_video(
                     f"Render Lỗi : Lỗi không xác định - {e} - {url}",
                     video_id, task_id, worker_id
                 )
@@ -462,13 +462,13 @@ class UploadProgress:
             self.last_printed_percent = int(percent_complete)
             # Print the percentage of upload completed
             print(f"Uploaded: {self.last_printed_percent}%")
-            update_status_video(f"Đang Render : Đang Upload File Lên Server {self.last_printed_percent}%", self.data.get('video_id'), self.task_id, self.worker_id)
+            async_update_status_video(f"Đang Render : Đang Upload File Lên Server {self.last_printed_percent}%", self.data.get('video_id'), self.task_id, self.worker_id)
 
 def upload_video(data, task_id, worker_id):
     video_id = data.get('video_id')
     name_video = data.get('name_video')
     video_path = f'media/{video_id}/{name_video}.mp4'
-    update_status_video(f"Đang Render : Đang Upload File Lên Server", video_id, task_id, worker_id)
+    async_update_status_video(f"Đang Render : Đang Upload File Lên Server", video_id, task_id, worker_id)
     
     class ProgressPercentage(object):
         def __init__(self, filename):
@@ -484,12 +484,12 @@ def upload_video(data, task_id, worker_id):
                 # Format size thành MB
                 total_mb = self._size / (1024 * 1024)
                 uploaded_mb = self._seen_so_far / (1024 * 1024)
-                # update_status_video(
-                #     f"Đang Render : Đang Upload File Lên Server ({percentage:.1f}%) - {uploaded_mb:.1f}MB/{total_mb:.1f}MB", 
-                #     video_id, 
-                #     task_id, 
-                #     worker_id
-                # )
+                async_update_status_video(
+                    f"Đang Render : Đang Upload File Lên Server ({percentage:.1f}%) - {uploaded_mb:.1f}MB/{total_mb:.1f}MB", 
+                    video_id, 
+                    task_id, 
+                    worker_id
+                )
     
     try:
         s3 = boto3.client(
@@ -503,7 +503,7 @@ def upload_video(data, task_id, worker_id):
         
         if not os.path.exists(video_path):
             error_msg = f"Không tìm thấy file {video_path}"
-            update_status_video(f"Render Lỗi : {error_msg}", video_id, task_id, worker_id)
+            async_update_status_video(f"Render Lỗi : {error_msg}", video_id, task_id, worker_id)
             return False
 
         object_name = f'data/{video_id}/{name_video}.mp4'
@@ -532,7 +532,7 @@ def upload_video(data, task_id, worker_id):
             ExpiresIn=expiration
         )
         print(f"Uploaded video to {url}")
-        update_status_video(
+        async_update_status_video(
             "Đang Render : Upload file File Lên Server thành công!", 
             video_id, 
             task_id, 
@@ -543,12 +543,12 @@ def upload_video(data, task_id, worker_id):
 
     except FileNotFoundError as e:
         error_msg = str(e)
-        update_status_video(f"Render Lỗi : File không tồn tại - {error_msg[:20]}", video_id, task_id, worker_id)
+        async_update_status_video(f"Render Lỗi : File không tồn tại - {error_msg[:20]}", video_id, task_id, worker_id)
         return False
         
     except Exception as e:
         error_msg = str(e)
-        update_status_video(f"Render Lỗi : Lỗi khi upload {error_msg[:20]}", video_id, task_id, worker_id)
+        async_update_status_video(f"Render Lỗi : Lỗi khi upload {error_msg[:20]}", video_id, task_id, worker_id)
         return False
 
 def create_video_file(data, task_id, worker_id):
@@ -556,7 +556,7 @@ def create_video_file(data, task_id, worker_id):
     name_video = data.get('name_video')
     text = data.get('text_content')
 
-    update_status_video("Đang Render : Đang nghép video và phụ đề", data['video_id'], task_id, worker_id)
+    async_update_status_video("Đang Render : Đang nghép video và phụ đề", data['video_id'], task_id, worker_id)
 
     # Tạo file subtitles.ass
     ass_file_path = f'media/{video_id}/subtitles.ass'
@@ -599,10 +599,10 @@ def create_video_file(data, task_id, worker_id):
                     h, m, s = map(float, time_str.split(":"))
                     current_time = int(h * 3600 + m * 60 + s)
                     percentage = (current_time / duration) * 100
-                    update_status_video(f"Đang Render: Đã xuất video {percentage:.2f}%", video_id, task_id, worker_id)
+                    async_update_status_video(f"Đang Render: Đã xuất video {percentage:.2f}%", video_id, task_id, worker_id)
                 except Exception as e:
                     print(f"Error parsing time: {e}")
-                    update_status_video("Render Lỗi : Không thể tính toán hoàn thành", data['video_id'], task_id, worker_id)
+                    async_update_status_video("Render Lỗi : Không thể tính toán hoàn thành", data['video_id'], task_id, worker_id)
         process.wait()
         
         
@@ -610,11 +610,11 @@ def create_video_file(data, task_id, worker_id):
         print("FFmpeg encountered an error.")
         stderr_output = ''.join(process.stderr)
         print(f"Error log:\n{stderr_output}")
-        update_status_video("Render Lỗi : không thể render video hoàn thành ", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : không thể render video hoàn thành ", data['video_id'], task_id, worker_id)
         return False
     else:
         print("Lồng nhạc nền thành công.")
-        update_status_video(f"Đang Render: Đã xuất video và chèn nhạc nền thành công , chuẩn bị upload lên sever", video_id, task_id, worker_id)
+        async_update_status_video(f"Đang Render: Đã xuất video và chèn nhạc nền thành công , chuẩn bị upload lên sever", video_id, task_id, worker_id)
         return True
     
 def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".woff2"]):
@@ -702,7 +702,7 @@ def format_timedelta_ass(ms):
 
 def create_subtitles(data, task_id, worker_id):
     try:
-        update_status_video("Đang Render : Đang tạo phụ đề video ", data['video_id'], task_id, worker_id)
+        async_update_status_video("Đang Render : Đang tạo phụ đề video ", data['video_id'], task_id, worker_id)
         video_id = data.get('video_id')
         subtitle_file = f'media/{video_id}/subtitles.ass'
         color = data.get('font_color')
@@ -765,17 +765,17 @@ def create_subtitles(data, task_id, worker_id):
                 start_time = end_time
                 
                 process = i / len(json.loads(text)) * 100
-                update_status_video(f"Đang Render : Đang tạo phụ đề video {process:.2f} ", data['video_id'], task_id, worker_id)
+                async_update_status_video(f"Đang Render : Đang tạo phụ đề video {process:.2f} ", data['video_id'], task_id, worker_id)
 
-            update_status_video("Đang Render : Tạo phụ đề thành công", data['video_id'], task_id, worker_id)
+            async_update_status_video("Đang Render : Tạo phụ đề thành công", data['video_id'], task_id, worker_id)
             return True
     except:
-        update_status_video("Render Lỗi : Không thể tạo phụ đề", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể tạo phụ đề", data['video_id'], task_id, worker_id)
         return False
 
 def merge_audio_video(data, task_id, worker_id):
     try:
-        update_status_video("Đang Render: đang ghép giọng đọc", data['video_id'], task_id, worker_id)
+        async_update_status_video("Đang Render: đang ghép giọng đọc", data['video_id'], task_id, worker_id)
         video_id = data.get('video_id')
         
         # Tải xuống tệp âm thanh nếu có URL âm thanh
@@ -1036,7 +1036,7 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
 
         # Kiểm tra nếu thời lượng âm thanh không hợp lệ
         if duration <= 0:
-            update_status_video(
+            async_update_status_video(
                         f"Render Lỗi : Thời lượng âm thanh không hợp lệ",
                         video_id, task_id, worker_id
                     )
@@ -1049,7 +1049,7 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
         
         # Kiểm tra đường dẫn file
         if not file:
-            update_status_video(
+            async_update_status_video(
                         f"Render Lỗi : Đường dẫn url không hợp lệ",
                         video_id, task_id, worker_id
                     )
@@ -1062,7 +1062,7 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
         # Kiểm tra loại file
         file_type = check_file_type(path_file)
         if file_type not in ["video", "image"]:
-            update_status_video(
+            async_update_status_video(
                         f"Render Lỗi : Loại file không hợp lệ",
                         video_id, task_id, worker_id
                     )
@@ -1078,7 +1078,7 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
             cache_file = f'media/{video_id}/video/chace_{text_entry["id"]}.mp4'
             success = random_video_effect_cython(path_file, cache_file, duration,24,1920, 1080)
             if not success:
-                update_status_video(
+                async_update_status_video(
                         f"Render Lỗi : Không thể xử lý video render {text_entry['id']}", video_id, task_id, worker_id)
                 return False
             else:
@@ -1131,7 +1131,7 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
 
 def create_video_lines(data, task_id, worker_id):
     try:
-        update_status_video("Đang Render : Chuẩn bị tạo video", data['video_id'], task_id, worker_id)
+        async_update_status_video("Đang Render : Chuẩn bị tạo video", data['video_id'], task_id, worker_id)
         video_id = data.get('video_id')
         text = data.get('text_content')
         create_or_reset_directory(f'media/{video_id}/video')
@@ -1147,7 +1147,7 @@ def create_video_lines(data, task_id, worker_id):
             data_sub = download_and_read_srt(data, video_id)
             if not data_sub or len(data_sub) != total_entries:
                 print("Phụ đề không khớp hoặc bị thiếu.")
-                update_status_video("Lỗi: Phụ đề không khớp", video_id, task_id, worker_id)
+                async_update_status_video("Lỗi: Phụ đề không khớp", video_id, task_id, worker_id)
                 return False  # Dừng quá trình nếu phụ đề không khớp
 
         with ThreadPoolExecutor(max_workers=2) as executor:
@@ -1162,22 +1162,22 @@ def create_video_lines(data, task_id, worker_id):
                     if result:
                         processed_entries += 1
                         percent_complete = (processed_entries / total_entries) * 100
-                        update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", video_id, task_id, worker_id)
+                        async_update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", video_id, task_id, worker_id)
                     else:
-                        update_status_video("Render Lỗi: Lỗi trong quá trình tạo video cho một đoạn.", video_id, task_id, worker_id)
+                        async_update_status_video("Render Lỗi: Lỗi trong quá trình tạo video cho một đoạn.", video_id, task_id, worker_id)
                         for pending in futures:
                             pending.cancel()  # Hủy tất cả các tác vụ chưa hoàn thành
                         return False  # Dừng quá trình nếu có lỗi trong việc tạo video cho một đoạn
                 except Exception as e:
                     print(f"Lỗi khi tạo video: {e}")
-                    update_status_video(f"Render Lỗi: Lỗi khi tạo video - {e}", video_id, task_id, worker_id)
+                    async_update_status_video(f"Render Lỗi: Lỗi khi tạo video - {e}", video_id, task_id, worker_id)
                     for pending in futures:
                         pending.cancel()  # Hủy tất cả các tác vụ chưa hoàn thành
                         return False  # Dừng quá trình nếu có lỗi trong việc tạo video cho một đoạn
-        update_status_video("Đang Render : Tạo video thành công", video_id, task_id, worker_id)
+        async_update_status_video("Đang Render : Tạo video thành công", video_id, task_id, worker_id)
         return True
     except Exception as e:
-        update_status_video(f"Đang Render : lỗi xử lý tổng quát video {e}", video_id, task_id, worker_id)
+        async_update_status_video(f"Đang Render : lỗi xử lý tổng quát video {e}", video_id, task_id, worker_id)
         return False  # Dừng quá trình nếu có lỗi tổng quát
 
 def get_random_video_from_directory(directory_path):
@@ -1508,7 +1508,7 @@ def download_audio(data, task_id, worker_id):
                         result = future.result()  # Lấy kết quả từ công việc hoàn thành
                         if result[0] is False:  # Nếu có lỗi trong quá trình tải
                             print("Lỗi khi tải giọng nói, dừng toàn bộ tiến trình.")
-                            update_status_video("Render Lỗi : Lỗi khi tải giọng nói, dừng toàn bộ tiến trình.", data['video_id'], task_id, worker_id)
+                            async_update_status_video("Render Lỗi : Lỗi khi tải giọng nói, dừng toàn bộ tiến trình.", data['video_id'], task_id, worker_id)
                             # Hủy tất cả các công việc chưa hoàn thành
                             for f in futures.keys():
                                 f.cancel()
@@ -1517,20 +1517,20 @@ def download_audio(data, task_id, worker_id):
                         result_files[idx] = file_name  # Đảm bảo thứ tự cho file_name
                         processed_entries += 1
                         percent_complete = (processed_entries / total_entries) * 100
-                        update_status_video(
+                        async_update_status_video(
                             f"Đang Render : Đang tạo giọng đọc ({processed_entries} /{total_entries}) {percent_complete:.2f}%",
                             video_id, task_id, worker_id
                         )
                     except Exception as e:
                         print(f"Lỗi khi xử lý giọng đọc cho đoạn văn bản {text_entries[idx]['id']}: {e}")
-                        update_status_video(
+                        async_update_status_video(
                             f"Render Lỗi : Lỗi khi tạo giọng đọc - {e}",
                             video_id, task_id, worker_id
                         )
                         # Hủy tất cả các công việc chưa hoàn thành
                         for f in futures.keys():
                             f.cancel()
-                        update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
+                        async_update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
                         return False  # Dừng toàn bộ nếu gặp lỗi
                 # Ghi vào input_files.txt theo đúng thứ tự ban đầu của text_entries
                 for file_name in result_files:
@@ -1538,7 +1538,7 @@ def download_audio(data, task_id, worker_id):
                         file.write(f"file 'voice/{os.path.basename(file_name)}'\n")
         return True
     except Exception as e:
-        update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
+        async_update_status_video("Render Lỗi : Không thể tải xuống âm thanh", data['video_id'], task_id, worker_id)
         return False
 
 def format_timestamp(seconds):
@@ -1859,7 +1859,7 @@ def download_single_image(url, local_directory):
 
 def download_image(data, task_id, worker_id):
     video_id = data.get('video_id')
-    update_status_video(f"Đang Render : Bắt đầu tải xuống hình ảnh", video_id, task_id, worker_id)
+    async_update_status_video(f"Đang Render : Bắt đầu tải xuống hình ảnh", video_id, task_id, worker_id)
 
     local_directory = os.path.join('media', str(video_id), 'image')
     os.makedirs(local_directory, exist_ok=True)
@@ -1874,7 +1874,7 @@ def download_image(data, task_id, worker_id):
     text_entries = json.loads(text)
     for iteam in text_entries:
         if iteam.get('url_video') =="":
-            update_status_video(
+            async_update_status_video(
                         f"Render Lỗi : iteam hình ảnh lỗi vui lòng xử lý lại",
                         video_id, task_id, worker_id
                     )
@@ -1899,13 +1899,13 @@ def download_image(data, task_id, worker_id):
                 if future.result():
                     downloaded_images += 1
                     percent_complete = (downloaded_images / total_images) * 100
-                    update_status_video(
+                    async_update_status_video(
                         f"Đang Render : Tải xuống  file thành công ({downloaded_images}/{total_images}) - {percent_complete:.2f}%",
                         video_id, task_id, worker_id
                     )
                 else:
                     # Hủy tất cả các tác vụ còn lại khi gặp lỗi tải xuống
-                    update_status_video(
+                    async_update_status_video(
                         f"Render Lỗi : Không thể tải xuống hình ảnh -{url}",
                         video_id, task_id, worker_id
                     )
@@ -1914,7 +1914,7 @@ def download_image(data, task_id, worker_id):
                     return False  # Ngừng tiến trình ngay khi gặp lỗi
             except Exception as e:
                 print(f"Lỗi khi tải xuống {url}: {e}")
-                update_status_video(
+                async_update_status_video(
                     f"Render Lỗi : Lỗi không xác định - {e} - {url}",
                     video_id, task_id, worker_id
                 )
@@ -1976,9 +1976,9 @@ def downdload_video_reup(data, task_id, worker_id):
     def progress_hook(d):
         if d['status'] == 'downloading':
             percent = d['_percent_str'].strip()
-            update_status_video(f"Đang Render : Đang tải video youtube {percent}", data['video_id'], task_id, worker_id)
+            async_update_status_video(f"Đang Render : Đang tải video youtube {percent}", data['video_id'], task_id, worker_id)
         elif d['status'] == 'finished':
-            update_status_video(f"Đang Render :  Đã tải xong video ", data['video_id'], task_id, worker_id)
+            async_update_status_video(f"Đang Render :  Đã tải xong video ", data['video_id'], task_id, worker_id)
 
     # Lấy proxy từ môi trường (nếu có)
     proxy_url = os.environ.get('PROXY_URL')  # Thay đổi proxy ở đây nếu cần
@@ -2001,13 +2001,13 @@ def downdload_video_reup(data, task_id, worker_id):
 
     except yt_dlp.DownloadError as e:
         # Xử lý lỗi khi tải video
-        update_status_video(f"Render Lỗi: Không thể tải video. Lỗi: {str(e)}", video_id, task_id, worker_id)
+        async_update_status_video(f"Render Lỗi: Không thể tải video. Lỗi: {str(e)}", video_id, task_id, worker_id)
         print(f"Lỗi khi tải video từ {url}: {str(e)}")
         return False  # Trả về False nếu có lỗi khi tải video
 
     except Exception as e:
         # Xử lý các lỗi khác (ví dụ, lỗi kết nối mạng)
-        update_status_video(f"Render Lỗi: Lỗi không xác định. Lỗi: {str(e)}", video_id, task_id, worker_id)
+        async_update_status_video(f"Render Lỗi: Lỗi không xác định. Lỗi: {str(e)}", video_id, task_id, worker_id)
         print(f"Lỗi không xác định khi tải video từ {url}: {str(e)}")
         return False  # Trả về False nếu có lỗi không xác định
 
@@ -2032,7 +2032,7 @@ class MyBarLogger(ProgressBarLogger):
             text = "đang lưu bộ nhớ tạm"
         else:
             text = "đang lưu video"
-        update_status_video(f"{self.status} {text}--{bar} {attr} {percentage:.2f}%", self.video_id, self.task_id, self.worker_id)
+        async_update_status_video(f"{self.status} {text}--{bar} {attr} {percentage:.2f}%", self.video_id, self.task_id, self.worker_id)
 
 def get_video_resolution(video_format):
     # Mapping giữa video_format và kích thước (rộng, cao)
@@ -2125,7 +2125,7 @@ def process_video_ffmpeg(input_video, output_video, width, height, fps=24, prese
                     progress_bar.refresh()
                     percentage = int((current_time / total_duration) * 100)
                     if percentage <= 100:
-                        update_status_video(f"{text}--{percentage}% ",video_id, task_id, worker_id)
+                        async_update_status_video(f"{text}--{percentage}% ",video_id, task_id, worker_id)
             process.wait()
         return True
     except Exception as e:
@@ -2174,7 +2174,7 @@ def update_info_video(data, task_id, worker_id):
         if not result:
             raise ValueError(f"Failed to get video info from {video_url}")
 
-        update_status_video("Đang Render : Đã lấy thành công thông tin video reup", 
+        async_update_status_video("Đang Render : Đã lấy thành công thông tin video reup", 
                           video_id, task_id, worker_id)
 
         # Cập nhật thông tin video lên server
@@ -2190,7 +2190,7 @@ def update_info_video(data, task_id, worker_id):
         response = requests.post(url, json=payload)
         response.raise_for_status()
 
-        update_status_video("Đang Render : Đã cập nhập thành công video youtube chuẩn bị tải video youtube", 
+        async_update_status_video("Đang Render : Đã cập nhập thành công video youtube chuẩn bị tải video youtube", 
                           video_id, task_id, worker_id)
 
         # Tải video
@@ -2208,17 +2208,31 @@ def update_info_video(data, task_id, worker_id):
                     downloaded_size += len(chunk)
                     percent_done = (downloaded_size / total_size) * 100
                     print(f"Đã tải: {percent_done:.2f}%", end="\r")
-                    # update_status_video(f"Đang Render : Đã tải {percent_done:.2f}%", 
-                    #       video_id, task_id, worker_id)
-        update_status_video("Đang Render : Đã tải xong video youtube", 
+                    async_update_status_video(f"Đang Render : Đã tải {percent_done:.2f}%", 
+                          video_id, task_id, worker_id)
+        async_update_status_video("Đang Render : Đã tải xong video youtube", 
                           video_id, task_id, worker_id)
         return True
             
     except Exception as e:
         print(f"Unexpected error: {e}")
-        update_status_video(f"Render Lỗi: Lỗi không xác định - {str(e)}", 
+        async_update_status_video(f"Render Lỗi: Lỗi không xác định - {str(e)}", 
                           data.get('video_id'), task_id, worker_id)
         return False
+    
+    
+def async_update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
+    """
+    Hàm chạy async_update_status_video trong luồng riêng.
+    """
+    thread = threading.Thread(
+        target=update_status_video,
+        args=(status_video, video_id, task_id, worker_id),
+        kwargs={'url_video': url_video}
+    )
+    thread.daemon = True  # Đảm bảo thread không ngăn chương trình chính kết thúc
+    thread.start()
+    
     
 def update_status_video(status_video,video_id,task_id,worker_id,url_video=None):
     data = {
