@@ -2200,42 +2200,20 @@ def update_info_video(data, task_id, worker_id):
 
         total_size = int(response.headers.get('content-length', 0))
         output_file = f'media/{video_id}/cache.mp4'
-        
-        with open(output_file, 'wb') as file:
-            start_time = time.time()
-            wrote = 0
-            
-            for chunk in response.iter_content(chunk_size=10024):
-                if not chunk:
-                    continue
-                    
-                wrote += len(chunk)
-                file.write(chunk)
-                
-                elapsed_time = time.time() - start_time
-                speed = wrote / 1024 / elapsed_time if elapsed_time > 0 else 0
-                percentage = (wrote / total_size) * 100 if total_size else 0
-                
-                update_status_video(
-                    f"Đang Render : đang tải video youtube {percentage:.2f}% ({speed:.2f} KB/s)", 
-                    video_id, task_id, worker_id
-                )
+        downloaded_size = 0  # Kích thước đã tải
+        with open(output_file, "wb") as file:
+            for chunk in response.iter_content(chunk_size=1024):  # Tải từng chunk
+                if chunk:  # Nếu chunk không rỗng
+                    file.write(chunk)
+                    downloaded_size += len(chunk)
+                    percent_done = (downloaded_size / total_size) * 100
+                    print(f"Đã tải: {percent_done:.2f}%", end="\r")
+                    # update_status_video(f"Đang Render : Đã tải {percent_done:.2f}%", 
+                    #       video_id, task_id, worker_id)
         update_status_video("Đang Render : Đã tải xong video youtube", 
                           video_id, task_id, worker_id)
         return True
-
-    except requests.RequestException as e:
-        print(f"Network error: {e}")
-        update_status_video(f"Render Lỗi: Lỗi kết nối - {str(e)}", 
-                          data.get('video_id'), task_id, worker_id)
-        return False
-        
-    except ValueError as e:
-        print(f"Value error: {e}")
-        update_status_video(f"Render Lỗi: {str(e)}", 
-                          data.get('video_id'), task_id, worker_id)
-        return False
-        
+            
     except Exception as e:
         print(f"Unexpected error: {e}")
         update_status_video(f"Render Lỗi: Lỗi không xác định - {str(e)}", 

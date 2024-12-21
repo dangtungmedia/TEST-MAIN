@@ -8,12 +8,5 @@ services:
     command: python start_celery_reup.py
     volumes:
       - .:/app
-    networks:
-      - app_network
-
-networks:
-  app_network:
-    driver: bridge
-
 
       

@@ -1,26 +1,20 @@
-version: '3.8'
+version: '4.3'
 services:
   celery_render:
     container_name: celery_render
     restart: always
     build:
       context: .
-    command: python start_celery_content.py
+    command: python test.py
     volumes:
       - .:/app
-    networks:
-      - app_network
-  voicevox_render:
-    container_name: voicevox_render
-    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
-    ports:
-      - "127.0.0.1:50025:50025"
-    restart: always 
-    volumes:
-      - .:/app
-    networks:
-      - app_network
-networks:
-  app_network:
-    driver: bridge
-      
+    network_mode: "host"
+  # voicevox_render:
+  #   container_name: voicevox_render
+  #   image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+  #   ports:
+  #     - "127.0.0.1:50025:50025"
+  #   restart: always
+  #   volumes:
+  #     - .:/app
+  #   network_mode: "host"
