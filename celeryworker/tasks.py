@@ -1113,8 +1113,8 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
                         "-t", str(duration),     # Thời gian video cần cắt
                         "-r", "24",              # Tốc độ khung hình đầu ra
                         "-c:v", "libx264",       # Codec video
-                        "-crf", "18",            # Chất lượng video
-                        "-preset", "medium",     # Tốc độ mã hóa
+                        "-crf", "23",            # Chất lượng video
+                        "-preset", "ultrafast",     # Tốc độ mã hóa
                         "-pix_fmt", "yuv420p",   # Đảm bảo tương thích với đầu ra
                         "-vsync", "1",           # Đồng bộ hóa video
                         "-loglevel", "debug",    # Đặt mức log level để ghi chi tiết
