@@ -7,7 +7,6 @@ services:
     command: celery -A celeryworker worker -l INFO --hostname=Sever-Content --concurrency=5 -Q render_video_content
     volumes:
       - .:/app
-    network_mode: "host"
   celery_render_reup:
     container_name: celery
     restart: always
