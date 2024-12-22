@@ -242,10 +242,10 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                 if future.result():
                     conver_count += 1
                     percent_complete = (conver_count / total_videos) * 100  # Sửa lại tính phần trăm từ total_videos
-                    # update_status_video(
-                    #     f"Đang Render: Chuyển đổi video thành công ({conver_count}/{total_videos}) - {percent_complete:.2f}%",
-                    #     video_id, task_id, worker_id
-                    # )
+                    update_status_video(
+                        f"Đang Render: Chuyển đổi video thành công ({conver_count}/{total_videos}) - {percent_complete:.2f}%",
+                        video_id, task_id, worker_id
+                    )
                 else:
                     # Hủy tất cả các tác vụ còn lại khi gặp lỗi chuyển đổi
                     update_status_video(
@@ -345,8 +345,7 @@ def convert_video_backrought_reup(data,task_id, worker_id, success):
                             progress_bar.refresh()
                             percentage = int((current_time / total_duration) * 100)
                             if percentage <= 100:
-                                pass
-                                # update_status_video(f"Đang Render: xuất video thành công {percentage}%", data['video_id'], task_id, worker_id)
+                                update_status_video(f"Đang Render: xuất video thành công {percentage}%", data['video_id'], task_id, worker_id)
                         except ValueError as e:
                             print(f"Skipping invalid time format: {time_str}, error: {e}")
             process.wait()
@@ -487,12 +486,12 @@ def upload_video(data, task_id, worker_id):
                 # Format size thành MB
                 total_mb = self._size / (1024 * 1024)
                 uploaded_mb = self._seen_so_far / (1024 * 1024)
-                # update_status_video(
-                #     f"Đang Render : Đang Upload File Lên Server ({percentage:.1f}%) - {uploaded_mb:.1f}MB/{total_mb:.1f}MB", 
-                #     video_id, 
-                #     task_id, 
-                #     worker_id
-                # )
+                update_status_video(
+                    f"Đang Render : Đang Upload File Lên Server ({percentage:.1f}%) - {uploaded_mb:.1f}MB/{total_mb:.1f}MB", 
+                    video_id, 
+                    task_id, 
+                    worker_id
+                )
     
     try:
         s3 = boto3.client(
@@ -2189,7 +2188,7 @@ def update_info_video(data, task_id, worker_id):
                           data.get('video_id'), task_id, worker_id)
         return False
     
-def update_status_video(status_video,video_id,task_id,worker_id,url_video=None):
+def update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
     data = {
         'secret_key': SECRET_KEY,
         'action': 'update_status',
@@ -2200,8 +2199,16 @@ def update_status_video(status_video,video_id,task_id,worker_id,url_video=None):
         'url_video': url_video,
     }
     url = f'{SERVER}/api/'
-    response = requests.post(url, json=data)
-    if response.status_code == 200:
-        print("Trạng thái video đã được cập nhật thành công.")
-    else:
-        print(f"Lỗi cập nhật trạng thái video: {response.status_code}")
+
+    def send_request():
+        try:
+            response = requests.post(url, json=data)
+            if response.status_code == 200:
+                print(f"Status {status_video} sent successfully for video {video_id}.")
+            else:
+                print(f"Failed to send status for video {video_id}. HTTP {response.status_code}: {response.text}")
+        except Exception as e:
+            print(f"Error while sending status for video {video_id}: {e}")
+
+    thread = threading.Thread(target=send_request)
+    thread.start()
