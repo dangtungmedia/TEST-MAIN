@@ -1,11 +1,11 @@
-version: '4.3'
+version: '3.8'
 services:
   celery_render:
     container_name: celery_render
     restart: always
     build:
       context: .
-    command: celery -A celeryworker worker -l INFO --hostname=Sever-Content --concurrency=5 -Q render_video_content
+    command: celery -A celeryworker worker -l INFO --hostname=Sever-Content --concurrency=3 -Q render_video_content
     volumes:
       - .:/app
   celery_render_reup:
@@ -13,6 +13,6 @@ services:
     restart: always
     build:
       context: .
-    command: celery -A celeryworker worker -l INFO --hostname=Sever-Reup --concurrency=2 -Q render_video_reupload
+    command: celery -A celeryworker worker -l INFO --hostname=Sever-Reup --concurrency=1 -Q render_video_reupload
     volumes:
       - .:/app
