@@ -2148,11 +2148,16 @@ def update_info_video(data, task_id, worker_id):
 
         # Tải video
         download_url = result["preview_url"]
+        if not download_url:
+            success = downdload_video_reup(data, task_id, worker_id)
+            if success:
+                return  True
+            else:
+                return False
         response = requests.get(download_url, stream=True)
         response.raise_for_status()
-
+        output_file = f'media/{video_id}/cache.mp4'    
         total_size = int(response.headers.get('content-length', 0))
-        output_file = f'media/{video_id}/cache.mp4'
         downloaded_size = 0  # Kích thước đã tải
         with open(output_file, "wb") as file:
             for chunk in response.iter_content(chunk_size=1024):  # Tải từng chunk

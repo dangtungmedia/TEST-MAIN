@@ -1,4 +1,4 @@
-version: '3.8'
+version: '4.3'
 services:
   celery_render:
     container_name: celery_render

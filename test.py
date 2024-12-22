@@ -1,41 +1,80 @@
-import yt_dlp
+import yt_dlp,requests
 
-proxy_url = "http://ybwi2317:SHCwyr4821@193.160.223.70:59522"  
 
-ydl_opts = {
-    'proxy': proxy_url,
-    'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best',  # Sửa format
-    'quiet': True,
-    'noplaylist': True
-}
 
-video_url = "https://www.youtube.com/watch?v=HF1syyQGNYw"
+def get_video_info(video_url):
+    api_url = "https://iloveyt.net/proxy.php"
+    form_data = {"url": video_url}
 
-try:
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        # Lấy thông tin video
-        info = ydl.extract_info(video_url, download=False)
-        formats = info.get('formats', [])
-
-        # Tìm URL phù hợp từ danh sách formats
-        for format in formats:
-            # In ra để kiểm tra các format có sẵn
-            print(f"Format ID: {format.get('format_id')} - {format.get('ext')} - {format.get('format_note', '')}")
-            
-            # Lấy URL từ format phù hợp
-            if format.get('ext') == 'mp4' and 'video' in format.get('format_note', '').lower():
-                playable_url = format['url']
-                break
-        else:
-            playable_url = None
-
-        result = {
-            'title': info.get('title', ''),
-            'url': playable_url,
-            'thumbnail': info.get('thumbnail', '')
+    try:
+        response = requests.post(api_url, data=form_data, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        if "api" not in data or "mediaItems" not in data["api"]:
+            raise ValueError("Invalid API response format")
+        title = data["api"]["title"]
+        mediaPreviewUrl = data["api"]["previewUrl"]
+        mediaThumbnail = data["api"]["imagePreviewUrl"]
+        return {
+            "title": title,
+            "preview_url": mediaPreviewUrl,
+            "thumbnail_url": mediaThumbnail
         }
-        print("\nKết quả:")
-        print(result)
+            
+    except requests.RequestException as e:
+        print(f"Network error: {e}")
+        return None
+    except ValueError as e:
+        print(f"Data error: {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return None
+    
 
-except Exception as e:
-    print(f"Error: {str(e)}")
+# def get_video_info(video_url):
+#     ydl_opts = {
+#         'proxy': "http://ybwi2317:SHCwyr4821@193.160.223.70:59522",
+#         'noplaylist': True,
+        
+#     }
+#     try:
+#         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+#             # Lấy metadata video
+#             info_dict = ydl.extract_info(video_url, download=False)
+            
+#             if not info_dict:
+#                 print("Không thể lấy thông tin video")
+#                 return None
+                
+#             # Trích xuất thông tin cần thiết
+#             video_data = {
+#                 'title': info_dict.get('title', 'N/A'),
+#                 'thumbnail': info_dict.get('thumbnail', 'N/A'),
+#                 'download_url': info_dict.get('url', 'N/A')
+#             } 
+#             return video_data
+        
+#     except Exception as e:
+#         print(f"Lỗi chi tiết: {type(e).__name__}: {str(e)}")
+#         return None
+
+# # Test code
+video_url = "https://www.youtube.com/watch?v=Kt0ty1DX8ks"
+# video_info = get_video_info(video_url)
+
+# if video_info:
+#     print("\nThông tin video:")
+#     print(f"Tiêu đề: {video_info['title']}")
+#     print(f"Ảnh thumbnail: {video_info['thumbnail']}")
+#     print(f"URL tải về: {video_info['download_url']}")
+# else:
+#     print("Không thể lấy thông tin video.")
+    
+    
+result = get_video_info(video_url)
+
+download_url = result["preview_url"]
+if not download_url:
+    print("xxxxxxxxxxxx")
