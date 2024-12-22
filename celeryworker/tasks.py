@@ -3,6 +3,7 @@ from celery import shared_task, Celery
 import os, shutil, urllib
 import time
 import requests
+import websocket
 import json
 from PIL import Image, ImageDraw, ImageFont
 import asyncio
@@ -2189,26 +2190,31 @@ def update_info_video(data, task_id, worker_id):
         return False
     
 def update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
-    data = {
-        'secret_key': SECRET_KEY,
-        'action': 'update_status',
-        'video_id': video_id,
-        'status': status_video,
-        'task_id': task_id,
-        'worker_id': worker_id,
-        'url_video': url_video,
-    }
-    url = f'{SERVER}/api/'
-    response = requests.post(url, json=data)
-    # def send_request():
-    #     try:
-    #         response = requests.post(url, json=data)
-    #         if response.status_code == 200:
-    #             print(f"Status {status_video} sent successfully for video {video_id}.")
-    #         else:
-    #             print(f"Failed to send status for video {video_id}. HTTP {response.status_code}: {response.text}")
-    #     except Exception as e:
-    #         print(f"Error while sending status for video {video_id}: {e}")
+    try:
+        # Kết nối WebSocket
+        ws = websocket.WebSocket()
+        ws.connect(f"wss://autospamnews.com/ws/update_status/")
+        data = {
+            'type':'update-status',
+            'video_id': video_id,
+            'status': status_video,
+            'task_id': task_id,
+            'worker_id': worker_id,
+            'url_video': url_video,
+        }
+        # Kiểm tra trạng thái kết nối
+        if ws.connected:
+            print("WebSocket connection established successfully!")
+            ws.send(json.dumps(data))
+        else:
+            print("WebSocket connection failed.")
+    except websocket.WebSocketException as e:
+        print(f"WebSocket error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+    finally:
+        # Đảm bảo đóng kết nối
+        if ws.connected:
+            ws.close()
+            print("WebSocket connection closed.")
 
-    # thread = threading.Thread(target=send_request)
-    # thread.start()
