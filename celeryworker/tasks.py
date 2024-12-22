@@ -163,9 +163,9 @@ def render_video_reupload(self, data):
         update_status_video("Render Lỗi : Không thể tạo thư mục", data['video_id'], task_id, worker_id)
         return
     
-    
     success = update_info_video(data, task_id, worker_id)
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể xử lý url video liên hệ admin", data['video_id'], task_id, worker_id)
         return
     # if data.get('url_reupload'):
@@ -187,8 +187,10 @@ def render_video_reupload(self, data):
         
     success = upload_video(data, task_id, worker_id)
     if not success:
+        shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể upload video", data['video_id'], task_id, worker_id)
         return
+    shutil.rmtree(f'media/{video_id}')
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
 def convert_video(input_path, output_path, target_resolution="1280x720", target_fps=24):

@@ -1,3 +1,0 @@
-こんにちは、音声合成の世界へようこそ
-
-celery -A celeryworker worker -l INFO --hostname=test_test-Content --concurrency=1 -Q render_video_content
