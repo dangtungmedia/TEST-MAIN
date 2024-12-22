@@ -2199,16 +2199,16 @@ def update_status_video(status_video, video_id, task_id, worker_id, url_video=No
         'url_video': url_video,
     }
     url = f'{SERVER}/api/'
+    response = requests.post(url, json=data)
+    # def send_request():
+    #     try:
+    #         response = requests.post(url, json=data)
+    #         if response.status_code == 200:
+    #             print(f"Status {status_video} sent successfully for video {video_id}.")
+    #         else:
+    #             print(f"Failed to send status for video {video_id}. HTTP {response.status_code}: {response.text}")
+    #     except Exception as e:
+    #         print(f"Error while sending status for video {video_id}: {e}")
 
-    def send_request():
-        try:
-            response = requests.post(url, json=data)
-            if response.status_code == 200:
-                print(f"Status {status_video} sent successfully for video {video_id}.")
-            else:
-                print(f"Failed to send status for video {video_id}. HTTP {response.status_code}: {response.text}")
-        except Exception as e:
-            print(f"Error while sending status for video {video_id}: {e}")
-
-    thread = threading.Thread(target=send_request)
-    thread.start()
+    # thread = threading.Thread(target=send_request)
+    # thread.start()
