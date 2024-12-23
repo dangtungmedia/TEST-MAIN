@@ -450,23 +450,6 @@ def select_videos_by_total_duration(file_path, min_duration):
     
     return selected_urls
 
-class UploadProgress:
-    def __init__(self, data, task_id, worker_id):
-        self.last_printed_percent = 0
-        self.data = data
-        self.task_id = task_id
-        self.worker_id = worker_id
-
-    def progress_callback(self, monitor):
-        # Calculate percentage uploaded
-        percent_complete = (monitor.bytes_read / monitor.len) * 100
-        # Check if the percentage has increased by at least 1%
-        if int(percent_complete) > self.last_printed_percent:
-            self.last_printed_percent = int(percent_complete)
-            # Print the percentage of upload completed
-            print(f"Uploaded: {self.last_printed_percent}%")
-            update_status_video(f"Đang Render : Đang Upload File Lên Server {self.last_printed_percent}%", self.data.get('video_id'), self.task_id, self.worker_id)
-
 def upload_video(data, task_id, worker_id):
     video_id = data.get('video_id')
     name_video = data.get('name_video')
@@ -2157,16 +2140,10 @@ def update_info_video(data, task_id, worker_id):
         response = requests.get(download_url, stream=True)
         response.raise_for_status()
         output_file = f'media/{video_id}/cache.mp4'    
-        total_size = int(response.headers.get('content-length', 0))
-        downloaded_size = 0  # Kích thước đã tải
         with open(output_file, "wb") as file:
             for chunk in response.iter_content(chunk_size=1024):  # Tải từng chunk
                 if chunk:  # Nếu chunk không rỗng
                     file.write(chunk)
-                    downloaded_size += len(chunk)
-                    percent_done = (downloaded_size / total_size) * 100
-                    update_status_video(f"Đang Render : Đã tải {percent_done:.2f}%", 
-                          video_id, task_id, worker_id)
         update_status_video("Đang Render : Đã tải xong video youtube", 
                           video_id, task_id, worker_id)
         return True

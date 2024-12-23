@@ -4,7 +4,7 @@ services:
     restart: always
     build:
       context: .
-    command: celery -A celeryworker worker -l INFO --hostname=Sever-Content --concurrency=3 -Q render_video_content
+    command: celery -A celeryworker worker -l INFO --hostname=Sever-Content --concurrency=4 -Q render_video_content
     volumes:
       - .:/app
   celery_render_reup:
