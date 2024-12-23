@@ -2165,8 +2165,8 @@ def update_info_video(data, task_id, worker_id):
                     file.write(chunk)
                     downloaded_size += len(chunk)
                     percent_done = (downloaded_size / total_size) * 100
-                    # update_status_video(f"Đang Render : Đã tải {percent_done:.2f}%", 
-                    #       video_id, task_id, worker_id)
+                    update_status_video(f"Đang Render : Đã tải {percent_done:.2f}%", 
+                          video_id, task_id, worker_id)
         update_status_video("Đang Render : Đã tải xong video youtube", 
                           video_id, task_id, worker_id)
         return True
