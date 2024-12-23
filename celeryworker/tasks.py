@@ -2158,16 +2158,13 @@ def update_info_video(data, task_id, worker_id):
         response = requests.get(download_url, stream=True)
         response.raise_for_status()
         output_file = f'media/{video_id}/cache.mp4'    
-        total_size = int(response.headers.get('content-length', 0))
-        downloaded_size = 0  # Kích thước đã tải
-        with open(output_file, "wb") as file:
-            for chunk in response.iter_content(chunk_size=20024):  # Tải từng chunk
-                if chunk:  # Nếu chunk không rỗng
+        # Gửi yêu cầu tải và ghi trực tiếp vào file
+        with requests.get(download_url, stream=True) as response:
+            response.raise_for_status()  # Kiểm tra lỗi HTTP
+            with open(output_file, 'wb') as file:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):  # Ghi theo từng chunk lớn
                     file.write(chunk)
-                    downloaded_size += len(chunk)
-                    percent_done = (downloaded_size / total_size) * 100
-                    update_status_video(f"Đang Render : Đã tải {percent_done:.2f}% video", 
-                          video_id, task_id, worker_id)
+            
         update_status_video("Đang Render : Đã tải xong video youtube", 
                           video_id, task_id, worker_id)
         return True
