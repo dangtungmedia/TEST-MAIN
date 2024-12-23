@@ -150,7 +150,6 @@ def render_video(self, data):
         return
     shutil.rmtree(f'media/{video_id}')
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
-    return True
 
 @shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=140000,queue='render_video_reupload')
 def render_video_reupload(self, data):
@@ -620,7 +619,6 @@ def create_video_file(data, task_id, worker_id):
         print("Lồng nhạc nền thành công.")
         update_status_video(f"Đang Render: Đã xuất video và chèn nhạc nền thành công , chuẩn bị upload lên sever", video_id, task_id, worker_id)
         return True
- 
     
 def find_font_file(font_name, font_dir, extensions=[".ttf", ".otf", ".woff", ".woff2"]):
     print(f"Searching for font '{font_name}' in directory '{font_dir}' with extensions {extensions}")
@@ -2116,6 +2114,7 @@ def get_video_info(video_url):
         print(f"Unexpected error: {e}")
         return None
     
+
 def update_info_video(data, task_id, worker_id):
     try:
         video_url = data.get('url_video_youtube')
@@ -2158,13 +2157,16 @@ def update_info_video(data, task_id, worker_id):
         response = requests.get(download_url, stream=True)
         response.raise_for_status()
         output_file = f'media/{video_id}/cache.mp4'    
-        # Gửi yêu cầu tải và ghi trực tiếp vào file
-        with requests.get(download_url, stream=True) as response:
-            response.raise_for_status()  # Kiểm tra lỗi HTTP
-            with open(output_file, 'wb') as file:
-                for chunk in response.iter_content(chunk_size=1024 * 1024):  # Ghi theo từng chunk lớn
+        total_size = int(response.headers.get('content-length', 0))
+        downloaded_size = 0  # Kích thước đã tải
+        with open(output_file, "wb") as file:
+            for chunk in response.iter_content(chunk_size=1024):  # Tải từng chunk
+                if chunk:  # Nếu chunk không rỗng
                     file.write(chunk)
-            
+                    downloaded_size += len(chunk)
+                    percent_done = (downloaded_size / total_size) * 100
+                    update_status_video(f"Đang Render : Đã tải {percent_done:.2f}%", 
+                          video_id, task_id, worker_id)
         update_status_video("Đang Render : Đã tải xong video youtube", 
                           video_id, task_id, worker_id)
         return True
@@ -2187,7 +2189,6 @@ def update_info_video(data, task_id, worker_id):
                           data.get('video_id'), task_id, worker_id)
         return False
     
-    
 def update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
     try:
         # Kết nối WebSocket
@@ -2203,7 +2204,6 @@ def update_status_video(status_video, video_id, task_id, worker_id, url_video=No
         }
         # Kiểm tra trạng thái kết nối
         if ws.connected:
-            print("WebSocket connection established successfully!")
             ws.send(json.dumps(data))
         else:
             print("WebSocket connection failed.")
@@ -2215,5 +2215,4 @@ def update_status_video(status_video, video_id, task_id, worker_id, url_video=No
         # Đảm bảo đóng kết nối
         if ws.connected:
             ws.close()
-            print("WebSocket connection closed.")
 
