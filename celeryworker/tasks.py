@@ -92,7 +92,7 @@ def render_video(self, data):
     worker_id = render_video.request.hostname  # Lưu worker ID
     video_id = data.get('video_id')
     print(data)
-    update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
+    update_status_video("Đang Render : Đang xử lý video render", data['video_id'], task_id, worker_id)
     success = create_or_reset_directory(f'media/{video_id}')
 
     if not success:
@@ -156,7 +156,7 @@ def render_video_reupload(self, data):
     task_id = render_video.request.id
     worker_id = render_video.request.hostname 
     video_id = data.get('video_id')
-    update_status_video("Đang Render : Đang lấy thông tin video render", data['video_id'], task_id, worker_id)
+    update_status_video("Đang Render : Đang xử lý video render", data['video_id'], task_id, worker_id)
     
     success = create_or_reset_directory(f'media/{video_id}')
     if not success:
