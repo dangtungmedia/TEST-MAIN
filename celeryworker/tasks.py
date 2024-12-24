@@ -1957,15 +1957,6 @@ def downdload_video_reup(data, task_id, worker_id):
     video_id = data.get('video_id')
     output_file = f'media/{video_id}/cache.mp4'
     url = data.get('url_video_youtube')
-
-    # Hàm xử lý tiến trình tải
-    def progress_hook(d):
-        if d['status'] == 'downloading':
-            percent = d['_percent_str'].strip()
-            update_status_video(f"Đang Render : Đang tải video youtube {percent}", data['video_id'], task_id, worker_id)
-        elif d['status'] == 'finished':
-            update_status_video(f"Đang Render :  Đã tải xong video ", data['video_id'], task_id, worker_id)
-
     # Lấy proxy từ môi trường (nếu có)
     proxy_url = os.environ.get('PROXY_URL')  # Thay đổi proxy ở đây nếu cần
 
@@ -1975,7 +1966,7 @@ def downdload_video_reup(data, task_id, worker_id):
         'format': 'bestvideo[height=720]+bestaudio/best',
         'outtmpl': f"{output_file}",
         'merge_output_format': 'mp4',  # Hợp nhất video và âm thanh thành định dạng MP4
-        'progress_hooks': [progress_hook],  # Thêm hàm xử lý tiến trình
+        # 'progress_hooks': [progress_hook],  # Thêm hàm xử lý tiến trình
     }
 
     try:
@@ -1983,6 +1974,7 @@ def downdload_video_reup(data, task_id, worker_id):
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             print(f"Tải video từ: {url}")
             ydl.download([url])
+        update_status_video(f"Đang Render :  Đã tải xong video ",video_id, task_id, worker_id)
         return True  # Trả về True nếu tải video thành công
 
     except yt_dlp.DownloadError as e:
