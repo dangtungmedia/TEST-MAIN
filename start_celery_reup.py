@@ -16,15 +16,20 @@ def get_public_ip():
        return None
 
 def get_local_ip():
-   try:
-       # Lấy hostname
-       hostname = socket.gethostname()
-       # Lấy địa chỉ IP local
-       local_ip = socket.gethostbyname(hostname)
-       return local_ip
-   except Exception as e:
-       print(f"Error getting local IP: {e}")
-       return None
+    try:
+        for interface in netifaces.interfaces():
+            addresses = netifaces.ifaddresses(interface)
+            # Kiểm tra IPv4 trong các interface
+            if netifaces.AF_INET in addresses:
+                for addr in addresses[netifaces.AF_INET]:
+                    ip = addr.get('addr')
+                    # Kiểm tra nếu IP thuộc dải 192.168.x.x hoặc 10.x.x.x (mạng LAN)
+                    if ip.startswith('192.168.') or ip.startswith('10.') or ip.startswith('172.'):
+                        return ip
+        return None
+    except Exception as e:
+        print(f"Error getting local IP: {e}")
+        return None
 
 if __name__ == "__main__":
    # Lấy địa chỉ IP public
