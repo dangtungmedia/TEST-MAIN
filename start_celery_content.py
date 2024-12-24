@@ -1,6 +1,6 @@
 import os
 import requests
-import psutil
+import socket
 
 def get_public_ip():
     try:
@@ -15,24 +15,21 @@ def get_public_ip():
         print(f"Error getting public IP: {e}")
         return None
 
-def get_cpu_cores():
-    # Số lõi logic (bao gồm cả những lõi ảo nếu có Hyper-Threading)
-    logical_cores = psutil.cpu_count(logical=True)
-    # Số lõi vật lý
-    physical_cores = psutil.cpu_count(logical=False)
-    return physical_cores, logical_cores
+def get_local_ip():
+   try:
+       # Lấy hostname
+       hostname = socket.gethostname()
+       # Lấy địa chỉ IP local
+       local_ip = socket.gethostbyname(hostname)
+       return local_ip
+   except Exception as e:
+       print(f"Error getting local IP: {e}")
+       return None
 
 if __name__ == "__main__":
     # Lấy địa chỉ IP public
     ip_address = get_public_ip()
     if ip_address:
-        # Lấy số lượng lõi CPU vật lý
-        physical_cores, logical_cores = get_cpu_cores()
-
-        # Tính số worker (chia đều số lõi CPU cho số worker và cộng thêm 1 nếu số lõi không chia hết)
-        # Ví dụ: chia số lõi CPU cho số worker cần thiết, nếu có dư thì cộng thêm 1.
-        worker_count = physical_cores // 2
-
         # Chạy Celery worker với số lượng worker tính được
         os.system(f"celery -A celeryworker worker -l INFO --hostname=Tung-Content --concurrency=3 -Q render_video_content")
     else:

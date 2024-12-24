@@ -7,5 +7,5 @@ services:
     command: python start_celery_reup.py
     volumes:
       - .:/app
-
+    network_mode: "host"
       
