@@ -7,17 +7,11 @@ import websocket
 import json
 from PIL import Image, ImageDraw, ImageFont
 import asyncio
-import math
 import urllib
 import edge_tts, random, subprocess
 import asyncio, json, shutil
 from googletrans import Translator
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.probability import FreqDist
-import math
 from datetime import timedelta, datetime
-from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 import re
 from datetime import datetime, timedelta
 import re
@@ -65,6 +59,40 @@ def delete_directory(video_id):
                 print(f"Lỗi khi xóa thư mục {directory_path}: {e}")
     else:
         print(f"Thư mục {directory_path} không tồn tại.")
+
+
+
+class WebSocketClient:
+    def __init__(self, url):
+        self.url = url
+        self.ws = None
+        
+    def connect(self):
+        with self._lock:  # Thread-safe connection
+            try:
+                if self.ws is None or not self.ws.connected:
+                    self.ws = websocket.WebSocket()
+                    self.ws.connect(self.url)
+                return True
+            except Exception as e:
+                return False
+            
+    def send(self, data, max_retries=3):
+        with self._lock:  # Thread-safe sending
+            for attempt in range(max_retries):
+                try:
+                    if not self.ws or not self.ws.connected:
+                        if not self.connect():
+                            continue
+                            
+                    self.ws.send(json.dumps(data))
+                    return True
+                except Exception as e:
+                    continue
+            return False
+
+# Khởi tạo WebSocket client một lần
+ws_client = WebSocketClient("wss://autospamnews.com/ws/update_status/")
 
 # Xử lý khi task gặp lỗi
 @task_failure.connect
@@ -1549,11 +1577,11 @@ def get_voice_japanese(data, text, file_name):
         try:
             # Tạo audio query với VoiceVox
             response_query = requests.post(
-                            f'http://voicevox:50021/audio_query?speaker={voice_id}',  # API để tạo audio_query
+                            f'http://voicevox_render:50021/audio_query?speaker={voice_id}',  # API để tạo audio_query
                             params={'text': text}  # Gửi văn bản cần chuyển thành giọng nói
                         )
             # Yêu cầu tạo âm thanh
-            url_synthesis = f"http://voicevox:50021/synthesis?speaker={voice_id}"
+            url_synthesis = f"http://voicevox_render:50021/synthesis?speaker={voice_id}"
             response_synthesis = requests.post(url_synthesis,data=json.dumps(response_query.json()))
             # Ghi nội dung phản hồi vào tệp
             with open(file_name, 'wb') as f:
@@ -2159,29 +2187,13 @@ def update_info_video(data, task_id, worker_id):
         return False
     
 def update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
-    try:
-        # Kết nối WebSocket
-        ws = websocket.WebSocket()
-        ws.connect(f"wss://autospamnews.com/ws/update_status/")
-        data = {
-            'type':'update-status',
-            'video_id': video_id,
-            'status': status_video,
-            'task_id': task_id,
-            'worker_id': worker_id,
-            'url_video': url_video,
-        }
-        # Kiểm tra trạng thái kết nối
-        if ws.connected:
-            ws.send(json.dumps(data))
-        else:
-            print("WebSocket connection failed.")
-    except websocket.WebSocketException as e:
-        print(f"WebSocket error: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-    finally:
-        # Đảm bảo đóng kết nối
-        if ws.connected:
-            ws.close()
-
+    data = {
+        'type': 'update-status',
+        'video_id': video_id,
+        'status': status_video,
+        'task_id': task_id,
+        'worker_id': worker_id,
+        'url_video': url_video,
+    }
+    
+    ws_client.send(data)
