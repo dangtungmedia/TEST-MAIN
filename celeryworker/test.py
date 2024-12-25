@@ -4,7 +4,7 @@ import json
 from time import sleep
 from celery.utils.log import get_task_logger
 
-logger = get_task_logger(__name__)
+
 
 class WebSocketClient:
     def __init__(self, url):
@@ -18,10 +18,9 @@ class WebSocketClient:
                 self.ws.connect(self.url)
                 return True
         except Exception as e:
-            logger.error(f"WebSocket connection error: {e}")
             return False
             
-    def send(self, data, max_retries=3):
+    def send(self, data, max_retries=5):
         for attempt in range(max_retries):
             try:
                 if not self.ws or not self.ws.connected:
@@ -31,7 +30,6 @@ class WebSocketClient:
                 self.ws.send(json.dumps(data))
                 return True
             except Exception as e:
-                logger.error(f"Send attempt {attempt + 1} failed: {e}")
                 sleep(1)  # Delay before retry
                 continue
         return False

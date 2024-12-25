@@ -25,7 +25,7 @@ from celery.signals import task_failure,task_revoked
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from dotenv import load_dotenv
-
+from time import sleep
 from .random_video_effect  import random_video_effect_cython
 import boto3
 import threading
@@ -68,28 +68,27 @@ class WebSocketClient:
         self.ws = None
         
     def connect(self):
-        with self._lock:  # Thread-safe connection
+        try:
+            if self.ws is None or not self.ws.connected:
+                self.ws = websocket.WebSocket()
+                self.ws.connect(self.url)
+                return True
+        except Exception as e:
+            return False
+            
+    def send(self, data, max_retries=5):
+        for attempt in range(max_retries):
             try:
-                if self.ws is None or not self.ws.connected:
-                    self.ws = websocket.WebSocket()
-                    self.ws.connect(self.url)
+                if not self.ws or not self.ws.connected:
+                    if not self.connect():
+                        continue
+                        
+                self.ws.send(json.dumps(data))
                 return True
             except Exception as e:
-                return False
-            
-    def send(self, data, max_retries=3):
-        with self._lock:  # Thread-safe sending
-            for attempt in range(max_retries):
-                try:
-                    if not self.ws or not self.ws.connected:
-                        if not self.connect():
-                            continue
-                            
-                    self.ws.send(json.dumps(data))
-                    return True
-                except Exception as e:
-                    continue
-            return False
+                sleep(1)  # Delay before retry
+                continue
+        return False
 
 # Khởi tạo WebSocket client một lần
 ws_client = WebSocketClient("wss://autospamnews.com/ws/update_status/")
