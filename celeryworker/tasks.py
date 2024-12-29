@@ -61,8 +61,6 @@ def delete_directory(video_id):
     else:
         print(f"Thư mục {directory_path} không tồn tại.")
 
-
-
 class WebSocketClient:
     def __init__(self, url):
         self.url = url
@@ -72,7 +70,8 @@ class WebSocketClient:
         self.min_delay = 1.0  # Delay tối thiểu 1s
         self.important_statuses = [
             "Render Thành Công : Đang Chờ Upload lên Kênh",
-            "Đang Render : Upload file File Lên Server thành công!"
+            "Đang Render : Upload file File Lên Server thành công!",
+            "Đang Render : Đang xử lý video render"
         ]
 
     def should_send(self, status):
