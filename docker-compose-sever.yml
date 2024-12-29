@@ -8,7 +8,7 @@ services:
     volumes:
       - .:/app
   celery_render_reup:
-    container_name: celery
+    container_name: celery_render_reup
     restart: always
     build:
       context: .

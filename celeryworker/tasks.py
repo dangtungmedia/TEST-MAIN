@@ -2185,6 +2185,7 @@ def update_info_video(data, task_id, worker_id):
                           data.get('video_id'), task_id, worker_id)
         return False
     
+
 def update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
     data = {
         'type': 'update-status',
@@ -2194,5 +2195,4 @@ def update_status_video(status_video, video_id, task_id, worker_id, url_video=No
         'worker_id': worker_id,
         'url_video': url_video,
     }
-    
     ws_client.send(data)
