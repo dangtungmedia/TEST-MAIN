@@ -29,6 +29,7 @@ from time import sleep
 from .random_video_effect  import random_video_effect_cython
 import boto3
 import threading
+from threading import Lock  # Import Lock từ threading
 # Nạp biến môi trường từ file .env
 load_dotenv()
 
@@ -66,29 +67,46 @@ class WebSocketClient:
     def __init__(self, url):
         self.url = url
         self.ws = None
+        self.lock = Lock()
+        self.last_send_time = 0
+        self.min_delay = 1.0  # Delay tối thiểu 1s
+        self.important_statuses = [
+            "Render Thành Công : Đang Chờ Upload lên Kênh",
+            "Đang Render : Upload file File Lên Server thành công!"
+        ]
+
+    def should_send(self, status):
+        current_time = time.time()
+        time_since_last = current_time - self.last_send_time
         
-    def connect(self):
-        try:
-            if self.ws is None or not self.ws.connected:
-                self.ws = websocket.WebSocket()
-                self.ws.connect(self.url)
-                return True
-        except Exception as e:
-            return False
+        # Nếu là status quan trọng, luôn gửi
+        if status in self.important_statuses:
+            return True
             
+        # Với status thường, chỉ gửi nếu đã qua 1s
+        return time_since_last >= self.min_delay
+
     def send(self, data, max_retries=5):
-        for attempt in range(max_retries):
-            try:
-                if not self.ws or not self.ws.connected:
-                    if not self.connect():
-                        continue
-                        
-                self.ws.send(json.dumps(data))
-                return True
-            except Exception as e:
-                sleep(1)  # Delay before retry
-                continue
-        return False
+        with self.lock:
+            status = data.get('status')
+            
+            # Kiểm tra xem có nên gửi không
+            if not self.should_send(status):
+                return True  # Return True vì không cần gửi
+                
+            for attempt in range(max_retries):
+                try:
+                    if not self.ws or not self.ws.connected:
+                        if not self.connect():
+                            continue
+                            
+                    self.ws.send(json.dumps(data))
+                    self.last_send_time = time.time()
+                    return True
+                except Exception as e:
+                    sleep(1)
+                    continue
+            return False
 
 # Khởi tạo WebSocket client một lần
 ws_client = WebSocketClient("wss://autospamnews.com/ws/update_status/")
