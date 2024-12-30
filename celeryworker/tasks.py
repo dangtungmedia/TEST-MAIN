@@ -7,11 +7,14 @@ import websocket
 import json
 from PIL import Image, ImageDraw, ImageFont
 import asyncio
+import math
 import urllib
 import edge_tts, random, subprocess
 import asyncio, json, shutil
 from googletrans import Translator
+import math
 from datetime import timedelta, datetime
+from requests_toolbelt.multipart.encoder import MultipartEncoder, MultipartEncoderMonitor
 import re
 from datetime import datetime, timedelta
 import re
@@ -25,11 +28,12 @@ from celery.signals import task_failure,task_revoked
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 from dotenv import load_dotenv
-from time import sleep
+
 from .random_video_effect  import random_video_effect_cython
 import boto3
 import threading
-from threading import Lock  # Import Lock từ threading
+
+from time import sleep
 # Nạp biến môi trường từ file .env
 load_dotenv()
 
@@ -61,51 +65,35 @@ def delete_directory(video_id):
     else:
         print(f"Thư mục {directory_path} không tồn tại.")
 
+
+
 class WebSocketClient:
     def __init__(self, url):
         self.url = url
         self.ws = None
-        self.lock = Lock()
-        self.last_send_time = 0
-        self.min_delay = 1.0  # Delay tối thiểu 1s
-        self.important_statuses = [
-            "Render Thành Công : Đang Chờ Upload lên Kênh",
-            "Đang Render : Upload file File Lên Server thành công!",
-            "Đang Render : Đang xử lý video render"
-        ]
-
-    def should_send(self, status):
-        current_time = time.time()
-        time_since_last = current_time - self.last_send_time
         
-        # Nếu là status quan trọng, luôn gửi
-        if status in self.important_statuses:
-            return True
-            
-        # Với status thường, chỉ gửi nếu đã qua 1s
-        return time_since_last >= self.min_delay
-
-    def send(self, data, max_retries=5):
-        with self.lock:
-            status = data.get('status')
-            
-            # Kiểm tra xem có nên gửi không
-            if not self.should_send(status):
-                return True  # Return True vì không cần gửi
-                
-            for attempt in range(max_retries):
-                try:
-                    if not self.ws or not self.ws.connected:
-                        if not self.connect():
-                            continue
-                            
-                    self.ws.send(json.dumps(data))
-                    self.last_send_time = time.time()
-                    return True
-                except Exception as e:
-                    sleep(1)
-                    continue
+    def connect(self):
+        try:
+            if self.ws is None or not self.ws.connected:
+                self.ws = websocket.WebSocket()
+                self.ws.connect(self.url)
+                return True
+        except Exception as e:
             return False
+            
+    def send(self, data, max_retries=5):
+        for attempt in range(max_retries):
+            try:
+                if not self.ws or not self.ws.connected:
+                    if not self.connect():
+                        continue
+                        
+                self.ws.send(json.dumps(data))
+                return True
+            except Exception as e:
+                sleep(1)  # Delay before retry
+                continue
+        return False
 
 # Khởi tạo WebSocket client một lần
 ws_client = WebSocketClient("wss://autospamnews.com/ws/update_status/")
@@ -197,8 +185,8 @@ def render_video(self, data):
 
 @shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=140000,queue='render_video_reupload')
 def render_video_reupload(self, data):
-    task_id = render_video.request.id
-    worker_id = render_video.request.hostname 
+    task_id = render_video_reupload.request.id
+    worker_id = render_video_reupload.request.hostname 
     video_id = data.get('video_id')
     update_status_video("Đang Render : Đang xử lý video render", data['video_id'], task_id, worker_id)
     
@@ -1593,11 +1581,11 @@ def get_voice_japanese(data, text, file_name):
         try:
             # Tạo audio query với VoiceVox
             response_query = requests.post(
-                            f'http://voicevox_render:50021/audio_query?speaker={voice_id}',  # API để tạo audio_query
+                            f'http://127.0.0.1:50021/audio_query?speaker={voice_id}',  # API để tạo audio_query
                             params={'text': text}  # Gửi văn bản cần chuyển thành giọng nói
                         )
             # Yêu cầu tạo âm thanh
-            url_synthesis = f"http://voicevox_render:50021/synthesis?speaker={voice_id}"
+            url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
             response_synthesis = requests.post(url_synthesis,data=json.dumps(response_query.json()))
             # Ghi nội dung phản hồi vào tệp
             with open(file_name, 'wb') as f:
@@ -2202,7 +2190,6 @@ def update_info_video(data, task_id, worker_id):
                           data.get('video_id'), task_id, worker_id)
         return False
     
-
 def update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
     data = {
         'type': 'update-status',
@@ -2213,3 +2200,5 @@ def update_status_video(status_video, video_id, task_id, worker_id, url_video=No
         'url_video': url_video,
     }
     ws_client.send(data)
+
+
