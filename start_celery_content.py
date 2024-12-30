@@ -31,6 +31,6 @@ if __name__ == "__main__":
     ip_address = get_public_ip()
     if ip_address:
         # Chạy Celery worker với số lượng worker tính được
-        os.system(f"celery -A celeryworker worker -l INFO --hostname=Tung-Content --concurrency=3 -Q render_video_content")
+        os.system(f"celery -A celeryworker worker -l INFO --hostname=Tung-Content --concurrency=2 -Q render_video_content")
     else:
         print("Không thể lấy địa chỉ IP public.")
