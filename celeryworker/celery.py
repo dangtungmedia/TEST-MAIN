@@ -21,6 +21,9 @@ app.conf.accept_content = ['json']
 app.conf.task_serializer = 'json'
 app.conf.result_serializer = 'json'
 
+app.conf.task_acks_late = True  # Xác nhận task sau khi xử lý
+app.conf.worker_prefetch_multiplier = 1  # Mỗi worker chỉ nhận 1 task
+
 # Định nghĩa một task debug đơn giản
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
