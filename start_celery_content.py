@@ -28,9 +28,15 @@ def get_local_ip():
 
 if __name__ == "__main__":
     # Lấy địa chỉ IP public
-    ip_address = get_public_ip()
-    if ip_address:
-        # Chạy Celery worker với số lượng worker tính được
-        os.system(f"celery -A celeryworker worker -l INFO --hostname=Tung-Content --concurrency=2 -Q render_video_content")
+    # Lấy địa chỉ IP public
+    public_ip = get_public_ip()
+    local_ip = get_local_ip()
+    print(f"dải ip của máy {public_ip} và {local_ip}")
+    if public_ip == "210.245.74.61":
+        # Nếu IP public trùng khớp, sử dụng IP local
+        local_ip = get_local_ip()
+        if local_ip:
+            # Chạy Celery worker với IP local
+            os.system(f"celery -A celeryworker worker -l INFO --hostname={local_ip}-Reup --concurrency=5 -Q render_video_content,render_video_reupload --prefetch-multiplier=1")
     else:
-        print("Không thể lấy địa chỉ IP public.")
+        os.system(f"celery -A celeryworker worker -l INFO --hostname={public_ip}-Reup --concurrency=3 -Q render_video_content,render_video_reupload --prefetch-multiplier=1")

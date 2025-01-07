@@ -44,31 +44,6 @@ SECRET_KEY=os.environ.get('SECRET_KEY')
 SERVER=os.environ.get('SERVER')
 ACCESS_TOKEN = None
 
-
-def delete_directory(video_id):
-    directory_path = f'media/{video_id}'
-    
-    # Kiểm tra nếu thư mục tồn tại
-    if os.path.exists(directory_path):
-        # Kiểm tra xem thư mục có trống không
-        if not os.listdir(directory_path):
-            try:
-                # Nếu thư mục trống, dùng os.rmdir để xóa
-                # os.rmdir(directory_path)
-                print(f"Đã xóa thư mục trống: {directory_path}")
-            except Exception as e:
-                print(f"Lỗi khi xóa thư mục {directory_path}: {e}")
-        else:
-            try:
-                # Nếu thư mục không trống, dùng shutil.rmtree để xóa toàn bộ
-                shutil.rmtree(directory_path)
-                print(f"Đã xóa thư mục cùng với các tệp: {directory_path}")
-            except Exception as e:
-                print(f"Lỗi khi xóa thư mục {directory_path}: {e}")
-    else:
-        print(f"Thư mục {directory_path} không tồn tại.")
-
-
 class WebSocketClient:
     def __init__(self, url, min_delay=1.0):
         self.url = url
@@ -81,7 +56,9 @@ class WebSocketClient:
         self.important_statuses = [
             "Render Thành Công : Đang Chờ Upload lên Kênh",
             "Đang Render : Upload file File Lên Server thành công!",
-            "Đang Render : Đang xử lý video render"
+            "Đang Render : Đang xử lý video render",
+            "Đang Render : Đã lấy thành công thông tin video reup",
+            "Render Lỗi"
         ]
         self.logger = self._setup_logger()
 
@@ -96,8 +73,8 @@ class WebSocketClient:
         current_time = time.time()
         time_since_last = current_time - self.last_send_time
 
-        # Important statuses bypass rate limiting
-        if status in self.important_statuses:
+        # Check if status contains any important keywords
+        if status and any(keyword in status for keyword in self.important_statuses):
             return True
             
         # Apply rate limiting for other statuses
@@ -170,6 +147,31 @@ class WebSocketClient:
 # Khởi tạo WebSocket client một lần
 ws_client = WebSocketClient("wss://autospamnews.com/ws/update_status/")
 
+
+
+def delete_directory(video_id):
+    directory_path = f'media/{video_id}'
+    
+    # Kiểm tra nếu thư mục tồn tại
+    if os.path.exists(directory_path):
+        # Kiểm tra xem thư mục có trống không
+        if not os.listdir(directory_path):
+            try:
+                # Nếu thư mục trống, dùng os.rmdir để xóa
+                # os.rmdir(directory_path)
+                print(f"Đã xóa thư mục trống: {directory_path}")
+            except Exception as e:
+                print(f"Lỗi khi xóa thư mục {directory_path}: {e}")
+        else:
+            try:
+                # Nếu thư mục không trống, dùng shutil.rmtree để xóa toàn bộ
+                shutil.rmtree(directory_path)
+                print(f"Đã xóa thư mục cùng với các tệp: {directory_path}")
+            except Exception as e:
+                print(f"Lỗi khi xóa thư mục {directory_path}: {e}")
+    else:
+        print(f"Thư mục {directory_path} không tồn tại.")
+
 # Xử lý khi task gặp lỗi
 @task_failure.connect
 def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, einfo, **kw):
@@ -177,8 +179,8 @@ def task_failure_handler(sender, task_id, exception, args, kwargs, traceback, ei
     worker_id = "None"
     update_status_video("Render Lỗi : Xử Lý Video Không Thành Công!", video_id, task_id, worker_id)
     delete_directory(video_id)
-    
 # Xử lý khi task bị hủy
+
 @task_revoked.connect
 def clean_up_on_revoke(sender, request, terminated, signum, expired, **kw):
     task_id = request.id
@@ -255,7 +257,7 @@ def render_video(self, data):
     shutil.rmtree(f'media/{video_id}')
     update_status_video(f"Render Thành Công : Đang Chờ Upload lên Kênh", data['video_id'], task_id, worker_id)
 
-@shared_task(bind=True, priority=10,name='render_video_reupload',time_limit=140000,queue='render_video_reupload')
+@shared_task(bind=True, priority=1,name='render_video_reupload',time_limit=140000,queue='render_video_reupload')
 def render_video_reupload(self, data):
     task_id = render_video_reupload.request.id
     worker_id = render_video_reupload.request.hostname 
@@ -273,12 +275,6 @@ def render_video_reupload(self, data):
         shutil.rmtree(f'media/{video_id}')
         update_status_video("Render Lỗi : Không thể xử lý url video liên hệ admin", data['video_id'], task_id, worker_id)
         return
-    # if data.get('url_reupload'):
-    #     success = downdload_video_reup(data, task_id, worker_id)
-    #     if not success:
-    #         shutil.rmtree(f'media/{video_id}')
-    #         return
-    # update_status_video("Đang Render : Tải xuống video thành công", data['video_id'], task_id, worker_id)
     
     success = cread_test_reup(data, task_id, worker_id)
     if not success:
@@ -2193,7 +2189,6 @@ def get_video_info(video_url):
         print(f"Unexpected error: {e}")
         return None
     
-
 def update_info_video(data, task_id, worker_id):
     try:
         video_url = data.get('url_video_youtube')
@@ -2207,24 +2202,7 @@ def update_info_video(data, task_id, worker_id):
             raise ValueError(f"Failed to get video info from {video_url}")
 
         update_status_video("Đang Render : Đã lấy thành công thông tin video reup", 
-                          video_id, task_id, worker_id)
-
-        # Cập nhật thông tin video lên server
-        url = f'{SERVER}/api/'
-        payload = {
-            'video_id': str(video_id),
-            'action': 'update-info-video',
-            'secret_key': SECRET_KEY,
-            'title': result["title"],
-            'thumbnail_url': result["thumbnail_url"],
-        }
-
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-
-        update_status_video("Đang Render : Đã cập nhập thành công video youtube chuẩn bị tải video youtube", 
-                          video_id, task_id, worker_id)
-
+                          video_id, task_id, worker_id,url_thumbnail=result["thumbnail_url"],title=result["title"])
         # Tải video
         download_url = result["preview_url"]
         if not download_url:
@@ -2233,6 +2211,8 @@ def update_info_video(data, task_id, worker_id):
                 return  True
             else:
                 return False
+        update_status_video("Đang Render : Đã tải xong video youtube", 
+                          video_id, task_id, worker_id)
         response = requests.get(download_url, stream=True)
         response.raise_for_status()
         output_file = f'media/{video_id}/cache.mp4'    
@@ -2262,13 +2242,23 @@ def update_info_video(data, task_id, worker_id):
                           data.get('video_id'), task_id, worker_id)
         return False
     
-def update_status_video(status_video, video_id, task_id, worker_id, url_video=None):
+    
+def remove_invalid_chars(string):
+    # Kiểm tra nếu đầu vào không phải chuỗi
+    if not isinstance(string, str):
+        return ''
+    # Loại bỏ ký tự Unicode 4 byte
+    return re.sub(r'[^\u0000-\uFFFF]', '', string)
+
+def update_status_video(status_video, video_id, task_id, worker_id,url_thumbnail=None, url_video=None,title=None):
     data = {
         'type': 'update-status',
         'video_id': video_id,
         'status': status_video,
         'task_id': task_id,
         'worker_id': worker_id,
+        "url_thumbnail":url_thumbnail,
+        'title': remove_invalid_chars(title),
         'url_video': url_video,
     }
     ws_client.send(data)
