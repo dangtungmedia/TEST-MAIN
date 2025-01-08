@@ -1654,11 +1654,11 @@ def get_voice_japanese(data, text, file_name):
         try:
             # Tạo audio query với VoiceVox
             response_query = requests.post(
-                            f'http://127.0.0.1:50021/audio_query?speaker={voice_id}',  # API để tạo audio_query
+                            f'http://127.0.0.1:50025/audio_query?speaker={voice_id}',  # API để tạo audio_query
                             params={'text': text}  # Gửi văn bản cần chuyển thành giọng nói
                         )
             # Yêu cầu tạo âm thanh
-            url_synthesis = f"http://127.0.0.1:50021/synthesis?speaker={voice_id}"
+            url_synthesis = f"http://127.0.0.1:50025/synthesis?speaker={voice_id}"
             response_synthesis = requests.post(url_synthesis,data=json.dumps(response_query.json()))
             # Ghi nội dung phản hồi vào tệp
             with open(file_name, 'wb') as f:
@@ -2067,7 +2067,7 @@ def downdload_video_reup(data, task_id, worker_id):
 
     # Cấu hình yt-dlp
     ydl_opts = {
-        'proxy': proxy_url,  # Cấu hình proxy
+        # 'proxy': proxy_url,  # Cấu hình proxy
         'format': 'bestvideo[height=720]+bestaudio/best',
         'outtmpl': f"{output_file}",
         'merge_output_format': 'mp4',  # Hợp nhất video và âm thanh thành định dạng MP4
