@@ -2205,11 +2205,12 @@ def get_video_info(data,task_id,worker_id):
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         file.write(chunk)
-                        
+        update_status_video(f"Đang Render: Đã tải xong video", video_id, task_id, worker_id)  
         return {"title": title}
         
     except (requests.RequestException, ValueError, KeyError, IOError) as e:
         print(f"Phương thức 1 thất bại: {str(e)}")
+        update_status_video(f"Đang Render: Phương thức download 1 thất bại", video_id, task_id, worker_id)  
         
     # Phương thức 2: Sử dụng yt-dlp
     try:
@@ -2217,8 +2218,8 @@ def get_video_info(data,task_id,worker_id):
         if not url:
             raise ValueError("Không tìm thấy URL video YouTube")
             
-        max_retries = 3
-        retry_delay = 5
+        max_retries = 4
+        retry_delay = 1
         proxy_url = os.environ.get('PROXY_URL')
         
         ydl_opts = {
@@ -2229,13 +2230,14 @@ def get_video_info(data,task_id,worker_id):
             'no_warnings': False
         }
         
-        if proxy_url:
-            ydl_opts['proxy'] = proxy_url
-            
+    
         for attempt in range(max_retries):
             try:
+                if attempt == 3: 
+                    ydl_opts['proxy'] = proxy_url
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    print(f"Đang thử tải video (lần {attempt + 1}/{max_retries})")
+                    update_status_video(f"Đang Render: Đang thử tải video (lần {attempt + 1}/{max_retries})", 
+                          data.get('video_id'), task_id, worker_id)
                     
                     # Lấy thông tin video trước
                     video_info = ydl.extract_info(url, download=False)
@@ -2258,12 +2260,14 @@ def get_video_info(data,task_id,worker_id):
                 print(f"Lỗi không xác định (lần {attempt + 1}): {str(e)}")
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay)
-                    
-        print("Render Lỗi: Không thể tải video sau nhiều lần thử")
+        update_status_video(f"Render Lỗi: Không thể tải video sau nhiều lần thử", 
+                          data.get('video_id'), task_id, worker_id)
         return None
         
     except Exception as e:
         print(f"Lỗi không xác định trong quá trình xử lý: {str(e)}")
+        update_status_video(f"Render Lỗi: Lỗi không xác định trong quá trình xử lý", 
+                          data.get('video_id'), task_id, worker_id)
         return None
     
     
