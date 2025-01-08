@@ -2277,12 +2277,12 @@ def update_info_video(data, task_id, worker_id):
         if not video_url or not video_id:
             raise ValueError("Missing video URL or video ID")
 
-        result = get_video_info(video_url)
+        result = get_video_info(data,task_id,worker_id)
         if not result:
             raise ValueError(f"Failed to get video info from {video_url}")
         
         
-        url_thumnail = get_youtube_thumbnail(data,task_id,worker_id)
+        url_thumnail = get_youtube_thumbnail(video_url)
 
         update_status_video("Đang Render : Đã lấy thành công thông tin video reup", 
                           video_id, task_id, worker_id,url_thumbnail=url_thumnail['max'],title=result["title"])
