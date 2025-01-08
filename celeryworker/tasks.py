@@ -2062,6 +2062,9 @@ def downdload_video_reup(data, task_id, worker_id):
     video_id = data.get('video_id')
     output_file = f'media/{video_id}/cache.mp4'
     url = data.get('url_video_youtube')
+    max_retries = 3  # Số lần thử lại
+    retry_delay = 5  # Thời gian chờ giữa các lần thử (giây)
+
     # Lấy proxy từ môi trường (nếu có)
     proxy_url = os.environ.get('PROXY_URL')  # Thay đổi proxy ở đây nếu cần
 
@@ -2074,25 +2077,33 @@ def downdload_video_reup(data, task_id, worker_id):
         # 'progress_hooks': [progress_hook],  # Thêm hàm xử lý tiến trình
     }
 
-    try:
-        # Khởi tạo yt-dlp và tải video
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            print(f"Tải video từ: {url}")
-            ydl.download([url])
-        update_status_video(f"Đang Render :  Đã tải xong video ",video_id, task_id, worker_id)
-        return True  # Trả về True nếu tải video thành công
+    for attempt in range(max_retries):
+        try:
+            # Khởi tạo yt-dlp và tải video
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                print(f"Thử tải video (lần {attempt + 1}) từ: {url}")
+                ydl.download([url])
 
-    except yt_dlp.DownloadError as e:
-        # Xử lý lỗi khi tải video
-        update_status_video(f"Render Lỗi: Không thể tải video. Lỗi: {str(e)}", video_id, task_id, worker_id)
-        print(f"Lỗi khi tải video từ {url}: {str(e)}")
-        return False  # Trả về False nếu có lỗi khi tải video
+            update_status_video(f"Đang Render : Đã tải xong video", video_id, task_id, worker_id)
+            return True  # Trả về True nếu tải video thành công
 
-    except Exception as e:
-        # Xử lý các lỗi khác (ví dụ, lỗi kết nối mạng)
-        update_status_video(f"Render Lỗi: Lỗi không xác định. Lỗi: {str(e)}", video_id, task_id, worker_id)
-        print(f"Lỗi không xác định khi tải video từ {url}: {str(e)}")
-        return False  # Trả về False nếu có lỗi không xác định
+        except yt_dlp.DownloadError as e:
+            print(f"Lỗi khi tải video từ {url} (lần {attempt + 1}): {str(e)}")
+        
+        except Exception as e:
+            print(f"Lỗi không xác định khi tải video từ {url} (lần {attempt + 1}): {str(e)}")
+
+        # Chờ trước khi thử lại (nếu không phải lần cuối)
+        if attempt < max_retries - 1:
+            print(f"Chờ {retry_delay} giây trước khi thử lại...")
+            time.sleep(retry_delay)
+
+    # Nếu thử đủ số lần mà vẫn lỗi, trả về False
+    final_error_message = "Render Lỗi: Không thể tải video sau nhiều lần thử."
+    update_status_video(final_error_message, video_id, task_id, worker_id)
+    print(final_error_message)
+    return False
+
 
 class MyBarLogger(ProgressBarLogger):
     
