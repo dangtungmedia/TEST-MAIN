@@ -44,6 +44,9 @@ SECRET_KEY=os.environ.get('SECRET_KEY')
 SERVER=os.environ.get('SERVER')
 ACCESS_TOKEN = None
 
+logging.basicConfig(filename='process_video.log', level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 class WebSocketClient:
     def __init__(self, url, min_delay=1.0):
         self.url = url
@@ -1209,6 +1212,9 @@ def process_video_segment(data, text_entry, data_sub, i, video_id, task_id, work
                     # Chạy lệnh FFmpeg
                     subprocess.run(cmd, check=True)
                 except subprocess.CalledProcessError as e:
+                    error_message = f"FFmpeg Error: {str(e)} | Command: {' '.join(cmd)}"
+                    update_status_video(f"Render Lỗi : {error_message}", video_id, task_id, worker_id)
+                    logging.error(error_message)
                     return False
         return True
     except Exception as e:
@@ -1250,7 +1256,6 @@ def create_video_lines(data, task_id, worker_id):
                         percent_complete = (processed_entries / total_entries) * 100
                         update_status_video(f"Đang Render : Đang tạo video {percent_complete:.2f}%", video_id, task_id, worker_id)
                     else:
-                        update_status_video("Render Lỗi: Lỗi trong quá trình tạo video cho một đoạn.", video_id, task_id, worker_id)
                         for pending in futures:
                             pending.cancel()  # Hủy tất cả các tác vụ chưa hoàn thành
                         return False  # Dừng quá trình nếu có lỗi trong việc tạo video cho một đoạn
@@ -1581,7 +1586,7 @@ def download_audio(data, task_id, worker_id):
         processed_entries = 0
 
         # Khởi tạo luồng xử lý tối đa 20 luồng
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = {
                 executor.submit(process_voice_entry, data, text_entry, video_id, task_id, worker_id, language): idx
                 for idx, text_entry in enumerate(text_entries)
@@ -2200,9 +2205,12 @@ def update_info_video(data, task_id, worker_id):
         result = get_video_info(video_url)
         if not result:
             raise ValueError(f"Failed to get video info from {video_url}")
+        
+        
+        url_thumnail = get_youtube_thumbnail(video_url)
 
         update_status_video("Đang Render : Đã lấy thành công thông tin video reup", 
-                          video_id, task_id, worker_id,url_thumbnail=result["thumbnail_url"],title=result["title"])
+                          video_id, task_id, worker_id,url_thumbnail=url_thumnail['max'],title=result["title"])
         # Tải video
         download_url = result["preview_url"]
         if not download_url:
@@ -2242,13 +2250,32 @@ def update_info_video(data, task_id, worker_id):
                           data.get('video_id'), task_id, worker_id)
         return False
     
-    
 def remove_invalid_chars(string):
     # Kiểm tra nếu đầu vào không phải chuỗi
     if not isinstance(string, str):
         return ''
     # Loại bỏ ký tự Unicode 4 byte
     return re.sub(r'[^\u0000-\uFFFF]', '', string)
+
+def get_youtube_thumbnail(youtube_url):
+    try:
+        # Regex pattern để lấy video ID
+        pattern = r'(?:https?:\/{2})?(?:w{3}\.)?youtu(?:be)?\.(?:com|be)(?:\/watch\?v=|\/)([^\s&]+)'
+        video_id = re.findall(pattern, youtube_url)[0]
+        
+        # Tạo các URL thumbnail
+        thumbnails = {
+            'max': f'https://i3.ytimg.com/vi/{video_id}/maxresdefault.jpg',
+            'hq': f'https://i3.ytimg.com/vi/{video_id}/hqdefault.jpg',
+            'mq': f'https://i3.ytimg.com/vi/{video_id}/mqdefault.jpg',
+            'sd': f'https://i3.ytimg.com/vi/{video_id}/sddefault.jpg',
+            'default': f'https://i3.ytimg.com/vi/{video_id}/default.jpg'
+        }
+        
+        return thumbnails
+        
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 def update_status_video(status_video, video_id, task_id, worker_id,url_thumbnail=None, url_video=None,title=None):
     data = {
