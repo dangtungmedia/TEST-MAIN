@@ -276,7 +276,6 @@ def render_video_reupload(self, data):
     success = update_info_video(data, task_id, worker_id)
     if not success:
         shutil.rmtree(f'media/{video_id}')
-        update_status_video("Render Lỗi : Không thể xử lý url video liên hệ admin", data['video_id'], task_id, worker_id)
         return
     
     success = cread_test_reup(data, task_id, worker_id)
