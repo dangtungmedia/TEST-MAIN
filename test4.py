@@ -10,14 +10,16 @@ import logging
 from urllib.parse import urlparse
 from requests.adapters import HTTPAdapter  
 from requests.packages.urllib3.util.retry import Retry
+import logging
+import sys
 
 # Cấu hình logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('download.log'),
-        logging.StreamHandler()
+        logging.FileHandler('download.log', encoding='utf-8'),  # File log hỗ trợ Unicode
+        logging.StreamHandler(sys.stdout)  # Console hỗ trợ Unicode
     ]
 )
 
@@ -132,4 +134,5 @@ if __name__ == "__main__":
         output_dir='video',
         max_videos=10000
     )
-    downloader.download_videos(max_workers=4)
+    downloader.download_videos(max_workers=20)
+
