@@ -2270,9 +2270,6 @@ def get_video_info(data,task_id,worker_id):
                           data.get('video_id'), task_id, worker_id)
         return None
     
-    
-    
-    
 def update_info_video(data, task_id, worker_id):
     try:
         video_url = data.get('url_video_youtube')
