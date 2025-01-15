@@ -134,5 +134,5 @@ if __name__ == "__main__":
         output_dir='video',
         max_videos=10000
     )
-    downloader.download_videos(max_workers=40)
+    downloader.download_videos(max_workers=20)
 
