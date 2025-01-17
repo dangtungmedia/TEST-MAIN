@@ -2298,9 +2298,7 @@ def get_video_info(data,task_id,worker_id):
     try:
         api_url = "https://iloveyt.net/proxy.php"
         form_data = {"url": video_url}
-        
         response = requests.post(api_url, data=form_data, timeout=10)
-        response.raise_for_status()
         api_data = response.json()
         
         if "api" not in api_data or "mediaItems" not in api_data["api"]:
@@ -2311,7 +2309,6 @@ def get_video_info(data,task_id,worker_id):
         
         # Tải video với cập nhật % tải
         with requests.get(media_preview_url, stream=True) as response:
-            response.raise_for_status()
             total_size = int(response.headers.get('content-length', 0))
             chunk_size = 8192
             downloaded_size = 0
